@@ -1,0 +1,7 @@
+.DS_Store
+.idea/
+# Zwischenstände des Scrapers (groß bzw. jederzeit neu erzeugbar).
+# NICHT ignorieren: Datensammlung/scraper/cache/id_zuordnung.json – sie hält die Bier-IDs dauerhaft stabil.
+Datensammlung/scraper/cache/details.jsonl
+Datensammlung/scraper/cache/links.json
+Datensammlung/scraper/cache/fehler.json
