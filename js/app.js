@@ -103,17 +103,28 @@
     const stars = tier >= 4
       ? `<g class="stars">${star(-4, 34, 5, 0)}${star(45, 52, 6, 0.7)}${star(-1, 76, 3.5, 1.4)}${tier >= 5 ? star(46, 22, 4, 0.35) + star(-6, 56, 3, 1.05) + star(44, 82, 3.5, 1.75) : ''}</g>`
       : '';
-    return `<svg class="bottle${tier ? ` t${tier}` : ''}" viewBox="0 0 40 96" aria-hidden="true"><path class="body" d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="label" x="10" y="52" width="20" height="18" rx="3"/>${shine}${foam}${stars}</svg>`;
+    // Kronkorken nur, solange die Flasche noch zu ist (ab Stufe 2 steht Schaum darauf)
+    const cap = tier < 2 ? '<path class="cap" d="M13.6 .4h12.8v4.4H13.6z"/>' : '';
+    const hop = '<path class="hop" d="M20 54.6c-2.7 0-4 2-4 4.1 0 2.7 1.9 5 4 6.4 2.1-1.4 4-3.7 4-6.4 0-2.1-1.3-4.1-4-4.1z"/><path class="hop-scales" d="M16.9 58.2q3.1 1.7 6.2 0M17.2 61.4q2.8 1.5 5.6 0"/>';
+    return `<svg class="bottle${tier ? ` t${tier}` : ''}" viewBox="0 0 40 96" aria-hidden="true"><path class="body" d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="shade" x="26.5" y="46" width="4" height="42" rx="2"/>${cap}<rect class="label" x="10" y="52" width="20" height="18" rx="3"/>${hop}${shine}${foam}${stars}</svg>`;
   }
   const BOTTLE = bottle();
 
+  // Herkunft für den Fuß der Karte: Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
+  const PIN = '<svg class="pin" viewBox="0 0 10 12" aria-hidden="true"><path fill-rule="evenodd" d="M5 0C2.4 0 .8 1.9.8 4.1c0 3.1 4.2 7.9 4.2 7.9s4.2-4.8 4.2-7.9C9.2 1.9 7.6 0 5 0zm0 2.6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>';
+  function originOf(b) {
+    const co = b.company || {};
+    return co.land && co.land !== 'Deutschland' ? co.land : (co.region || '');
+  }
   /* Sammelkarte. c = { beer, count } aus GAME.summarize (count 0 = noch nicht gesammelt).
      Innerhalb eines <button> sind nur <span> erlaubt; deshalb besteht die Karte nur aus <span>-Elementen. */
   function cardInner(c) {
     const b = c.beer;
     const chips = [G.fmtAlc(b.alc), G.fmtLiter(b.flasche)].filter(Boolean);
     const tier = G.cardTier(c.count);
-    return `<span class="band"><span class="kat">${esc(b.kategorie)}</span></span>
+    const origin = originOf(b);
+    return `<span class="mat" aria-hidden="true"></span><span class="foil" aria-hidden="true"></span>
+      <span class="band"><span class="kat">${esc(b.kategorie)}</span></span>
       <span class="bcard-body${tier ? ` t${tier}` : ''}">
         ${c.count ? `<b class="count" title="${c.count}-mal getrunken">Lvl ${c.count}</b>` : ''}
         ${bottle(tier)}
@@ -121,7 +132,8 @@
         ${b.brand ? `<span class="brand">${esc(b.brand)}</span>` : ''}
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
         ${b.sorten.length ? `<span class="sorte">${esc(b.sorten.join(' · '))}</span>` : ''}
-      </span>`;
+      </span>
+      <span class="origin">${origin ? `<span class="o">${PIN}<b>${esc(origin)}</b></span>` : ''}</span>`;
   }
   const cardHtml = (c) => `<div class="bcard k${c.beer.stufe}">${cardInner(c)}</div>`;
   // Karte im Raster der Startseite: Knopf, der die große Kartenansicht öffnet
@@ -400,6 +412,7 @@
     paintCard();
     if (!cardDlg.open) cardDlg.showModal();
     $('.sheet-body', cardDlg).scrollTop = 0;
+    tilt.start();
   }
   function paintCard() {
     const beer = db.map.get(cardDlg.dataset.id);
@@ -437,6 +450,63 @@
   }
   cardDlg.addEventListener('toggle', (e) => { if (e.target.matches('details.desc')) descOpen = e.target.open; }, true);
   cardDlg.addEventListener('close', () => { if (!cardDlg.open) { cardDlg.innerHTML = ''; delete cardDlg.dataset.id; } });
+
+  /* Neigung und Holo-Glanz der großen Karte. Solange der Dialog offen ist, läuft pro Bild eine kleine Rechnung:
+     Maus oder Finger über der Karte (waagerecht ziehen, senkrechtes Wischen scrollt weiter) legen das Ziel fest, sonst
+     schwankt die Karte ganz leicht von selbst, damit der Glanz auch ohne Berührung lebt. Das Skript setzt nur CSS-Variablen
+     (--rx/--ry Neigung, --mx/--my Lichtreflex, --fx/--fy Folie, --tx/--ty Verschiebung der Flasche); gezeichnet wird per CSS.
+     Bei „weniger Bewegung“ bleibt alles ruhig. Der Dialog zeichnet sich bei Sync neu (innerHTML); die Schleife sucht die
+     Karte deshalb in jedem Bild neu. */
+  const tilt = (() => {
+    const MAX = 15; // größte Neigung in Grad
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    const s = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4, amp: 0.4, touched: false, raf: 0 };
+    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    function frame(now) {
+      s.raf = 0;
+      if (!cardDlg.open || document.hidden || calm.matches) return;
+      const el = cardDlg.querySelector('.card-view .bcard');
+      if (el) {
+        if (!s.touched) {
+          const t = now / 1000;
+          s.tx = 0.5 + 0.3 * Math.sin(t * 0.7);
+          s.ty = 0.42 + 0.22 * Math.sin(t * 0.53 + 1.3);
+        }
+        s.x += (s.tx - s.x) * 0.12;
+        s.y += (s.ty - s.y) * 0.12;
+        s.amp += ((s.touched ? 1 : 0.4) - s.amp) * 0.08;
+        const nx = (s.x - 0.5) * 2, ny = (s.y - 0.5) * 2;
+        const set = (k, v) => el.style.setProperty(k, v);
+        set('--rx', `${(-ny * MAX * s.amp).toFixed(2)}deg`);
+        set('--ry', `${(nx * MAX * s.amp).toFixed(2)}deg`);
+        set('--mx', `${(s.x * 100).toFixed(1)}%`);
+        set('--my', `${(s.y * 100).toFixed(1)}%`);
+        set('--fx', s.x.toFixed(3));
+        set('--fy', s.y.toFixed(3));
+        set('--tx', (-nx).toFixed(3));
+        set('--ty', (-ny).toFixed(3));
+        el.classList.add('live');
+      }
+      s.raf = requestAnimationFrame(frame);
+    }
+    function start() { if (!s.raf && !calm.matches) s.raf = requestAnimationFrame(frame); }
+    function aim(e) {
+      const cv = e.target instanceof Element && e.target.closest('.card-view');
+      if (!cv) { s.touched = false; return; }
+      const r = cv.getBoundingClientRect();
+      s.tx = clamp01((e.clientX - r.left) / r.width);
+      s.ty = clamp01((e.clientY - r.top) / r.height);
+      s.touched = true;
+    }
+    const release = () => { s.touched = false; };
+    cardDlg.addEventListener('pointermove', aim);
+    cardDlg.addEventListener('pointerdown', aim);
+    cardDlg.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') release(); });
+    cardDlg.addEventListener('pointercancel', release);
+    cardDlg.addEventListener('pointerleave', release);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && cardDlg.open) start(); });
+    return { start };
+  })();
 
   /* Statistiken. Alle Zahlen kommen aus GAME.stats (aus dem Protokoll berechnet).
      Bewusst keine Tages-Serien oder andere Werte, die tägliches Trinken belohnen. */

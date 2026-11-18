@@ -28,6 +28,7 @@
   --k3: #2F6FA8; --on-k3: #FFFFFF;  /* Spezialität: Blau */
   --k4: #7B4FB3; --on-k4: #FFFFFF;  /* Zaubertrank: Violett */
   --k5: #E0A91B; --on-k5: #2B2010;  /* Heiligtum: Gold */
+  --foil-k4: 0.65; --foil-k5: 0.5;  /* Deckkraft der Holo-Folie: im dunklen Modus schwächer, sonst leidet die Lesbarkeit */
 }
 
 /* ---------- Farben: dunkel (System-Einstellung, sofern nicht „hell“ gewählt) ---------- */
@@ -54,6 +55,7 @@
     --k3: #78ACDC; --on-k3: #15130F;
     --k4: #B796E2; --on-k4: #15130F;
     --k5: #F2C14E; --on-k5: #15130F;
+    --foil-k4: 0.5; --foil-k5: 0.3;
   }
 }
 /* ---------- Farben: dunkel (Auswahl „dunkel“) – identisch zum Block darüber ---------- */
@@ -79,6 +81,7 @@
   --k3: #78ACDC; --on-k3: #15130F;
   --k4: #B796E2; --on-k4: #15130F;
   --k5: #F2C14E; --on-k5: #15130F;
+  --foil-k4: 0.5; --foil-k5: 0.3;
 }
 
 /* ---------- Grundlayout ---------- */
@@ -276,7 +279,17 @@ button.bcard:active { transform: scale(0.98); }
 [aria-expanded="true"] > .chev { transform: rotate(45deg); }
 
 /* ---------- Große Kartenansicht ---------- */
-.card-view { width: min(240px, 72vw); margin: 4px auto 16px; }
+.card-view { width: min(240px, 72vw); margin: 4px auto 16px; perspective: 700px; }
+/* Neigung und Lichtreflex (js/app.js, „tilt“): .live setzt das Skript, sobald die Karte beweglich ist.
+   pan-y: senkrechtes Wischen scrollt weiter den Dialog, waagerechtes Ziehen neigt die Karte. */
+.card-view .bcard { touch-action: pan-y; }
+.card-view .bcard.live {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); will-change: transform;
+  box-shadow: calc(var(--tx, 0) * 9px) calc(var(--ty, 0) * 9px + 6px) 20px var(--shadow), 0 0 16px var(--glow, transparent);
+}
+.bcard.live::after { opacity: 1; }
+.bcard.live .foil::before { animation: none; transform: translate(calc(var(--fx, 0.5) * -66.667%), calc(var(--fy, 0.5) * -66.667%)); }
+.bcard.live .bottle { transform: translate(calc(var(--tx, 0) * 5px), calc(var(--ty, 0) * 3px)); }
 .card-view .bcard .title { font-size: 20px; }
 .sheet h3 { margin: 18px 0 8px; font-size: 16px; }
 .facts { display: grid; gap: 0; margin: 0; }
@@ -290,18 +303,113 @@ button.bcard:active { transform: scale(0.98); }
 .desc summary { padding: 12px 14px; font-weight: 650; cursor: pointer; }
 .desc p { margin: 0; padding: 0 14px 14px; white-space: pre-line; overflow-wrap: anywhere; }
 .bcard {
-  position: relative; display: flex; flex-direction: column;
+  position: relative; display: flex; flex-direction: column; isolation: isolate;
   width: 100%; min-width: 0; padding: 0; overflow: hidden;
   border: 2px solid var(--k); border-radius: var(--radius);
   background: var(--surface); color: var(--text); text-align: left;
   box-shadow: 0 2px 10px var(--shadow);
 }
-/* Band: nur der Kategorie-Name, damit er auch in schmalen Karten ganz zu sehen ist */
-.band {
-  display: block; padding: 6px 10px; background: var(--k); color: var(--on-k);
-  font-size: 13px; font-weight: 750; letter-spacing: 0.01em; text-align: center;
+
+/* Aufbau einer Karte, von hinten nach vorn (alle Karten gleich, nur das Material wechselt mit der Kategorie):
+   .mat (0) Tönung, Muster und Körnung · .foil (1) Holo-Folie, nur Zaubertrank und Heiligtum · Inhalt (2) ·
+   ::before (3) Zierrahmen · .band (4) Schriftband · ::after (1) Lichtreflex, nur in der großen Ansicht
+   (liegt unter dem Inhalt, damit die Schrift scharf bleibt).
+   Muster sind SVG-Masken: Die Farbe kommt aus den Variablen, also folgen sie hell und dunkel von selbst. */
+.bcard {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .45 0 0 0 0 .4 1.6 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --corner-tl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M.6 14V7A6.4 6.4 0 0 0 7 .6H14' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='2.6' cy='2.6' r='1.1'/%3E%3C/svg%3E");
+  --corner-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M13.4 14V7A6.4 6.4 0 0 1 7 .6H0' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='11.4' cy='2.6' r='1.1'/%3E%3C/svg%3E");
+  --corner-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M.6 0V7A6.4 6.4 0 0 1 7 13.4H14' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='2.6' cy='11.4' r='1.1'/%3E%3C/svg%3E");
+  --corner-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M13.4 0V7A6.4 6.4 0 0 0 7 13.4H0' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='11.4' cy='11.4' r='1.1'/%3E%3C/svg%3E");
+  --rainbow: repeating-linear-gradient(115deg, #ff4fc8 0%, #ffb21f 7%, #2fe08a 14%, #1fb6ff 21%, #8a63ff 28%, #ff4fc8 35%);
 }
-.band .kat { display: block; overflow-wrap: anywhere; }
+.mat, .foil { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.mat { background: linear-gradient(180deg, color-mix(in srgb, var(--kt) 16%, transparent), transparent 62%); }
+.mat::before, .mat::after { content: ""; position: absolute; inset: 0; }
+.mat::before { background: var(--kt); opacity: 0.2; -webkit-mask-image: var(--pat, none); mask-image: var(--pat, none); -webkit-mask-size: var(--pat-s, auto); mask-size: var(--pat-s, auto); }
+.mat::after { background-image: var(--grain); background-size: 140px; opacity: 0.36; }
+/* Standardgebräu: Karton, nur Körnung. Klassiker: Leinen. Spezialität: Banknoten-Geflecht aus Kreisen.
+   Zaubertrank: Sternenstaub. Heiligtum: gebürstetes Gold. */
+.k1 .mat::before { display: none; }
+.k1 .mat::after { opacity: 0.5; }
+.k2 { --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M0 1H6M0 4H6' stroke='%23000' stroke-width='.5'/%3E%3Cpath d='M1 0V6M4 0V6' stroke='%23000' stroke-width='.5' opacity='.55'/%3E%3C/svg%3E"); --pat-s: 6px 6px; }
+.k3 { --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg fill='none' stroke='%23000' stroke-width='.7'%3E%3Ccircle cx='12' cy='12' r='12'/%3E%3Ccircle cx='0' cy='0' r='12'/%3E%3Ccircle cx='24' cy='0' r='12'/%3E%3Ccircle cx='0' cy='24' r='12'/%3E%3Ccircle cx='24' cy='24' r='12'/%3E%3C/g%3E%3C/svg%3E"); --pat-s: 24px 24px; }
+.k4 { --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Ccircle cx='7' cy='7' r='.9'/%3E%3C/svg%3E"); --pat-s: 14px 14px; }
+.k5 { --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M0 4L4 0M-1 1L1 -1M3 5L5 3' stroke='%23000' stroke-width='.7'/%3E%3C/svg%3E"); --pat-s: 4px 4px; }
+.k4 .mat::before, .k5 .mat::before { opacity: 0.28; }
+
+/* Holo-Folie: ein Regenbogenverlauf, der hinter einer Maske wandert. Die Maske bestimmt, wo die Folie sichtbar ist
+   (Zaubertrank: Sterne, Heiligtum: Rautengitter). Ruhig läuft er von selbst; in der großen Ansicht folgt er dem Finger
+   bzw. der Maus (--fx, --fy, 0 … 1). Verschoben wird nur per transform, das ist günstig zu zeichnen. */
+.foil { display: none; z-index: 1; }
+.k4 .foil { display: block; opacity: var(--foil-k4); }
+.k5 .foil { display: block; opacity: var(--foil-k5); }
+.foil::before {
+  content: ""; position: absolute; left: 0; top: 0; width: 300%; height: 300%;
+  background: var(--rainbow);
+  animation: foil-drift 11s ease-in-out infinite alternate;
+}
+@keyframes foil-drift { from { transform: translate(0, 0); } to { transform: translate(-66.667%, -66.667%); } }
+.k4 .foil {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M12 4Q12 12 20 12Q12 12 12 20Q12 12 4 12Q12 12 12 4zM40 28Q40 34 46 34Q40 34 40 40Q40 34 34 34Q40 34 40 28zM46 3Q46 8 51 8Q46 8 46 13Q46 8 41 8Q46 8 46 3z'/%3E%3Ccircle cx='22' cy='46' r='1.7'/%3E%3Ccircle cx='4' cy='36' r='1.4'/%3E%3Ccircle cx='30' cy='14' r='1.3'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M12 4Q12 12 20 12Q12 12 12 20Q12 12 4 12Q12 12 12 4zM40 28Q40 34 46 34Q40 34 40 40Q40 34 34 34Q40 34 40 28zM46 3Q46 8 51 8Q46 8 46 13Q46 8 41 8Q46 8 46 3z'/%3E%3Ccircle cx='22' cy='46' r='1.7'/%3E%3Ccircle cx='4' cy='36' r='1.4'/%3E%3Ccircle cx='30' cy='14' r='1.3'/%3E%3C/svg%3E");
+  -webkit-mask-size: 56px 56px; mask-size: 56px 56px;
+}
+.k5 .foil {
+  --rainbow: repeating-linear-gradient(115deg, #f2b21a 0%, #fff0a0 7%, #ff8a3d 14%, #ffd24a 21%, #4fd0ff 26%, #f2b21a 35%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M11 0L22 11L11 22L0 11Z' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.8'/%3E%3C/svg%3E");
+  -webkit-mask-size: 22px 22px; mask-size: 22px 22px;
+}
+
+/* Zierrahmen mit eingezogenen Ecken, unterhalb des Schriftbands. */
+.bcard::before {
+  content: ""; position: absolute; inset: 37px 6px 6px; z-index: 3; pointer-events: none;
+  background: color-mix(in srgb, var(--kt) 72%, transparent);
+  -webkit-mask: var(--corner-tl) 0 0 / 14px 14px no-repeat, var(--corner-tr) 100% 0 / 14px 14px no-repeat,
+                var(--corner-bl) 0 100% / 14px 14px no-repeat, var(--corner-br) 100% 100% / 14px 14px no-repeat,
+                linear-gradient(#000, #000) 14px 0 / calc(100% - 28px) 1.2px no-repeat,
+                linear-gradient(#000, #000) 14px 100% / calc(100% - 28px) 1.2px no-repeat,
+                linear-gradient(#000, #000) 0 14px / 1.2px calc(100% - 28px) no-repeat,
+                linear-gradient(#000, #000) 100% 14px / 1.2px calc(100% - 28px) no-repeat;
+  mask: var(--corner-tl) 0 0 / 14px 14px no-repeat, var(--corner-tr) 100% 0 / 14px 14px no-repeat,
+        var(--corner-bl) 0 100% / 14px 14px no-repeat, var(--corner-br) 100% 100% / 14px 14px no-repeat,
+        linear-gradient(#000, #000) 14px 0 / calc(100% - 28px) 1.2px no-repeat,
+        linear-gradient(#000, #000) 14px 100% / calc(100% - 28px) 1.2px no-repeat,
+        linear-gradient(#000, #000) 0 14px / 1.2px calc(100% - 28px) no-repeat,
+        linear-gradient(#000, #000) 100% 14px / 1.2px calc(100% - 28px) no-repeat;
+}
+/* Lichtreflex (nur in der großen Ansicht, siehe .live): Licht am Finger, leichte Abdunklung auf der Gegenseite.
+   Zaubertrank und Heiligtum bekommen zusätzlich einen Regenbogen-Schimmer, der mit dem Finger wandert. */
+.bcard::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.1) 38%, transparent 62%),
+              radial-gradient(circle at calc(100% - var(--mx, 50%)) calc(100% - var(--my, 30%)), rgb(0 0 0 / 0.1), transparent 65%);
+}
+.k4::after, .k5::after {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.1) 38%, transparent 62%),
+              conic-gradient(from 0deg at var(--mx, 50%) var(--my, 30%), rgb(255 79 200 / 0.12), rgb(255 178 31 / 0.12), rgb(47 224 138 / 0.12), rgb(31 182 255 / 0.12), rgb(138 99 255 / 0.12), rgb(255 79 200 / 0.12)),
+              radial-gradient(circle at calc(100% - var(--mx, 50%)) calc(100% - var(--my, 30%)), rgb(0 0 0 / 0.1), transparent 65%);
+}
+
+/* Schriftband: ein durchgehender Balken über die ganze Kartenbreite, nur der Kategorie-Name (passt auch in schmale Karten).
+   Zaubertrank und Heiligtum bekommen zusätzlich einen wandernden Glanz. */
+.band {
+  position: relative; z-index: 4; display: block; margin: 0; padding: 0;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.18), 0 2px 5px rgb(0 0 0 / 0.14);
+}
+.band .kat {
+  display: block; height: 30px; padding: 0 12px; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bk, var(--k)) 90%, #fff), color-mix(in srgb, var(--bk, var(--k)) 92%, #000));
+  color: var(--on-k); font-size: 13px; font-weight: 750; line-height: 30px; letter-spacing: 0.01em;
+  text-align: center; text-overflow: ellipsis; white-space: nowrap;
+}
+.k4 .band .kat, .k5 .band .kat {
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.5) 50%, transparent 62%) 120% 0 / 250% 100% no-repeat,
+              linear-gradient(180deg, color-mix(in srgb, var(--bk, var(--k)) 90%, #fff), color-mix(in srgb, var(--bk, var(--k)) 92%, #000));
+  animation: ribbon-sheen 4.4s ease-in-out infinite;
+}
+@keyframes ribbon-sheen { 0%, 55% { background-position: 120% 0, 0 0; } 100% { background-position: -120% 0, 0 0; } }
 /* Zähler „×n“ als Plakette oben rechts in der Karte */
 .count {
   position: absolute; top: 8px; right: 8px;
@@ -309,25 +417,41 @@ button.bcard:active { transform: scale(0.98); }
   background: var(--k); color: var(--on-k);
   font: 800 14px/1.2 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; text-align: center;
 }
-.bcard-body { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 10px 12px; text-align: center; min-width: 0; }
-.bottle { width: 26px; height: 62px; margin-bottom: 4px; fill: var(--k); }
-.bottle .label { fill: var(--surface); opacity: 0.85; }
+.bcard-body { flex: 1; position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 12px 6px; text-align: center; min-width: 0; }
+/* Herkunft unten auf der Karte: Bundesland, bei Bieren aus dem Ausland das Land. Ohne Angabe bleibt nur die Zierlinie. */
+.origin {
+  position: relative; z-index: 2; display: flex; align-items: center; gap: 6px; min-height: 18px; padding: 0 14px 12px;
+  color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: 0.03em;
+}
+.origin::before, .origin::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--kt) 65%, transparent)); }
+.origin::after { transform: scaleX(-1); }
+.origin .o { display: flex; align-items: center; gap: 3px; min-width: 0; max-width: 80%; }
+.origin .o b { overflow: hidden; font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
+.pin { width: 8px; height: 10px; flex-shrink: 0; fill: var(--kt); }
+.bottle { width: 26px; height: 62px; margin-bottom: 4px; fill: var(--kt); }
+.bottle .body { stroke: color-mix(in srgb, var(--kt) 62%, #000); stroke-width: 0.9; stroke-linejoin: round; }
+.bottle .cap { fill: color-mix(in srgb, var(--kt) 38%, #2B2620); }
+.bottle .shade { fill: #000; opacity: 0.16; }
+.bottle .label { fill: var(--surface); opacity: 0.9; }
+.bottle .hop { fill: color-mix(in srgb, var(--kt) 72%, #000); }
+.bottle .hop-scales { fill: none; stroke: var(--surface); stroke-width: 0.7; stroke-linecap: round; }
 .bcard .title {
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   max-width: 100%; overflow-wrap: anywhere; /* bricht nur sehr lange Wörter um, ohne Silbentrennung */
   font-family: ui-rounded, "SF Pro Rounded", -apple-system, sans-serif;
   font-size: 17px; font-weight: 750; line-height: 1.2;
 }
-.bcard .brand { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
+.bcard .title, .bcard .brand, .bcard .sorte, .origin .o { text-shadow: 0 0 4px var(--surface), 0 0 9px var(--surface); }
+.bcard .brand { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--muted) 65%, var(--text)); font-size: 13px; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
 .chips span { padding: 1px 8px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
-.bcard .sorte { max-width: 100%; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.bcard .sorte { max-width: 100%; color: color-mix(in srgb, var(--muted) 65%, var(--text)); font-size: 12px; overflow-wrap: anywhere; }
 
 /* Karten-Level: ab 4, 8, 16, 24 und 40 Mal getrunken verändert sich nur die MITTE der Karte (Hintergrund und Flasche),
    Rahmen und Band bleiben, damit die Kategorie erkennbar bleibt. Die Stufen t1 … t5 setzt GAME.cardTier.
    --kt ist die Tönung: die Kategorie-Farbe, bei Standardgebräu (blasses Beige) mit Bernstein gemischt. */
 .bcard { --kt: var(--k); }
-.bcard.k1 { --kt: color-mix(in srgb, var(--k1), var(--accent) 45%); }
+.bcard.k1 { --kt: color-mix(in srgb, var(--k1), var(--accent) 45%); --bk: var(--kt); }
 .bcard-body { isolation: isolate; }
 .bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, color-mix(in srgb, var(--kt) 16%, transparent), transparent); }
 .bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, color-mix(in srgb, var(--kt) 26%, transparent), transparent); }
@@ -354,25 +478,20 @@ button.bcard:active { transform: scale(0.98); }
 .bottle.t5 .stars path { transform-box: fill-box; transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; animation-delay: var(--d); }
 @keyframes twinkle { 0%, 100% { opacity: 0.35; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.15); } }
 
-/* Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: doppelter Goldrand, Leuchten und Glanz.
-   So unterscheiden sich die seltenen Karten nicht nur über die Farbe. */
+/* Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: Rahmen aus gebürstetem Gold mit Leuchten.
+   Dazu kommen Holo-Folie (.foil) und Schriftband mit Glanz. So unterscheiden sich die seltenen Karten nicht nur über die Farbe. */
 .bcard.k4 {
   border: 2px solid transparent;
   background: linear-gradient(var(--surface), var(--surface)) padding-box,
-              linear-gradient(135deg, var(--k4), var(--k3), var(--k4), var(--k5)) border-box;
+              linear-gradient(135deg, var(--k4), var(--k3), #ff8ad8, var(--k4), var(--k5)) border-box;
 }
 .bcard.k5 {
-  border: 3px double var(--k5);
-  box-shadow: 0 0 0 1px var(--k5), 0 0 18px color-mix(in srgb, var(--k5) 55%, transparent), 0 2px 10px var(--shadow);
+  --glow: color-mix(in srgb, var(--k5) 50%, transparent);
+  border: 3px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+              linear-gradient(135deg, #fbe9a0, #c98f14, #fff3b8, #b27408, #f2c14e) border-box;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--k5) 80%, #000), 0 0 18px color-mix(in srgb, var(--k5) 55%, transparent), 0 2px 10px var(--shadow);
 }
-.bcard.k4::after, .bcard.k5::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
-  background-size: 250% 100%; background-position: 120% 0;
-  animation: sheen 3.6s ease-in-out infinite;
-}
-.bcard.k4::after { animation-duration: 5s; background-image: linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 0.22) 50%, transparent 60%); }
-@keyframes sheen { 0%, 55% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
 
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */
@@ -410,7 +529,9 @@ button.bcard:active { transform: scale(0.98); }
   background: repeating-linear-gradient(135deg, var(--surface-2) 0 10px, var(--surface) 10px 20px);
   color: var(--muted); text-align: center; filter: grayscale(1);
 }
+.hidden-card::before { inset: 5px; }
 .hidden-card .bottle { fill: var(--muted); opacity: 0.5; }
+.hidden-card .bottle .body, .hidden-card .bottle .cap, .hidden-card .bottle .hop { stroke: none; fill: var(--muted); }
 .hidden-card .ask { font: 800 34px/1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; opacity: 0.6; }
 .reveal-info { text-align: center; }
 .reveal-info p { margin: 6px 0; }
@@ -554,8 +675,9 @@ button.bcard:active { transform: scale(0.98); }
 /* ---------- Weniger Bewegung ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-  /* Glanz bleibt als ruhiger Schimmer stehen; Karte wird ohne Drehung aufgedeckt */
-  .bcard.k4::after, .bcard.k5::after { animation: none; background-position: 50% 0; opacity: 0.5; }
+  /* Folie und Bandglanz bleiben als ruhiger Schimmer stehen; Karte wird ohne Drehung aufgedeckt */
+  .foil::before { animation: none; transform: translate(-30%, -24%); }
+  .k4 .band .kat, .k5 .band .kat { animation: none; background-position: 50% 0, 0 0; }
   .flip-inner { transform: none !important; }
   .flip .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
   .flip .face.front { transform: none; opacity: 0; }

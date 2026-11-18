@@ -78,6 +78,16 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht). Alles wird aus dem
   Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 40 zählt die Zahl weiter.
   „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
+- Kartenoptik (18.11.2026, alle Karten gleicher Aufbau, nur das Material wechselt je Kategorie; Schrift unverändert):
+  Ebenen `.mat` (Tönung, Muster als SVG-Maske, Körnung), `.foil` (Holo-Folie, nur Zaubertrank/Heiligtum), Zierrahmen
+  (`.bcard::before`), Schriftband (`.band`, ein glatter durchgehender Balken oben, bewusst ohne Zacken und Naht), Herkunft im Fuß (`.origin`: Bundesland, bei Bieren aus dem
+  Ausland das Land), Lichtreflex (`::after`). Materialien: Standardgebräu Karton, Klassiker Leinen, Spezialität
+  Kreisgeflecht, Zaubertrank Sternenstaub, Heiligtum gebürstetes Gold. Die Stufe (1–5) darf weiterhin NIE sichtbar sein
+  (keine Sterne/Ziffern zum Zählen). Holo-Deckkraft je Theme über `--foil-k4/-k5` (dunkel schwächer, sonst unleserlich;
+  beide Dunkel-Blöcke gleich halten). Große Ansicht: `tilt` in `js/app.js` setzt pro Bild nur CSS-Variablen (Maus/Finger
+  neigt, sonst leichtes Schwanken; `.live` auf der Karte); `touch-action: pan-y`, damit der Dialog weiter scrollt; bei
+  „weniger Bewegung“ keine Schleife. Kein Gyro-Sensor (iOS bräuchte eine Berechtigungsabfrage). Getestet im eingebauten
+  Browser (hell/dunkel, 390 px, Desktop, Aufdecken); NICHT auf echtem iPhone/Safari (Masken, `isolation`, Neigung per Finger).
 - Wochen beginnen montags in Ortszeit (`weekStart`, `weekKey` über Kalendertage, DST-fest), KW nach ISO 8601.
   Ø/Woche = Anzahl / Wochen von der Woche des ersten Eintrags bis heute (beide eingeschlossen). Nie `toISOString()`.
 - Suche: `fold` (klein, ß→ss, Akzente weg, Bindestriche/Apostrophe weg) und `unumlaut` (ae/oe/ue → a/o/u); ein Wort
