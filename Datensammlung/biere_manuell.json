@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "BM-000001",
+    "name": "Kosmonaut - Helles (Flasche)",
+    "biersorte": ["Helles"],
+    "alkoholgehalt": 5.1,
+    "brauerei_vertrieb": { "typ": "Vertrieb", "name": "REWE", "adresse": null, "region": null, "land": "Deutschland" },
+    "beschreibung": "Mildes Helles der REWE-Marke Kosmonaut mit leichten Zitrusnoten. Gibt es im Kasten mit 20 Flaschen à 0,5 l.",
+    "zutaten": ["Wasser", "Gerstenmalz", "Hopfen", "Hefe"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
+  },
+  {
+    "id": "BM-000002",
+    "name": "Kosmonaut - Helles (Dose)",
+    "biersorte": ["Helles"],
+    "alkoholgehalt": 5.1,
+    "brauerei_vertrieb": { "typ": "Vertrieb", "name": "REWE", "adresse": null, "region": null, "land": "Deutschland" },
+    "beschreibung": "Das Kosmonaut Helles in der 0,5-l-Dose: mild, rund und gebraut nach dem deutschen Reinheitsgebot.",
+    "zutaten": ["Wasser", "Gerstenmalz", "Hopfen", "Hefe"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
+  },
+  {
+    "id": "BM-000003",
+    "name": "Kosmonaut - Helles alkoholfrei",
+    "biersorte": ["Helles", "Alkoholfrei"],
+    "alkoholgehalt": 0,
+    "brauerei_vertrieb": { "typ": "Vertrieb", "name": "REWE", "adresse": null, "region": null, "land": "Deutschland" },
+    "beschreibung": "Alkoholfreies Helles mit sanften Zitrusnoten (unter 0,5 % vol.). Gibt es im Kasten mit 20 Flaschen à 0,5 l.",
+    "zutaten": ["Wasser", "Gerstenmalz", "Hopfen", "Hefe"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000004",
+    "name": "Kosmonaut - Naturtrübes Radler",
+    "biersorte": ["Radler"],
+    "alkoholgehalt": 2.2,
+    "brauerei_vertrieb": { "typ": "Vertrieb", "name": "REWE", "adresse": null, "region": null, "land": "Deutschland" },
+    "beschreibung": "Naturtrübes Saison-Radler aus 60 % Zitronenlimonade und 40 % hellem Vollbier. Ein Bodensatz ist möglich. Mehrwegflasche mit 0,5 l.",
+    "zutaten": ["Zitronenlimonade (naturtrüb)", "Helles Vollbier"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Spezialität",
+    "kategorie_stufe": 3
+  }
+]

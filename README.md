@@ -189,10 +189,12 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).
 - Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,1 · Spezialität 1,2 · Zaubertrank 1,4 · Heiligtum 1,6.
   Keine Extrapunkte für neue Biere.
-- 20 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
+- 10 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
 - Kein Nachtragen: Es zählt der Zeitpunkt des Bestätigens.
+- **Willkommensfenster:** Nach der ersten Anmeldung (einmal je Konto und Gerät) erscheinen die wichtigsten Regeln samt Hinweis, dass man
+  für die Platzierung einen Benutzernamen erstellen muss.
 - **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die
   besten 15 Spieler (Rang, Name, Level, Anzahl Biere) und, falls man nicht darunter ist, den eigenen Rang. Es zählen die
   Punkte; gleiche Punkte teilen sich den Platz (Reihenfolge dann nach Anzahl Biere). Spieler ohne Benutzernamen erscheinen

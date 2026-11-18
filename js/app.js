@@ -3,7 +3,7 @@
    1. Grundlagen (Hilfsfunktionen, Darstellung hell/dunkel)
    2. Zustand (Bierdatenbank laden, Protokoll, daraus berechnete Sammlung)
    3. Darstellung (Karte, Kopfleiste mit Level-Ring, Startseite)
-   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Platzierung, Einstellungen, Bestätigung, Altershinweis)
+   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Platzierung, Einstellungen, Bestätigung, Altershinweis, Willkommen)
    5. Bedienung (Klicks)
    6. Anmeldesperre (gesteuert über den Status aus js/store.js)
    7. Service Worker registrieren
@@ -16,6 +16,7 @@
   const STORE = window.STORE;
   const LS_THEME = 'biersammler-theme-v1'; // 'light' | 'dark' | fehlt = System (auch im Inline-Skript in index.html)
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
+  const LS_WELCOME = 'biersammler-welcome-v1'; // Kontokennungen (Komma-getrennt), die das Willkommensfenster schon gesehen haben; „local“ = lokaler Modus
   const LS_MOTION = 'biersammler-motion-v1'; // „0“ = Neigungssensor abgelehnt, nicht mehr fragen
   const BEER_FILES = {
     main: 'Datensammlung/biere.json',
@@ -889,7 +890,7 @@
       <p><b>Kategorien</b> von häufig bis sehr selten:</p>
       ${kats ? `<ul class="howto-kats">${kats}</ul>` : '<p class="note">Die Kategorien erscheinen, sobald die Bierdatenbank geladen ist.</p>'}
       <p>Ein neues Bier bringt keine Extrapunkte – es zählt nur seine Kategorie.</p>
-      <p><b>Level:</b> 20 Punkte ergeben ein Level. Du startest bei Level 1; Punkte über 20 werden ins nächste Level mitgenommen.
+      <p><b>Level:</b> 10 Punkte ergeben ein Level. Du startest bei Level 1; Punkte über 10 werden ins nächste Level mitgenommen.
         Der Ring oben rechts zeigt den Fortschritt im aktuellen Level. Löschst du Einträge, sinken die Punkte und notfalls auch das Level.</p>
       <p><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst. Ein Datum lässt sich nicht auswählen.</p>`;
   }
@@ -1016,9 +1017,55 @@
     let ok = false;
     dlg.addEventListener('cancel', (e) => e.preventDefault());
     dlg.addEventListener('close', () => { if (!ok) dlg.showModal(); });
-    $('[data-act="age-ok"]', dlg).addEventListener('click', () => { ok = true; lsSet(LS_AGE, '1'); dlg.close(); });
+    $('[data-act="age-ok"]', dlg).addEventListener('click', () => { ok = true; lsSet(LS_AGE, '1'); dlg.close(); maybeWelcome(); });
     dlg.showModal();
   }
+
+  /* Willkommensfenster mit den wichtigsten Regeln: einmal je Konto und Gerät, direkt nach der ersten Anmeldung
+     (im lokalen Modus nach dem Altershinweis). Es gilt als gesehen, sobald es geöffnet wurde. Der Hinweis, dass für die
+     Platzierung ein Benutzername nötig ist, steht nur im Firebase-Modus (lokal gibt es weder Namen noch Rangliste). */
+  const welcomeDlg = $('#welcome');
+  function maybeWelcome() {
+    if (locked || welcomeDlg.open) return;
+    if ($('#age').open) return; // der Altershinweis kommt zuerst; sein Knopf ruft maybeWelcome() erneut auf
+    const who = STORE.uid() || 'local';
+    const seen = (lsGet(LS_WELCOME) || '').split(',');
+    if (seen.includes(who)) return;
+    lsSet(LS_WELCOME, seen.filter(Boolean).concat(who).join(','));
+    showWelcome();
+  }
+  function showWelcome() {
+    const online = STORE.mode === 'firebase';
+    const lo = G.fmt1(G.pointsFor(1)), hi = fmtPoints(G.pointsFor(5));
+    welcomeDlg.innerHTML = `<div class="sheet-head"><h2>Willkommen bei Bier Sammler</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
+      <div class="sheet-body welcome">
+        <p>Das sind die wichtigsten Regeln:</p>
+        <ul class="rules">
+          <li><b>Sammeln:</b> Tippe nach jedem getrunkenen Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt – erst dann siehst du, wie selten dein Bier ist.</li>
+          <li><b>Punkte:</b> Je nach Kategorie bringt ein Bier ${esc(lo)} (häufig) bis ${esc(hi)} (sehr selten). Ein neues Bier bringt keine Extrapunkte.</li>
+          <li><b>Level:</b> Schon ${G.LEVEL_POINTS / 10} Punkte ergeben ein Level. Der Ring oben rechts zeigt deinen Fortschritt.</li>
+          <li><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst.</li>
+          <li><b>Verantwortung:</b> Trink nie, um Punkte zu sammeln, und nie, wenn du noch fahren musst.</li>
+        </ul>
+        ${online ? `<p class="welcome-name"><b>Wichtig:</b> Um an der Platzierung (Rangliste) teilzunehmen, musst du dir einen <b>Benutzernamen</b> erstellen.
+            Das geht unter Einstellungen (Zahnrad oben rechts) → Benutzername. Ohne Namen spielst du anonym und erscheinst nicht in der Rangliste.</p>` : ''}
+        <div class="actions">
+          ${online ? '<button class="btn primary" type="button" data-welcome="name">Benutzernamen erstellen</button>' : ''}
+          <button class="btn${online ? '' : ' primary'}" type="button" data-close>Verstanden</button>
+        </div>
+      </div>`;
+    welcomeDlg.showModal();
+    $('.sheet-body', welcomeDlg).scrollTop = 0;
+    $('.close', welcomeDlg).focus();
+  }
+  welcomeDlg.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-welcome="name"]')) return;
+    welcomeDlg.close();
+    openSettings();
+    const field = $('#set-username', setDlg);
+    if (field) field.focus();
+  });
+  welcomeDlg.addEventListener('close', () => { if (!welcomeDlg.open) welcomeDlg.innerHTML = ''; });
 
   /* Kurzer Hinweis unten. Als Popover liegt er in der obersten Ebene und ist damit auch über offenen
      Dialogen sichtbar (z. B. „Eintrag gelöscht“ in den Einstellungen). Ohne Popover-Unterstützung: normales Element. */
@@ -1082,7 +1129,7 @@
     const st = STORE.status();
     const shouldLock = STORE.mode === 'firebase' && st !== 'in';
     if (shouldLock !== locked) setLocked(shouldLock);
-    if (locked) renderGate(); else render();
+    if (locked) renderGate(); else { render(); maybeWelcome(); }
   }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-auth]');

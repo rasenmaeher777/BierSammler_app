@@ -29,7 +29,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 
 | Datei | Aufgabe |
 | --- | --- |
-| `index.html` | Gerüst, Dialoge (`#add`, `#card`, `#stats`, `#ranking`, `#settings`, `#confirm`, `#age`), Hinweis `#toast` (Popover), modulepreload |
+| `index.html` | Gerüst, Dialoge (`#add`, `#card`, `#stats`, `#ranking`, `#settings`, `#confirm`, `#age`, `#welcome`), Hinweis `#toast` (Popover), modulepreload |
 | `css/style.css` | Farbvariablen oben: hell, dunkel per System (`:root:not([data-theme=light])`) und dunkel per Auswahl (`[data-theme=dark]`) – beide Dunkel-Blöcke gleich halten |
 | `js/game.js` | Reine Funktionen (`window.GAME`, in Node per `require`): Punkte, Level, Formatierung, Bierdaten prüfen/zusammenführen, Suche, Protokoll, Sortierung, Wochen, Statistiken, Benutzername, Rangliste (`rankBoard`) |
 | `js/store.js` | `window.STORE`: lokaler Modus (localStorage) oder Firebase (Auth, Firestore, Warteschlange, Namen) |
@@ -49,6 +49,10 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   (Kategorie fest aus der ID abgeleitet; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
   Skript verändern.
 - `biere_manuell.json`: gleiches Format, IDs `BM-000001` fortlaufend. Doppelte ID → Warnung, `biere.json` gilt.
+  Stand 18.11.2026: `BM-000001`…`BM-000004` = die vier Kosmonaut-Biere (REWE-Marke, Quelle rewe-kosmonaut.de/de): Helles Flasche,
+  Helles Dose (je 5,1 %, 0,5 l, Stufe 1), Helles alkoholfrei (0 = „alkoholfrei“, Stufe 2), Naturtrübes Radler (2,2 %, Saisonartikel, Stufe 3).
+  Die Stufen sind eine Annahme (Seite nennt keine Seltenheit); Vertrieb „REWE“, Brauerei auf der Seite nicht genannt, Beschreibungen selbst formuliert.
+  Stufe nachträglich ändern verschiebt die Punkte aller Spieler, die das Bier schon haben.
 - `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
   `GAME.mergeBeers` (5. Parameter, `applyFix`) auf den Rohdatensatz gelegt, bevor `cleanBeer` läuft. Änderbar: name,
   beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,
@@ -66,12 +70,13 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 
 ## Spielregeln und Rechnen
 
-- Punkte in Zehnteln: Stufe 1–5 = 10, 11, 12, 14, 16. Level = floor(summe/200)+1, Ring = (summe mod 200)/200.
+- Punkte in Zehnteln: Stufe 1–5 = 10, 11, 12, 14, 16. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
+  seit 18.11.2026; vorher 20). `LEVEL_POINTS` in `js/game.js`; Text in Spielanleitung, Willkommensfenster, `aria-label` in `index.html` und README mitändern.
 - Alles (Punkte, Level, Sammlung, Statistiken) wird aus dem Protokoll berechnet, nie gespeichert.
 - Kein Nachtragen: Zeitpunkt = Geräteuhr beim Bestätigen. Keine Tages-Serien.
 - Pflicht-Beispiele, die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
-  0 → Level 1, Ring 0 · 10×Stufe 5 = 160 → Level 1, 16,0/20 · 20×Stufe 1 = 200 → Level 2, 0,0/20 ·
-  19×Stufe 4 = 266 → Level 2, 6,6/20 · 13×Stufe 1 + 5×Stufe 5 = 210 → Level 2, 1,0/20 · 3×Stufe 2 = 33 → „3,3“.
+  0 → Level 1, Ring 0 · 10×Stufe 5 = 160 → Level 2, 6,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
+  19×Stufe 4 = 266 → Level 3, 6,6/10 · 13×Stufe 1 + 5×Stufe 5 = 210 → Level 3, 1,0/10 · 3×Stufe 2 = 33 → „3,3“.
 - Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
   24 und 40 Mal verändert sich die Optik der Karte in fünf Stufen (`GAME.cardTier`, Klassen `t1`…`t5` auf `.bcard-body`
   und `.bottle`): Farbschimmer in der Mitte, Glanz, Schaumkrone, Strahlen, Sterne, goldene Flasche mit Funkeln. Rahmen
@@ -119,7 +124,7 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 - Abmelden: `signOut` → `terminate` + `clearIndexedDbPersistence` → neu laden. Ein anderes Konto als zuletzt
   (`biersammler-uid-v1`) löscht ebenfalls den Zwischenspeicher, das neue Konto beginnt leer.
 - Firebase-SDK-Version `10.12.2` steht in `js/store.js`, `sw.js` und den drei `modulepreload`-Links in `index.html`.
-- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`.
+- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`, `-welcome-v1`.
 
 ## Rangliste („Platzierung“, 18.11.2026)
 
@@ -145,6 +150,18 @@ Name wählen, ändern, nur Groß/klein ändern). Nicht automatisch getestet: Es 
 Wesentlich: drinks nur create/delete mit genau `beerId` (`^B[SM]-[0-9]{6}$`) und `at` (int, ≤ jetzt + 5 min);
 usernames nur anlegen, wenn frei, für sich selbst, mit passendem `users/<uid>.usernameKey` (getAfter) und nur, wenn ein
 bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen des Profils).
+
+## Willkommensfenster (18.11.2026)
+
+- `#welcome` (`maybeWelcome`/`showWelcome` in `js/app.js`): öffnet sich einmal je Konto und Gerät direkt nach der ersten Anmeldung,
+  zeigt die wichtigsten Regeln (Sammeln, Punkte, Level, Kein Nachtragen, Verantwortung) und den Hinweis, dass man für die
+  Platzierung einen Benutzernamen braucht (Einstellungen → Benutzername). Knöpfe: „Benutzernamen erstellen“ (öffnet die
+  Einstellungen mit Fokus im Namensfeld) und „Verstanden“. Im lokalen Modus nur die Regeln, ohne Namenshinweis.
+- Merker: localStorage `biersammler-welcome-v1` = Komma-Liste der Konto-IDs (lokal: `local`); gilt als gesehen, sobald geöffnet.
+  Ein anderes Konto auf demselben Gerät sieht es einmal selbst. Bestehende Spieler sehen es nach dem Update ebenfalls einmal.
+- Reihenfolge: Altershinweis (`#age`) zuerst; ist er noch offen, wartet das Willkommensfenster (Knopf ruft `maybeWelcome()` auf).
+- Getestet in einer Kopie mit leerem `apiKey` (lokaler Modus; Online-Variante per umgestelltem `STORE.mode`/`status`/`uid`),
+  375 px. NICHT getestet: echte Google-Anmeldung, iPhone, Dunkelmodus.
 
 ## Darstellung und Bedienung
 

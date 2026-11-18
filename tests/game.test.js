@@ -24,17 +24,18 @@ function check(sum, wantSum, wantLevel, wantRing) {
   assert.strictEqual(G.fmtRing(sum), wantRing, 'Ring-Anzeige');
 }
 
-test('0 Einträge → Level 1, Ring 0', () => { check(0, 0, 1, '0,0 / 20 Punkte'); assert.strictEqual(G.ring(0), 0); });
-test('10 × Stufe 5 = 160 → Level 1, 16,0 / 20', () => check(sumOf([10, 5]), 160, 1, '16,0 / 20 Punkte'));
-test('20 × Stufe 1 = 200 → Level 2, 0,0 / 20', () => { check(sumOf([20, 1]), 200, 2, '0,0 / 20 Punkte'); assert.strictEqual(G.ring(200), 0); });
-test('19 × Stufe 4 = 266 → Level 2, 6,6 / 20', () => check(sumOf([19, 4]), 266, 2, '6,6 / 20 Punkte'));
-test('13 × Stufe 1 + 5 × Stufe 5 = 210 → Level 2, 1,0 / 20', () => check(sumOf([13, 1], [5, 5]), 210, 2, '1,0 / 20 Punkte'));
+test('0 Einträge → Level 1, Ring 0', () => { check(0, 0, 1, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(0), 0); });
+test('10 × Stufe 5 = 160 → Level 2, 6,0 / 10', () => check(sumOf([10, 5]), 160, 2, '6,0 / 10 Punkte'));
+test('10 × Stufe 1 = 100 → Level 2, 0,0 / 10', () => { check(sumOf([10, 1]), 100, 2, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(100), 0); assert.strictEqual(G.level(99), 1); });
+test('20 × Stufe 1 = 200 → Level 3, 0,0 / 10', () => { check(sumOf([20, 1]), 200, 3, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(200), 0); });
+test('19 × Stufe 4 = 266 → Level 3, 6,6 / 10', () => check(sumOf([19, 4]), 266, 3, '6,6 / 10 Punkte'));
+test('13 × Stufe 1 + 5 × Stufe 5 = 210 → Level 3, 1,0 / 10', () => check(sumOf([13, 1], [5, 5]), 210, 3, '1,0 / 10 Punkte'));
 test('3 × Stufe 2 = 33 → 3,3', () => { assert.strictEqual(sumOf([3, 2]), 33); assert.strictEqual(G.fmt1(33), '3,3'); });
-test('Überschuss: 19,6 + 1,4 → Level steigt, Ring 1,0', () => {
-  const s = 196 + G.pointsFor(4);
-  assert.strictEqual(G.level(196), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,0 / 20 Punkte');
+test('Überschuss: 9,6 + 1,4 → Level steigt, Ring 1,0', () => {
+  const s = 96 + G.pointsFor(4);
+  assert.strictEqual(G.level(96), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,0 / 10 Punkte');
 });
-test('Punkte bis zum nächsten Level', () => { assert.strictEqual(G.toNext(266), 134); assert.strictEqual(G.toNext(200), 200); });
+test('Punkte bis zum nächsten Level', () => { assert.strictEqual(G.toNext(266), 34); assert.strictEqual(G.toNext(200), 100); });
 
 /* ---------- Anzeige ---------- */
 
@@ -213,7 +214,7 @@ test('Sammlung aus dem Protokoll und Sortierung', () => {
   assert.deepStrictEqual([c10.count, c10.first, c10.last, c10.points], [2, 100, 300, 20]);
 });
 test('Eintrag löschen senkt Punkte und Level', () => {
-  const many = Array.from({ length: 20 }, (_, i) => ({ id: 'x' + i, beerId: 'BS-000010', at: 1000 + i }));
+  const many = Array.from({ length: 10 }, (_, i) => ({ id: 'x' + i, beerId: 'BS-000010', at: 1000 + i }));
   assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many, map), map).sum), 2);
   assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many.slice(1), map), map).sum), 1);
 });
@@ -315,8 +316,8 @@ test('Benutzername', () => {
 
 test('Rangliste: sortiert nach Punkten, dann Bieren, dann Name; gleiche Punkte teilen den Platz', () => {
   const rows = [
-    { uid: 'u1', username: 'Anna', sum: 200, count: 20 },       // Level 2
-    { uid: 'u2', username: 'bernd', sum: 266, count: 19 },      // Level 2
+    { uid: 'u1', username: 'Anna', sum: 200, count: 20 },       // Level 3
+    { uid: 'u2', username: 'bernd', sum: 266, count: 19 },      // Level 3
     { uid: 'u3', username: 'Carl', sum: 200, count: 18 },       // gleiche Punkte wie Anna, weniger Biere
     { uid: 'u4', username: 'dora_1', sum: 0, count: 0 },
     { uid: 'u5', username: 'Emil', sum: 200, count: 18 },       // gleich wie Carl → nach Name
@@ -324,7 +325,7 @@ test('Rangliste: sortiert nach Punkten, dann Bieren, dann Name; gleiche Punkte t
   const b = G.rankBoard(rows);
   assert.deepStrictEqual(b.map((r) => r.username), ['bernd', 'Anna', 'Carl', 'Emil', 'dora_1']);
   assert.deepStrictEqual(b.map((r) => r.rank), [1, 2, 2, 2, 5]);
-  assert.deepStrictEqual(b.map((r) => r.level), [2, 2, 2, 2, 1]);
+  assert.deepStrictEqual(b.map((r) => r.level), [3, 3, 3, 3, 1]);
   assert.strictEqual(b[0].count, 19); assert.strictEqual(b[0].uid, 'u2');
 });
 

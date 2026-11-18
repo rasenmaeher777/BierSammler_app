@@ -12,7 +12,7 @@
 
   // Punkte pro Trinken je Kategorie-Stufe, in Zehnteln (Stufe 4 = 1,4 Punkte)
   const POINTS = { 1: 10, 2: 11, 3: 12, 4: 14, 5: 16 };
-  const LEVEL_POINTS = 200; // 20 Punkte = 1 Level
+  const LEVEL_POINTS = 100; // 10 Punkte = 1 Level
 
   const pointsFor = (stufe) => POINTS[stufe] || 0;
   // Man startet bei Level 1; Überschuss wird ins nächste Level mitgenommen
@@ -37,7 +37,7 @@
   }
   // Flaschengröße: 0.5 → "0,5 l", 1 → "1 l"
   const fmtLiter = (x) => (typeof x === 'number' ? `${fmtDec(x)} l` : '');
-  // Fortschrittsanzeige: "6,6 / 20 Punkte"
+  // Fortschrittsanzeige: "6,6 / 10 Punkte"
   const fmtRing = (sum) => `${fmt1(ringTenths(sum))} / ${LEVEL_POINTS / 10} Punkte`;
 
   /* ---------- Bierdatenbank prüfen und zusammenführen ---------- */
