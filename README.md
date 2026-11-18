@@ -36,6 +36,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
 | `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
 | `Datensammlung/kategorien.json` | Die fünf Kategorien |
+| `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
 

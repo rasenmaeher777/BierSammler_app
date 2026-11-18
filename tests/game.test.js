@@ -352,6 +352,62 @@ test('Kartenstufe: Veränderung ab 4, 8, 16, 24 und 40 Mal getrunken', () => {
   for (const [count, tier] of expected) assert.strictEqual(G.cardTier(count), tier, `count ${count}`);
 });
 
+/* ---------- Glückskeks-Nachrichten ---------- */
+
+test('cleanMessages: gültige behalten, ungültige und doppelte IDs melden', () => {
+  const warns = [];
+  const list = G.cleanMessages([
+    { id: 1, nachricht: ' Hallo ' }, { id: 2, nachricht: '' }, { nachricht: 'ohne id' }, { id: 1, nachricht: 'doppelt' },
+    { id: 'a', nachricht: 'Text' }, null, { id: 0, nachricht: 'null ist keine ID' },
+  ], (t) => warns.push(t));
+  assert.deepStrictEqual(list, [{ id: '1', text: 'Hallo' }, { id: 'a', text: 'Text' }]);
+  assert.strictEqual(warns.length, 5);
+  assert.deepStrictEqual(G.cleanMessages({}, () => {}), []);
+  assert.deepStrictEqual(G.cleanMessages(undefined), []);
+});
+
+test('pickMessage: jede Nachricht genau einmal, dann von vorn, ohne direkte Wiederholung', () => {
+  const msgs = G.cleanMessages(Array.from({ length: 5 }, (_, i) => ({ id: i + 1, nachricht: 'N' + (i + 1) })));
+  for (const rand of [Math.random, () => 0, () => 0.999999]) {
+    let shown = [];
+    let last = null;
+    for (let round = 0; round < 3; round++) {
+      const got = [];
+      for (let i = 0; i < msgs.length; i++) {
+        const p = G.pickMessage(msgs, shown, rand);
+        shown = p.shownIds;
+        got.push(p.message.id);
+        if (i === 0 && last) assert.notStrictEqual(p.message.id, last, 'direkt nach dem Neustart keine Wiederholung');
+      }
+      assert.deepStrictEqual(got.slice().sort(), msgs.map((m) => m.id).sort(), `Runde ${round + 1}: jede genau einmal`);
+      last = got[got.length - 1];
+    }
+  }
+});
+
+test('pickMessage: leere Liste, eine Nachricht, neue und entfernte Nachrichten', () => {
+  assert.deepStrictEqual(G.pickMessage([], ['1']), { message: null, shownIds: [] });
+  const one = G.cleanMessages([{ id: 1, nachricht: 'A' }]);
+  assert.strictEqual(G.pickMessage(one, []).message.text, 'A');
+  assert.strictEqual(G.pickMessage(one, ['1']).message.text, 'A'); // nur eine: darf sich wiederholen
+  assert.deepStrictEqual(G.pickMessage(one, ['1']).shownIds, ['1']);
+  // Neue Nachricht kommt als Nächste dran, entfernte ID fällt aus dem Merker
+  const two = G.cleanMessages([{ id: 1, nachricht: 'A' }, { id: 2, nachricht: 'B' }]);
+  const p = G.pickMessage(two, ['1', '99']);
+  assert.strictEqual(p.message.id, '2');
+  assert.deepStrictEqual(p.shownIds, ['1', '2']);
+  // Kaputter Merker (kein Array) = von vorn
+  assert.ok(G.pickMessage(two, 'x').message);
+});
+
+test('Echte nachrichten.json: gültig, mindestens eine Nachricht', () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Datensammlung', 'nachrichten.json'), 'utf8'));
+  const warns = [];
+  const list = G.cleanMessages(raw, (t) => warns.push(t));
+  assert.strictEqual(warns.length, 0, warns.join(' | '));
+  assert.ok(list.length >= 1);
+});
+
 /* ---------- Echte Datenbank ---------- */
 
 test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {

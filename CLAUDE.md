@@ -68,6 +68,16 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 - Eigenheiten: 1.092× keine Beschreibung, 252× 0,0 % Alkohol, 2.064× mehrere Sorten, 1.082× keine Region,
   18 doppelte Namen (Treffer zeigen deshalb Flaschengröße und Alkohol), 2.379× Marke ≠ Firmenname, 1.518 ausländische Biere.
 
+## Glückskeks-Sprüche (18.11.2026)
+
+- `Datensammlung/nachrichten.json`: Liste `{ id, nachricht }` (id = Ganzzahl > 0 oder Text, eindeutig; Nutzer trägt die Sprüche selbst ein,
+  vorhanden ist nur ein Probe-Spruch). Nach „Bestätigen“ steht der Spruch (`<p class="fortune">`) zwischen den Punkte-Zeilen und „Fertig“.
+- Auswahl: `GAME.pickMessage` (zufällig unter den noch nicht gezeigten; alle gezeigt → von vorn, der zuletzt gezeigte nicht gleich wieder).
+  Merker: localStorage `biersammler-messages-v1` (Liste der gezeigten IDs), also je Gerät/Browser, NICHT je Konto und nicht in Firestore
+  (keine Regeländerung nötig). Entfernte IDs fallen aus dem Merker, neue Sprüche gelten als ungezeigt. Datei fehlt/leer → kein Spruch, kein Fehler.
+- `CACHE_VERSION` wurde beim Anlegen auf `v3` erhöht (neue Datei in `DATA_FILES`). Tests: `cleanMessages`, `pickMessage`, echte Datei.
+- NICHT im Browser getestet (kein Server startbar): Anzeige/Abstände, Umbruch langer Sprüche, hell/dunkel, 375 px.
+
 ## Spielregeln und Rechnen
 
 - Punkte in Zehnteln: Stufe 1–5 = 10, 11, 12, 14, 16. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,

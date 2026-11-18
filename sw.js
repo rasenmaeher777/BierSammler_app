@@ -12,7 +12,7 @@
    gelöschte Datei) oder die Firebase-Version. Für normale Änderungen am Code ist das nicht nötig. */
 'use strict';
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -40,6 +40,7 @@ const DATA_FILES = [
   'Datensammlung/biere_manuell.json',
   'Datensammlung/kategorien.json',
   'Datensammlung/biere_korrekturen.json',
+  'Datensammlung/nachrichten.json',
 ];
 const SDK_FILES = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map((f) => SDK_BASE + f);
 

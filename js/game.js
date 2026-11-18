@@ -391,6 +391,45 @@
     return tier;
   }
 
+  /* ---------- Glückskeks-Nachrichten ---------- */
+
+  /* Rohdaten aus Datensammlung/nachrichten.json: Liste von { id, nachricht }. id = Ganzzahl > 0 oder nicht leerer Text,
+     nachricht = nicht leerer Text. Ungültige Einträge und doppelte IDs (die erste gilt) werden gemeldet und übersprungen. */
+  function cleanMessages(raw, warn = () => {}) {
+    if (!Array.isArray(raw)) { if (raw !== undefined) warn('nachrichten.json: Es muss eine Liste sein'); return []; }
+    const seen = new Set();
+    const out = [];
+    raw.forEach((m, i) => {
+      const idOk = m && ((Number.isInteger(m.id) && m.id > 0) || (typeof m.id === 'string' && m.id.trim()));
+      const text = m && typeof m.nachricht === 'string' ? m.nachricht.trim() : '';
+      if (!idOk || !text) { warn(`nachrichten.json: Eintrag ${i + 1} ungültig (id und nachricht nötig), wird ignoriert`); return; }
+      const id = String(m.id).trim();
+      if (seen.has(id)) { warn(`nachrichten.json: ID ${id} kommt doppelt vor, die erste gilt`); return; }
+      seen.add(id);
+      out.push({ id, text });
+    });
+    return out;
+  }
+
+  /* Nächste Nachricht wählen: zufällig unter denen, die noch nicht ausgegeben wurden. Sind alle ausgegeben, beginnt die
+     Liste von vorn (die zuletzt gezeigte Nachricht kommt dann nicht gleich wieder, sofern es mehrere gibt).
+     messages = bereinigte Liste, shownIds = bisher ausgegebene IDs (Reihenfolge = Ausgabe), rand = Zufallsfunktion [0, 1).
+     Gibt { message, shownIds } zurück; shownIds ist der neue Stand zum Speichern. Ohne Nachrichten: message = null.
+     IDs, die es nicht mehr gibt, fallen aus shownIds heraus; neu hinzugekommene Nachrichten gelten als nicht ausgegeben. */
+  function pickMessage(messages, shownIds, rand = Math.random) {
+    if (!Array.isArray(messages) || !messages.length) return { message: null, shownIds: [] };
+    const known = new Set(messages.map((m) => m.id));
+    let shown = (Array.isArray(shownIds) ? shownIds : []).filter((id, i, a) => known.has(id) && a.indexOf(id) === i);
+    let pool = messages.filter((m) => !shown.includes(m.id));
+    if (!pool.length) {
+      const last = shown[shown.length - 1];
+      shown = [];
+      pool = messages.length > 1 ? messages.filter((m) => m.id !== last) : messages;
+    }
+    const message = pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))];
+    return { message, shownIds: shown.concat(message.id) };
+  }
+
   /* ---------- Bundesländer ---------- */
 
   const BUNDESLAENDER = ['Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hessen',
@@ -432,6 +471,7 @@
     splitName, cleanBeer, mergeBeers,
     fold, unumlaut, searchEntry, buildIndex, search,
     normalizeDrinks, summarize, compareCards, CARD_TIER_AT, cardTier,
+    cleanMessages, pickMessage,
     weekStart, weekKey, weeksInclusive, dayNumber, isoWeek,
     WEEKDAYS, stats,
     usernameKey,

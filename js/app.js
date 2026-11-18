@@ -23,7 +23,9 @@
     manual: 'Datensammlung/biere_manuell.json',
     kategorien: 'Datensammlung/kategorien.json',
     korrekturen: 'Datensammlung/biere_korrekturen.json',
+    nachrichten: 'Datensammlung/nachrichten.json', // Glückskeks-Sprüche nach dem Bestätigen eines Biers
   };
+  const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
   const RECENT_MAX = 8; // zuletzt getrunkene Biere im leeren Suchfeld
   const TOP_COUNT = 6;  // beste Karten auf der Startseite
@@ -52,7 +54,7 @@
   /* ---------- 2. Zustand ---------- */
 
   // Bierdatenbank aus biere.json und biere_manuell.json plus biere_korrekturen.json (zusammengeführt in js/game.js)
-  const db = { list: [], map: new Map(), index: [], ready: false, error: false };
+  const db = { list: [], map: new Map(), index: [], messages: [], ready: false, error: false };
   // Aus dem Protokoll berechnet; wird vor jedem Zeichnen neu bestimmt, nie gespeichert
   let drinks = [];
   let summary = G.summarize([], db.map);
@@ -72,7 +74,8 @@
     };
     const optional = (url, empty = []) => get(url).catch((err) => { console.warn(`${url} nicht lesbar, wird ignoriert:`, err.message); return empty; });
     try {
-      const [main, manual, kategorien, korrekturen] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {})]);
+      const [main, manual, kategorien, korrekturen, nachrichten] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {}), optional(BEER_FILES.nachrichten)]);
+      db.messages = G.cleanMessages(nachrichten, (text) => console.warn(text));
       const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text), korrekturen);
       db.list = r.list;
       db.map = r.map;
@@ -256,6 +259,16 @@
     else if (e.target.closest('[data-close]')) dlg.close();
   });
 
+  /* Glückskeks: nächsten Spruch wählen (jeder nur einmal, danach beginnt die Liste von vorn) und die Auswahl merken.
+     Gemerkt wird je Gerät in localStorage; ohne Speicher oder ohne Sprüche gibt es keinen Text (null). */
+  function nextFortune() {
+    let shown = [];
+    try { const v = JSON.parse(lsGet(LS_MESSAGES)); if (Array.isArray(v)) shown = v.filter((id) => typeof id === 'string'); } catch { /* leer beginnen */ }
+    const pick = G.pickMessage(db.messages, shown);
+    if (pick.message) lsSet(LS_MESSAGES, JSON.stringify(pick.shownIds));
+    return pick.message ? pick.message.text : null;
+  }
+
   /* Hinzufügen: suchen → ausgegraute Karte (nur der Name) → Bestätigen → Karte dreht sich um.
      Gespeichert wird genau einmal, beim Bestätigen. Schließen vorher speichert nichts.
      Kategorie und Details stehen vor dem Bestätigen NICHT im Dokument (auch nicht versteckt). */
@@ -265,7 +278,7 @@
     q: '',
     beerId: null,
     saved: false,    // Schutz gegen doppelte Einträge (Doppelklick, Enter-Wiederholung)
-    result: null,    // { gain, levelUp, level, isNew }
+    result: null,    // { gain, levelUp, level, isNew, count, fortune }
 
     open() {
       this.step = 'search'; this.q = ''; this.beerId = null; this.saved = false; this.result = null;
@@ -302,6 +315,7 @@
             ${r.levelUp ? `<p class="levelup">Level ${r.level} erreicht!</p>` : ''}
             ${r.isNew ? '<p class="new">Neu in deiner Sammlung</p>' : ''}
           </div>
+          ${r.fortune ? `<p class="fortune">${esc(r.fortune)}</p>` : ''}
           <div class="actions"><button class="btn primary" type="button" data-close>Fertig</button></div>`
         : `<p class="note center">Ist das dein Bier?</p>
           <div class="actions">
@@ -363,7 +377,7 @@
       const gain = G.pointsFor(beer.stufe);
       // Zeitpunkt = Geräteuhr beim Bestätigen. Nicht auf den Server warten: Die Anzeige kommt aus dem lokalen Stand.
       STORE.add(beer.id, Date.now());
-      this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before) };
+      this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune() };
       this.step = 'done';
       this.paint();
     },
