@@ -115,6 +115,9 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
   (das Ereignis kommt verzögert).
 - Smartphone zuerst: 375/390 px prüfen, Eingabefelder 16 px, Safe-Area-Abstände; Kopfleiste und Werkzeugzeile dürfen
   nicht höher werden.
+- Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
+  feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
+  Chromium (auch der eingebaute Browser) zeigt den Fehler nicht; nachstellbar mit `.sheet-body { flex-basis: 0px }`.
 
 ## Testen
 

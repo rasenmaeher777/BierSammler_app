@@ -210,9 +210,11 @@ dialog.sheet::backdrop { background: var(--backdrop); }
   border-bottom: 1px solid var(--line);
 }
 .sheet-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; }
-/* flex: 1 – der Inhalt füllt den ganzen Dialog; sonst gälte ein Tipp in leere Fläche als Tipp auf den Hintergrund */
+/* Wachsen: der Inhalt füllt den ganzen Dialog; sonst gälte ein Tipp in leere Fläche als Tipp auf den Hintergrund.
+   Grundgröße MUSS auto sein (nicht „flex: 1“ = 0 %): Safari rechnet 0 % im Dialog ohne feste Höhe als 0,
+   dann zeigt das Blatt auf dem iPhone nur die Kopfzeile. Schrumpfen + min-height: 0 = Scrollen ab max-height. */
 .sheet-body {
-  flex: 1; min-height: 0;
+  flex: 1 1 auto; min-height: 0;
   overflow-y: auto; overscroll-behavior: contain;
   padding: 16px max(16px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
