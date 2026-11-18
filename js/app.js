@@ -16,6 +16,7 @@
   const STORE = window.STORE;
   const LS_THEME = 'biersammler-theme-v1'; // 'light' | 'dark' | fehlt = System (auch im Inline-Skript in index.html)
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
+  const LS_MOTION = 'biersammler-motion-v1'; // „0“ = Neigungssensor abgelehnt, nicht mehr fragen
   const BEER_FILES = {
     main: 'Datensammlung/biere.json',
     manual: 'Datensammlung/biere_manuell.json',
@@ -110,8 +111,9 @@
   }
   const BOTTLE = bottle();
 
-  // Herkunft für den Fuß der Karte: Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
-  const PIN = '<svg class="pin" viewBox="0 0 10 12" aria-hidden="true"><path fill-rule="evenodd" d="M5 0C2.4 0 .8 1.9.8 4.1c0 3.1 4.2 7.9 4.2 7.9s4.2-4.8 4.2-7.9C9.2 1.9 7.6 0 5 0zm0 2.6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>';
+  // Herkunft für den Fuß der Karte (Box, Farbe je Bundesland per CSS über data-o): Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
+  // Die beiden längsten Namen werden in der Box gekürzt, damit sie auch auf schmalen Smartphones ganz zu lesen sind
+  const ORIGIN_SHORT = { 'Mecklenburg-Vorpommern': 'Meckl.-Vorpommern', 'Nordrhein-Westfalen': 'Nordrhein-Westf.' };
   function originOf(b) {
     const co = b.company || {};
     return co.land && co.land !== 'Deutschland' ? co.land : (co.region || '');
@@ -133,7 +135,7 @@
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
         ${b.sorten.length ? `<span class="sorte">${esc(b.sorten.join(' · '))}</span>` : ''}
       </span>
-      <span class="origin">${origin ? `<span class="o">${PIN}<b>${esc(origin)}</b></span>` : ''}</span>`;
+      <span class="origin">${origin ? `<span class="o" data-o="${esc(origin)}" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>`;
   }
   const cardHtml = (c) => `<div class="bcard k${c.beer.stufe}">${cardInner(c)}</div>`;
   // Karte im Raster der Startseite: Knopf, der die große Kartenansicht öffnet
@@ -451,32 +453,42 @@
   cardDlg.addEventListener('toggle', (e) => { if (e.target.matches('details.desc')) descOpen = e.target.open; }, true);
   cardDlg.addEventListener('close', () => { if (!cardDlg.open) { cardDlg.innerHTML = ''; delete cardDlg.dataset.id; } });
 
-  /* Neigung und Holo-Glanz der großen Karte. Solange der Dialog offen ist, läuft pro Bild eine kleine Rechnung:
-     Maus oder Finger über der Karte (waagerecht ziehen, senkrechtes Wischen scrollt weiter) legen das Ziel fest, sonst
-     schwankt die Karte ganz leicht von selbst, damit der Glanz auch ohne Berührung lebt. Das Skript setzt nur CSS-Variablen
-     (--rx/--ry Neigung, --mx/--my Lichtreflex, --fx/--fy Folie, --tx/--ty Verschiebung der Flasche); gezeichnet wird per CSS.
-     Bei „weniger Bewegung“ bleibt alles ruhig. Der Dialog zeichnet sich bei Sync neu (innerHTML); die Schleife sucht die
-     Karte deshalb in jedem Bild neu. */
+  /* Neigung und Holo-Glanz der großen Karte. Solange der Dialog offen ist, läuft pro Bild eine kleine Rechnung. Das Ziel der
+     Neigung kommt, in dieser Reihenfolge, von: Maus oder Finger über der Karte (waagerecht ziehen; senkrechtes Wischen
+     scrollt weiter) → Neigungssensor des Telefons → ein leichtes Schwanken von selbst, damit der Glanz auch ohne Berührung
+     lebt. Die Karte folgt dem Ziel mit zeitabhängiger Glättung (gleich schnell auf 60 und 120 Hz) und hebt sich bei
+     Berührung leicht an (--lift). Das Skript setzt nur CSS-Variablen (--rx/--ry Neigung, --mx/--my Lichtreflex, --fx/--fy
+     Folie, --tx/--ty Verschiebung der Flasche, --lift); gezeichnet wird per CSS. Bei „weniger Bewegung“ bleibt alles ruhig.
+     Der Dialog zeichnet sich bei Sync neu (innerHTML); die Schleife sucht die Karte deshalb in jedem Bild neu.
+     Neigungssensor: Android liefert ihn ohne Nachfrage. iOS fragt einmal nach, und zwar beim ersten Antippen der Karte
+     (nur auf Berührung hin erlaubt). Lehnt der Nutzer ab, wird nicht mehr gefragt (LS_MOTION). */
   const tilt = (() => {
-    const MAX = 15; // größte Neigung in Grad
+    const MAX = 15;       // größte Neigung in Grad
+    const HAND = 30;      // Handneigung in Grad, die die volle Kartenneigung ergibt
     const calm = matchMedia('(prefers-reduced-motion: reduce)');
-    const s = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4, amp: 0.4, touched: false, raf: 0 };
-    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    const s = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4, amp: 0.4, touched: false, raf: 0, last: 0 };
+    const g = { b0: null, g0: null, tx: 0.5, ty: 0.5, at: -1e9, asked: false };
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     function frame(now) {
       s.raf = 0;
-      if (!cardDlg.open || document.hidden || calm.matches) return;
+      if (!cardDlg.open || document.hidden || calm.matches) { s.last = 0; return; }
+      const dt = s.last ? Math.min(0.05, (now - s.last) / 1000) : 0.016;
+      s.last = now;
       const el = cardDlg.querySelector('.card-view .bcard');
       if (el) {
         if (!s.touched) {
-          const t = now / 1000;
-          s.tx = 0.5 + 0.3 * Math.sin(t * 0.7);
-          s.ty = 0.42 + 0.22 * Math.sin(t * 0.53 + 1.3);
+          if (now - g.at < 800) { s.tx = g.tx; s.ty = g.ty; } else {
+            const t = now / 1000;
+            s.tx = 0.5 + 0.3 * Math.sin(t * 0.7);
+            s.ty = 0.42 + 0.22 * Math.sin(t * 0.53 + 1.3);
+          }
         }
-        s.x += (s.tx - s.x) * 0.12;
-        s.y += (s.ty - s.y) * 0.12;
-        s.amp += ((s.touched ? 1 : 0.4) - s.amp) * 0.08;
+        const k = 1 - Math.exp(-dt * 8);
+        s.x += (s.tx - s.x) * k;
+        s.y += (s.ty - s.y) * k;
+        s.amp += ((s.touched || now - g.at < 800 ? 1 : 0.4) - s.amp) * (1 - Math.exp(-dt * 5));
         const nx = (s.x - 0.5) * 2, ny = (s.y - 0.5) * 2;
-        const set = (k, v) => el.style.setProperty(k, v);
+        const set = (name, v) => el.style.setProperty(name, v);
         set('--rx', `${(-ny * MAX * s.amp).toFixed(2)}deg`);
         set('--ry', `${(nx * MAX * s.amp).toFixed(2)}deg`);
         set('--mx', `${(s.x * 100).toFixed(1)}%`);
@@ -485,23 +497,56 @@
         set('--fy', s.y.toFixed(3));
         set('--tx', (-nx).toFixed(3));
         set('--ty', (-ny).toFixed(3));
+        set('--lift', ((s.amp - 0.4) / 0.6).toFixed(3));
         el.classList.add('live');
       }
       s.raf = requestAnimationFrame(frame);
     }
-    function start() { if (!s.raf && !calm.matches) s.raf = requestAnimationFrame(frame); }
+    // Neigungssensor: nur Hochformat; die Ruhelage wandert langsam mit, damit jede Haltung des Telefons passt
+    function onOrient(e) {
+      if (!cardDlg.open || calm.matches || e.beta == null || e.gamma == null) return;
+      if (screen.orientation && screen.orientation.angle) return;
+      if (g.b0 === null) { g.b0 = e.beta; g.g0 = e.gamma; }
+      const t = performance.now();
+      const k = 1 - Math.exp(-(t - g.at > 1000 ? 0.016 : (t - g.at) / 1000) / 4); // Ruhelage folgt mit ca. 4 s Zeitkonstante
+      g.b0 += (e.beta - g.b0) * k;
+      g.g0 += (e.gamma - g.g0) * k;
+      g.tx = 0.5 + clamp(e.gamma - g.g0, -HAND, HAND) / (HAND * 2);
+      g.ty = 0.5 + clamp(e.beta - g.b0, -HAND, HAND) / (HAND * 2);
+      g.at = t;
+    }
+    async function enableMotion() {
+      if (g.asked || typeof DeviceOrientationEvent === 'undefined' || lsGet(LS_MOTION) === '0') return;
+      g.asked = true;
+      try {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          if (await DeviceOrientationEvent.requestPermission() !== 'granted') { lsSet(LS_MOTION, '0'); return; }
+        }
+        window.addEventListener('deviceorientation', onOrient);
+      } catch { g.asked = false; /* kein Sensor oder keine Geste: bleibt bei Finger/Maus, beim nächsten Antippen erneut */ }
+    }
+    function start() {
+      g.b0 = null; s.last = 0;
+      if (!s.raf && !calm.matches) s.raf = requestAnimationFrame(frame);
+      // Ohne Nachfrage-Pflicht (Android, Desktop) sofort einschalten; iOS erst nach dem ersten Antippen
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') enableMotion();
+    }
     function aim(e) {
       const cv = e.target instanceof Element && e.target.closest('.card-view');
       if (!cv) { s.touched = false; return; }
       const r = cv.getBoundingClientRect();
-      s.tx = clamp01((e.clientX - r.left) / r.width);
-      s.ty = clamp01((e.clientY - r.top) / r.height);
+      s.tx = clamp((e.clientX - r.left) / r.width, 0, 1);
+      s.ty = clamp((e.clientY - r.top) / r.height, 0, 1);
       s.touched = true;
     }
     const release = () => { s.touched = false; };
     cardDlg.addEventListener('pointermove', aim);
     cardDlg.addEventListener('pointerdown', aim);
-    cardDlg.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') release(); });
+    cardDlg.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'mouse') return;
+      release();
+      if (e.target instanceof Element && e.target.closest('.card-view')) enableMotion(); // Berührung = erlaubte Geste für die iOS-Nachfrage
+    });
     cardDlg.addEventListener('pointercancel', release);
     cardDlg.addEventListener('pointerleave', release);
     document.addEventListener('visibilitychange', () => { if (!document.hidden && cardDlg.open) start(); });

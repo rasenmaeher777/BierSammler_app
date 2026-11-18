@@ -80,14 +80,18 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
 - Kartenoptik (18.11.2026, alle Karten gleicher Aufbau, nur das Material wechselt je Kategorie; Schrift unverändert):
   Ebenen `.mat` (Tönung, Muster als SVG-Maske, Körnung), `.foil` (Holo-Folie, nur Zaubertrank/Heiligtum), Zierrahmen
-  (`.bcard::before`), Schriftband (`.band`, ein glatter durchgehender Balken oben, bewusst ohne Zacken und Naht), Herkunft im Fuß (`.origin`: Bundesland, bei Bieren aus dem
-  Ausland das Land), Lichtreflex (`::after`). Materialien: Standardgebräu Karton, Klassiker Leinen, Spezialität
+  (`.bcard::before`), Schriftband (`.band`, ein glatter durchgehender Balken oben, bewusst ohne Zacken und Naht), Herkunft im Fuß (`.origin .o`: kleine Box mit weißer Schrift, Farbe je Bundesland per
+  `data-o` in `style.css` (Berlin rot, alle ≥ 4,5 : 1 zu Weiß), Ausland dunkles Blaugrau; Mecklenburg-Vorpommern und
+  Nordrhein-Westfalen werden in der Box gekürzt), Lichtreflex (`::after`). Materialien: Standardgebräu Karton, Klassiker Leinen, Spezialität
   Kreisgeflecht, Zaubertrank Sternenstaub, Heiligtum gebürstetes Gold. Die Stufe (1–5) darf weiterhin NIE sichtbar sein
   (keine Sterne/Ziffern zum Zählen). Holo-Deckkraft je Theme über `--foil-k4/-k5` (dunkel schwächer, sonst unleserlich;
   beide Dunkel-Blöcke gleich halten). Große Ansicht: `tilt` in `js/app.js` setzt pro Bild nur CSS-Variablen (Maus/Finger
   neigt, sonst leichtes Schwanken; `.live` auf der Karte); `touch-action: pan-y`, damit der Dialog weiter scrollt; bei
-  „weniger Bewegung“ keine Schleife. Kein Gyro-Sensor (iOS bräuchte eine Berechtigungsabfrage). Getestet im eingebauten
-  Browser (hell/dunkel, 390 px, Desktop, Aufdecken); NICHT auf echtem iPhone/Safari (Masken, `isolation`, Neigung per Finger).
+  „weniger Bewegung“ keine Schleife. Zeitabhängige Glättung, Anheben (`--lift`) und Neigungssensor: Android sofort, iOS fragt beim ersten Antippen der
+  Karte einmal nach (Ablehnung → `biersammler-motion-v1` = `0`, nie wieder fragen). Getestet im eingebauten
+  Browser (hell/dunkel, 390 px, Desktop, Aufdecken, Sensor per nachgebildeten Ereignissen); NICHT auf echtem iPhone/Safari
+  (Masken, `isolation`, Neigung per Finger, echter Sensor und dessen Richtung). Der eingebaute Browser zeichnet bei
+  ausgeblendetem Bereich keine Animationen (Schleife steht).
 - Wochen beginnen montags in Ortszeit (`weekStart`, `weekKey` über Kalendertage, DST-fest), KW nach ISO 8601.
   Ø/Woche = Anzahl / Wochen von der Woche des ersten Eintrags bis heute (beide eingeschlossen). Nie `toISOString()`.
 - Suche: `fold` (klein, ß→ss, Akzente weg, Bindestriche/Apostrophe weg) und `unumlaut` (ae/oe/ue → a/o/u); ein Wort
@@ -115,7 +119,7 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 - Abmelden: `signOut` → `terminate` + `clearIndexedDbPersistence` → neu laden. Ein anderes Konto als zuletzt
   (`biersammler-uid-v1`) löscht ebenfalls den Zwischenspeicher, das neue Konto beginnt leer.
 - Firebase-SDK-Version `10.12.2` steht in `js/store.js`, `sw.js` und den drei `modulepreload`-Links in `index.html`.
-- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`.
+- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`.
 
 ## Rangliste („Platzierung“, 18.11.2026)
 
