@@ -1,0 +1,274 @@
+/* Bier Sammler – Speicherschicht (window.STORE).
+   Eine Schnittstelle für beide Betriebsarten, damit js/app.js nicht wissen muss, wo die Daten liegen:
+   - lokal:    leerer apiKey in js/firebase-config.js → Einträge nur in localStorage dieses Browsers
+   - firebase: Google-Anmeldung, Cloud Firestore mit dauerhaftem Zwischenspeicher (IndexedDB)
+
+   Gespeichert wird nur das Protokoll: ein Eintrag je getrunkenem Bier { id, beerId, at }.
+   Punkte, Level, Sammlung und Statistiken berechnet js/app.js daraus (js/game.js), nichts davon wird gespeichert.
+
+   Firestore (Regeln: firestore.rules):
+     users/<uid>                 { username?, usernameKey? }   (optionale Felder fehlen, nie undefined/null)
+     users/<uid>/drinks/<autoId> { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
+     usernames/<usernameKey>     { uid }                         (sorgt für eindeutige Namen)
+
+   Schreibvorgänge werden NICHT abgewartet: Ihre Promises erfüllen sich erst nach Bestätigung durch den Server und
+   hängen ohne Netz. Die Anzeige kommt sofort aus dem lokalen Snapshot; ohne Netz landen die Schreibvorgänge in der
+   Warteschlange des dauerhaften Zwischenspeichers, überstehen das Schließen der App und werden später übertragen.
+
+   Schnittstelle:
+     start(onChange)    Laden beginnen; onChange() wird nach jeder Änderung aufgerufen
+     drinks()           Rohdaten des Protokolls (js/app.js bereinigt sie mit GAME.normalizeDrinks)
+     add(beerId, at)    einen Eintrag anlegen (sofort sichtbar, ohne auf den Server zu warten)
+     remove(ids)        Einträge löschen
+     reset()            alle Einträge löschen und den Benutzernamen freigeben
+     setUsername(name)  Promise; Fehler mit err.code: 'local' | 'invalid' | 'taken' | 'offline' | 'error'
+     signIn()           Promise; Anmeldung mit Google (Popup)
+     signOut()          Promise; abmelden, Kopie auf diesem Gerät löschen, Seite neu laden
+     status()           'local' | 'loading' | 'out' | 'in' | 'error'
+     error()            Text zum Status 'error'
+     pending()          true, solange Änderungen noch nicht beim Server angekommen sind
+     profile()          { username?, usernameKey?, email? } */
+window.STORE = (() => {
+  'use strict';
+
+  const FIREBASE_SDK = '10.12.2'; // muss zu den modulepreload-Links in index.html und zu sw.js passen
+  const cfg = window.FIREBASE_CONFIG || {};
+  const MODE = cfg.apiKey ? 'firebase' : 'local';
+  const LS_DRINKS = 'biersammler-drinks-v1'; // nur lokaler Modus
+  const LS_OWNER = 'biersammler-uid-v1';     // Konto, dem der Zwischenspeicher auf diesem Gerät gehört
+  const BATCH_MAX = 500;                      // Höchstzahl Vorgänge je Firestore-Batch
+  const NAME_TIMEOUT = 10000;                 // ms; danach gilt der Server als nicht erreichbar
+
+  let onChange = () => {};
+  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {} };
+  const emit = () => onChange();
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const fail = (code, message) => Object.assign(new Error(message || code), { code });
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Speicher nicht verfügbar */ } };
+
+  /* ---------- Lokaler Modus ---------- */
+
+  function loadLocal() {
+    try { const v = JSON.parse(localStorage.getItem(LS_DRINKS)); return Array.isArray(v) ? v : []; } catch { return []; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_DRINKS, JSON.stringify(s.drinks)); return true; } catch { return false; }
+  }
+
+  const local = {
+    start() {
+      s.drinks = loadLocal();
+      // Änderungen aus einem anderen Tab desselben Browsers übernehmen
+      window.addEventListener('storage', (e) => { if (e.key === LS_DRINKS) { s.drinks = loadLocal(); emit(); } });
+      emit();
+    },
+    add(beerId, at) {
+      const d = { id: newId(), beerId, at };
+      s.drinks = s.drinks.concat(d);
+      if (!saveLocal()) console.error('Speichern im Browser fehlgeschlagen');
+      emit();
+      return d;
+    },
+    remove(ids) {
+      const drop = new Set(ids);
+      s.drinks = s.drinks.filter((d) => !drop.has(d.id));
+      saveLocal();
+      emit();
+    },
+    reset() {
+      s.drinks = [];
+      lsSet(LS_DRINKS, null);
+      emit();
+    },
+    // Benutzernamen brauchen den Server (Eindeutigkeit); im lokalen Modus gibt es keine
+    setUsername() { return Promise.reject(fail('local', 'Benutzernamen gibt es nur mit Anmeldung')); },
+    signIn() { return Promise.resolve(); },
+    signOut() { return Promise.resolve(); },
+  };
+
+  /* ---------- Firebase ---------- */
+
+  let fb = null;          // Funktionen aus den Firebase-Modulen
+  let auth = null;
+  let db = null;
+  let user = null;
+  let unsubs = [];        // laufende onSnapshot-Abos
+  const stopListening = () => { unsubs.forEach((u) => u()); unsubs = []; };
+  const drinksCol = () => fb.collection(db, 'users', user.uid, 'drinks');
+  const failed = (text) => (err) => {
+    console.error(text, err);
+    s.status = 'error';
+    s.error = err && err.code === 'permission-denied'
+      ? 'Zugriff verweigert. Sind die Firestore-Regeln eingetragen? (siehe README)'
+      : 'Verbindung zur Datenbank fehlgeschlagen.';
+    emit();
+  };
+  // Schreibvorgänge laufen im Hintergrund; ein Fehler (z. B. abgelehnt durch die Regeln) wird nur protokolliert,
+  // die Anzeige korrigiert sich über den nächsten Snapshot von selbst.
+  const background = (p, what) => { p.catch((err) => console.error(`${what} fehlgeschlagen`, err)); };
+
+  // Kopie der Daten auf diesem Gerät löschen (Firestore-Zwischenspeicher in IndexedDB) und neu laden.
+  // Gelingt das Löschen nicht (z. B. weil die App noch in einem anderen Tab offen ist), wird trotzdem neu geladen.
+  // newOwner: Konto, dem der (dann leere) Zwischenspeicher danach gehört; null nach dem Abmelden.
+  async function wipeAndReload(newOwner) {
+    try { await fb.terminate(db); await fb.clearIndexedDbPersistence(db); } catch (err) { console.warn('Zwischenspeicher konnte nicht gelöscht werden', err); }
+    lsSet(LS_OWNER, newOwner); // auch bei Fehlschlag setzen, sonst würde nach dem Neuladen endlos weiter gelöscht
+    lsSet(LS_DRINKS, null);
+    location.reload();
+  }
+
+  function onUser(u) {
+    stopListening();
+    const before = user;
+    user = u;
+    s.drinks = [];
+    s.pending = false;
+    s.profile = {};
+    if (!u) {
+      // Gerade abgemeldet (hier oder in einem anderen Tab): Kopie auf diesem Gerät löschen und neu laden.
+      // Beim Start ohne Anmeldung bleibt LS_OWNER stehen, damit ein anderes Konto später erkannt wird.
+      if (before) { wipeAndReload(null); return; }
+      s.status = 'out';
+      emit();
+      return;
+    }
+    // Ein anderes Konto als zuletzt auf diesem Gerät (z. B. nach abgelaufener Anmeldung ohne Abmelden):
+    // dessen Zwischenspeicher löschen, das neue Konto beginnt leer
+    const owner = lsGet(LS_OWNER);
+    if (owner && owner !== u.uid) { wipeAndReload(u.uid); return; }
+    lsSet(LS_OWNER, u.uid);
+
+    s.profile = { email: u.email || '' };
+    s.status = 'loading'; // bis der erste Snapshot da ist (sonst blitzt kurz die leere Sammlung auf)
+    emit();
+    unsubs.push(fb.onSnapshot(drinksCol(), { includeMetadataChanges: true }, (snap) => {
+      // Nur beerId und at übernehmen; die eigentliche Prüfung macht GAME.normalizeDrinks
+      s.drinks = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, beerId: v.beerId, at: v.at }; });
+      s.pending = snap.metadata.hasPendingWrites;
+      s.status = 'in';
+      emit();
+    }, failed('Einträge konnten nicht geladen werden')));
+    unsubs.push(fb.onSnapshot(fb.doc(db, 'users', u.uid), (snap) => {
+      const v = (snap.exists() && snap.data()) || {};
+      const key = window.GAME.usernameKey(v.username);
+      // Nur einen stimmigen Namen anzeigen (Anzeigeform passt zum Schlüssel)
+      s.profile = key && key === v.usernameKey ? { email: u.email || '', username: v.username, usernameKey: key } : { email: u.email || '' };
+      emit();
+    }, (err) => console.error('Profil konnte nicht geladen werden', err)));
+  }
+
+  // Löschvorgänge in Batches mit höchstens 500 Vorgängen; extra = zusätzliche Vorgänge für den ersten Batch
+  function deleteInBatches(ids, extra = []) {
+    const refs = ids.map((id) => fb.doc(drinksCol(), id));
+    const first = Math.max(0, BATCH_MAX - extra.length);
+    const chunks = [refs.slice(0, first)];
+    for (let i = first; i < refs.length; i += BATCH_MAX) chunks.push(refs.slice(i, i + BATCH_MAX));
+    chunks.forEach((chunk, n) => {
+      const batch = fb.writeBatch(db);
+      if (n === 0) extra.forEach((op) => op(batch));
+      chunk.forEach((ref) => batch.delete(ref));
+      background(batch.commit(), 'Löschen');
+    });
+  }
+
+  const firebase = {
+    async start() {
+      try {
+        const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
+        const [appM, authM, fsM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+        fb = { ...authM, ...fsM };
+        const app = appM.initializeApp(cfg);
+        auth = authM.getAuth(app);
+        // Dauerhafter Zwischenspeicher, auch über mehrere Tabs. Ohne IndexedDB (z. B. manche private Fenster)
+        // fällt Firestore von selbst auf einen Speicher im Arbeitsspeicher zurück.
+        db = fsM.initializeFirestore(app, { localCache: fsM.persistentLocalCache({ tabManager: fsM.persistentMultipleTabManager() }) });
+        authM.onAuthStateChanged(auth, onUser, failed('Anmeldestatus nicht lesbar'));
+      } catch (err) {
+        console.error('Firebase konnte nicht geladen werden', err);
+        s.status = 'error';
+        s.error = 'Die Anmeldung ist gerade nicht erreichbar.';
+        emit();
+      }
+    },
+
+    add(beerId, at) {
+      if (!user) return null;
+      const ref = fb.doc(drinksCol()); // neue automatische ID, schon vor dem Senden bekannt
+      background(fb.setDoc(ref, { beerId, at }), 'Speichern');
+      return { id: ref.id, beerId, at };
+    },
+
+    remove(ids) {
+      if (!user || !ids.length) return;
+      deleteInBatches(ids);
+    },
+
+    // Alle Einträge löschen und den Namen freigeben (Name im ersten Batch, damit beides zusammen passiert)
+    reset() {
+      if (!user) return;
+      const key = s.profile.usernameKey;
+      const extra = key ? [
+        (b) => b.delete(fb.doc(db, 'usernames', key)),
+        (b) => b.set(fb.doc(db, 'users', user.uid), {}),
+      ] : [];
+      deleteInBatches(s.drinks.map((d) => d.id), extra);
+    },
+
+    /* Benutzername wählen oder ändern. Braucht den Server: Eine Transaktion liest usernames/<neu> direkt vom Server
+       und schlägt ohne Netz fehl, statt in der Warteschlange zu hängen. In EINEM Vorgang: alten Namen freigeben,
+       neuen belegen, users/<uid> setzen. firestore.rules prüft dasselbe noch einmal. */
+    setUsername(name) {
+      if (!user) return Promise.reject(fail('error', 'nicht angemeldet'));
+      const key = window.GAME.usernameKey(name);
+      if (!key) return Promise.reject(fail('invalid'));
+      if (navigator.onLine === false) return Promise.reject(fail('offline'));
+      const uid = user.uid;
+      const old = s.profile.usernameKey;
+      const run = fb.runTransaction(db, async (tx) => {
+        const newRef = fb.doc(db, 'usernames', key);
+        const snap = await tx.get(newRef);
+        if (snap.exists() && snap.data().uid !== uid) throw fail('taken');
+        if (old && old !== key) tx.delete(fb.doc(db, 'usernames', old));
+        if (!snap.exists()) tx.set(newRef, { uid });
+        tx.set(fb.doc(db, 'users', uid), { username: name, usernameKey: key });
+      });
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(fail('offline')), NAME_TIMEOUT));
+      return Promise.race([run, timeout]).catch((err) => {
+        if (err && (err.code === 'taken' || err.code === 'offline')) throw err;
+        if (err && (err.code === 'unavailable' || err.code === 'deadline-exceeded')) throw fail('offline');
+        console.error('Benutzername konnte nicht gespeichert werden', err);
+        throw fail('error');
+      });
+    },
+
+    signIn() {
+      return fb.signInWithPopup(auth, new fb.GoogleAuthProvider());
+    },
+
+    async signOut() {
+      stopListening();
+      try { await fb.signOut(auth); } catch (err) { console.error('Abmelden fehlgeschlagen', err); }
+      // onUser(null) übernimmt Löschen und Neuladen
+    },
+  };
+
+  const impl = MODE === 'local' ? local : firebase;
+
+  return {
+    mode: MODE,
+    sdk: FIREBASE_SDK,
+    start(fn) { onChange = typeof fn === 'function' ? fn : () => {}; impl.start(); },
+    drinks: () => s.drinks,
+    add: (beerId, at) => impl.add(beerId, at),
+    remove: (ids) => impl.remove(ids),
+    reset: () => impl.reset(),
+    setUsername: (name) => impl.setUsername(name),
+    signIn: () => impl.signIn(),
+    signOut: () => impl.signOut(),
+    status: () => s.status,
+    error: () => s.error,
+    pending: () => s.pending,
+    profile: () => s.profile,
+  };
+})();

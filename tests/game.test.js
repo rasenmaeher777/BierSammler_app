@@ -1,0 +1,287 @@
+/* Tests der Spiellogik (js/game.js). Aufruf im Projektordner:
+     node tests/game.test.js
+   Ohne npm-Abhängigkeiten (nur das eingebaute assert). Liest zusätzlich die echte Bierdatenbank,
+   um Zusammenführen und Suche mit den echten Daten zu prüfen. */
+'use strict';
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const G = require('../js/game.js');
+
+let passed = 0;
+function test(name, fn) {
+  try { fn(); passed++; console.log('ok   ' + name); }
+  catch (err) { console.error('FEHLER ' + name + '\n  ' + err.message); process.exitCode = 1; }
+}
+
+/* ---------- Pflicht-Beispiele aus dem Auftrag ---------- */
+
+// Summe aus Anzahl × Stufe, nur über pointsFor (so rechnet auch die App)
+const sumOf = (...pairs) => pairs.reduce((s, [n, stufe]) => s + n * G.pointsFor(stufe), 0);
+function check(sum, wantSum, wantLevel, wantRing) {
+  assert.strictEqual(sum, wantSum, 'Summe');
+  assert.strictEqual(G.level(sum), wantLevel, 'Level');
+  assert.strictEqual(G.fmtRing(sum), wantRing, 'Ring-Anzeige');
+}
+
+test('0 Einträge → Level 1, Ring 0', () => { check(0, 0, 1, '0,0 / 20 Punkte'); assert.strictEqual(G.ring(0), 0); });
+test('10 × Stufe 5 = 160 → Level 1, 16,0 / 20', () => check(sumOf([10, 5]), 160, 1, '16,0 / 20 Punkte'));
+test('20 × Stufe 1 = 200 → Level 2, 0,0 / 20', () => { check(sumOf([20, 1]), 200, 2, '0,0 / 20 Punkte'); assert.strictEqual(G.ring(200), 0); });
+test('19 × Stufe 4 = 266 → Level 2, 6,6 / 20', () => check(sumOf([19, 4]), 266, 2, '6,6 / 20 Punkte'));
+test('13 × Stufe 1 + 5 × Stufe 5 = 210 → Level 2, 1,0 / 20', () => check(sumOf([13, 1], [5, 5]), 210, 2, '1,0 / 20 Punkte'));
+test('3 × Stufe 2 = 33 → 3,3', () => { assert.strictEqual(sumOf([3, 2]), 33); assert.strictEqual(G.fmt1(33), '3,3'); });
+test('Überschuss: 19,6 + 1,4 → Level steigt, Ring 1,0', () => {
+  const s = 196 + G.pointsFor(4);
+  assert.strictEqual(G.level(196), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,0 / 20 Punkte');
+});
+test('Punkte bis zum nächsten Level', () => { assert.strictEqual(G.toNext(266), 134); assert.strictEqual(G.toNext(200), 200); });
+
+/* ---------- Anzeige ---------- */
+
+test('Zahlen deutsch', () => {
+  assert.strictEqual(G.fmtInt(6368), '6.368');
+  assert.strictEqual(G.fmtInt(37), '37');
+  assert.strictEqual(G.fmtAlc(5.3), '5,3 %');
+  assert.strictEqual(G.fmtAlc(5), '5,0 %');
+  assert.strictEqual(G.fmtAlc(0), 'alkoholfrei');
+  assert.strictEqual(G.fmtAlc(null), '');
+  assert.strictEqual(G.fmtLiter(0.355), '0,355 l');
+  assert.strictEqual(G.fmtLiter(1), '1 l');
+  assert.strictEqual(G.fmtLiter(null), '');
+});
+
+/* ---------- Bierdaten ---------- */
+
+const KAT = [{ stufe: 1, name: 'Standardgebräu' }, { stufe: 2, name: 'Klassiker' }, { stufe: 3, name: 'Spezialität' }, { stufe: 4, name: 'Zaubertrank' }, { stufe: 5, name: 'Heiligtum' }];
+const raw = (id, name, stufe, extra = {}) => ({
+  id, name, biersorte: ['Pils'], alkoholgehalt: 4.9,
+  brauerei_vertrieb: { typ: 'Brauerei', name: 'Testbrauerei GmbH', adresse: 'Weg 1', region: 'Bayern', land: 'Deutschland' },
+  beschreibung: null, zutaten: null, flaschengroesse: 0.5, kategorie_name: 'x', kategorie_stufe: stufe, ...extra,
+});
+
+test('Name trennen am ersten " - "', () => {
+  assert.deepStrictEqual(G.splitName('Schneider Weisse - TAP6 - unser Aventinus', 'X'), { title: 'TAP6 - unser Aventinus', brand: 'Schneider Weisse' });
+  assert.deepStrictEqual(G.splitName("Beck's", 'Brauerei Beck GmbH'), { title: "Beck's", brand: 'Brauerei Beck GmbH' });
+});
+
+test('Zusammenführen: ungültig weg, doppelte ID → biere.json gilt, Warnung', () => {
+  const warns = [];
+  const r = G.mergeBeers(
+    [raw('BS-000001', 'A - Eins', 1), raw('BS-000002', 'B - Zwei', 9), { id: 'kaputt' }],
+    [raw('BS-000001', 'Fremd - Doppelt', 5), raw('BM-000001', 'C - Manuell', 3, { biersorte: null, flaschengroesse: null, alkoholgehalt: 0 })],
+    KAT, (t) => warns.push(t));
+  assert.deepStrictEqual(r.list.map((b) => b.id), ['BS-000001', 'BM-000001']);
+  assert.strictEqual(r.map.get('BS-000001').name, 'A - Eins');
+  assert.strictEqual(r.map.get('BM-000001').kategorie, 'Spezialität');
+  assert.deepStrictEqual(r.map.get('BM-000001').sorten, []);
+  assert.strictEqual(r.map.get('BM-000001').flasche, null);
+  assert.strictEqual(r.map.get('BM-000001').alc, 0);
+  assert.strictEqual(warns.length, 3, warns.join(' | '));
+  assert.ok(warns.some((w) => w.includes('doppelte ID BS-000001')));
+});
+
+/* ---------- Suche ---------- */
+
+test('Normalisierung', () => {
+  assert.strictEqual(G.fold('Münchner Hefe-Weißbier'), 'munchner hefeweissbier');
+  assert.strictEqual(G.fold("Beck's"), 'becks');
+  assert.strictEqual(G.fold('Ožujsko'), 'ozujsko');
+  assert.strictEqual(G.fold('Allgäuer Brauhaus - Urtyp'), 'allgauer brauhaus urtyp');
+});
+
+const mini = G.mergeBeers([
+  raw('BS-000010', 'Löwenbräu - Münchner Hell', 1),
+  raw('BS-000011', 'Paulaner - Hefe-Weißbier', 2),
+  raw('BS-000012', 'Muenchner Kindl - Dunkel', 1),
+  raw('BS-000013', "Beck's", 1, { brauerei_vertrieb: { typ: 'Brauerei', name: 'Brauerei Beck GmbH', adresse: null, region: null, land: 'Deutschland' } }),
+  raw('BS-000014', 'Altenmünster - Brauer Bier', 2, { brauerei_vertrieb: { typ: 'Brauerei', name: 'Allgäuer Brauhaus AG', adresse: null, region: null, land: 'Deutschland' } }),
+], [], KAT).list;
+const idx = G.buildIndex(mini);
+const ids = (q) => G.search(idx, q).map((b) => b.id);
+
+test('ä = a = ae, beide Richtungen', () => {
+  const want = ['BS-000010', 'BS-000012'];
+  assert.deepStrictEqual(ids('münchner').sort(), want);
+  assert.deepStrictEqual(ids('muenchner').sort(), want);
+  assert.deepStrictEqual(ids('munchner').sort(), want);
+  assert.deepStrictEqual(ids('MÜNCHNER').sort(), want);
+});
+test('ß = ss, Bindestriche egal', () => {
+  assert.deepStrictEqual(ids('weissbier'), ['BS-000011']);
+  assert.deepStrictEqual(ids('hefeweißbier'), ['BS-000011']);
+  assert.deepStrictEqual(ids('hefe weiss'), ['BS-000011']);
+  assert.deepStrictEqual(ids('becks'), ['BS-000013']);
+});
+test('Jedes Wort muss vorkommen; Firmenname wird durchsucht', () => {
+  assert.deepStrictEqual(ids('münchner dunkel'), ['BS-000012']);
+  assert.deepStrictEqual(ids('allgäuer brauer'), ['BS-000014']);
+  assert.deepStrictEqual(ids('münchner pils'), []);
+});
+test('Zwischenstände beim Tippen gehen nicht verloren', () => {
+  for (const q of ['br', 'bra', 'brau', 'braue', 'brauer']) assert.ok(ids(q).includes('BS-000014'), q);
+});
+test('Unter 2 Zeichen keine Treffer, höchstens 10', () => {
+  assert.deepStrictEqual(ids('m'), []);
+  assert.deepStrictEqual(ids(' - '), []);
+});
+test('Wortanfänge zuerst', () => {
+  // "bra" steht bei Altenmünster am Wortanfang ("Brauer", "Brauhaus"), bei Löwenbräu nur mittendrin
+  const r = G.search(idx, 'bra');
+  assert.strictEqual(r[0].id, 'BS-000014');
+  assert.ok(r.some((b) => b.id === 'BS-000010'));
+});
+
+/* ---------- Protokoll, Sammlung, Sortierung ---------- */
+
+const map = new Map(mini.map((b) => [b.id, b]));
+test('Einträge bereinigen', () => {
+  const d = G.normalizeDrinks([
+    { id: 'a', beerId: 'BS-000010', at: 2000 },
+    { id: 'b', beerId: 'BS-999999', at: 1000 },      // unbekannt
+    { id: 'c', beerId: 'BS-000010', at: 1.5 },       // keine Ganzzahl
+    { id: 'd', beerId: '<img>', at: 1000 },          // ungültig
+    null, 'x', { id: 'a', beerId: 'BS-000011', at: 3000 }, // doppelte id
+    { id: 'e', beerId: 'BS-000011', at: 1000, extra: 1 },
+  ], map);
+  assert.deepStrictEqual(d, [{ id: 'e', beerId: 'BS-000011', at: 1000 }, { id: 'a', beerId: 'BS-000010', at: 2000 }]);
+  assert.deepStrictEqual(G.normalizeDrinks('kaputt'), []);
+});
+test('Sammlung aus dem Protokoll und Sortierung', () => {
+  const d = G.normalizeDrinks([
+    { id: '1', beerId: 'BS-000010', at: 100 }, { id: '2', beerId: 'BS-000010', at: 300 },
+    { id: '3', beerId: 'BS-000012', at: 200 }, { id: '4', beerId: 'BS-000012', at: 400 },
+    { id: '5', beerId: 'BS-000011', at: 50 }, { id: '6', beerId: 'BS-000013', at: 500 },
+  ], map);
+  const s = G.summarize(d, map);
+  assert.strictEqual(s.sum, 5 * 10 + 11);
+  assert.strictEqual(s.count, 6);
+  const order = s.cards.slice().sort(G.compareCards).map((c) => c.beer.id);
+  // Stufe 2 zuerst; dann je 2× (10 und 12): 12 zuletzt getrunken (400) vor 10 (300); dann 13 (1×)
+  assert.deepStrictEqual(order, ['BS-000011', 'BS-000012', 'BS-000010', 'BS-000013']);
+  const c10 = s.cards.find((c) => c.beer.id === 'BS-000010');
+  assert.deepStrictEqual([c10.count, c10.first, c10.last, c10.points], [2, 100, 300, 20]);
+});
+test('Eintrag löschen senkt Punkte und Level', () => {
+  const many = Array.from({ length: 20 }, (_, i) => ({ id: 'x' + i, beerId: 'BS-000010', at: 1000 + i }));
+  assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many, map), map).sum), 2);
+  assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many.slice(1), map), map).sum), 1);
+});
+
+/* ---------- Wochen ---------- */
+
+const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
+test('Woche beginnt Montag 00:00 Ortszeit', () => {
+  const ws = G.weekStart(at(2026, 11, 22, 23)); // Sonntag 22.11.2026
+  assert.deepStrictEqual([ws.getFullYear(), ws.getMonth() + 1, ws.getDate(), ws.getHours()], [2026, 11, 16, 0]);
+  assert.strictEqual(G.weekKey(at(2026, 11, 16, 0)), G.weekKey(at(2026, 11, 22, 23)));
+  assert.notStrictEqual(G.weekKey(at(2026, 11, 22, 23)), G.weekKey(at(2026, 11, 23, 0)));
+});
+test('Wochenzählung über Sommerzeit und Jahreswechsel', () => {
+  assert.strictEqual(G.weeksInclusive(at(2026, 3, 23), at(2026, 3, 30)), 2);  // Umstellung 29.03.
+  assert.strictEqual(G.weeksInclusive(at(2026, 10, 19), at(2026, 10, 26)), 2); // Umstellung 25.10.
+  assert.strictEqual(G.weeksInclusive(at(2026, 12, 28), at(2027, 1, 4)), 2);
+  assert.strictEqual(G.weeksInclusive(at(2026, 11, 18), at(2026, 11, 18)), 1);
+  assert.strictEqual(G.weeksInclusive(at(2026, 1, 1), at(2026, 12, 31)), 53); // Do 1.1. bis Do 31.12.
+});
+
+/* ---------- Kalenderwoche und Statistiken ---------- */
+
+test('Kalenderwoche nach ISO 8601', () => {
+  assert.deepStrictEqual(G.isoWeek(at(2026, 11, 18)), { week: 47, year: 2026 });
+  assert.deepStrictEqual(G.isoWeek(at(2026, 1, 1)), { week: 1, year: 2026 });   // Donnerstag
+  assert.deepStrictEqual(G.isoWeek(at(2025, 12, 29)), { week: 1, year: 2026 });
+  assert.deepStrictEqual(G.isoWeek(at(2026, 12, 28)), { week: 53, year: 2026 });
+  assert.deepStrictEqual(G.isoWeek(at(2027, 1, 1)), { week: 53, year: 2026 });  // Freitag
+  assert.deepStrictEqual(G.isoWeek(at(2027, 1, 4)), { week: 1, year: 2027 });
+  assert.deepStrictEqual(G.isoWeek(at(2026, 3, 29, 23)), { week: 13, year: 2026 }); // Sonntag der Zeitumstellung
+});
+
+test('Statistiken: leeres Protokoll', () => {
+  const s = G.stats([], map, at(2026, 11, 18));
+  assert.strictEqual(s.total, 0); assert.strictEqual(s.avgPerWeek, 0); assert.strictEqual(s.bestWeek, null);
+  assert.strictEqual(s.history.length, 12); assert.ok(s.history.every((h) => h.count === 0));
+  assert.strictEqual(s.favBeer, null); assert.strictEqual(s.avgAlc, null); assert.strictEqual(s.liter, 0);
+  assert.deepStrictEqual(s.states, []);
+});
+
+test('Statistiken: Wochen, Ø, Lieblinge, Liter, Bundesländer', () => {
+  // now = Mi 18.11.2026 (KW 47). Einträge: KW 45 (2), KW 46 (3), KW 47 (1). Erster Eintrag in KW 45 → 3 Wochen.
+  const extra = G.mergeBeers([
+    raw('BS-000020', 'X - Alkoholfrei', 3, { alkoholgehalt: 0, flaschengroesse: 0.33, biersorte: ['Pils', 'Alkoholfrei'], brauerei_vertrieb: { typ: 'Brauerei', name: 'Nordbräu', adresse: null, region: 'Hamburg', land: 'Deutschland' } }),
+    raw('BS-000021', 'Y - Ohne Größe', 1, { alkoholgehalt: 7.5, flaschengroesse: null, brauerei_vertrieb: { typ: 'Brauerei', name: 'Wien AG', adresse: null, region: 'Wien', land: 'Österreich' } }),
+  ], [], KAT).list;
+  const m2 = new Map([...map, ...extra.map((b) => [b.id, b])]);
+  const d = G.normalizeDrinks([
+    { id: '1', beerId: 'BS-000010', at: at(2026, 11, 2, 20) },  // Mo KW 45, 4,9 %, 0,5 l, Bayern
+    { id: '2', beerId: 'BS-000020', at: at(2026, 11, 6, 20) },  // Fr KW 45, alkoholfrei, 0,33 l, Hamburg
+    { id: '3', beerId: 'BS-000010', at: at(2026, 11, 13, 20) }, // Fr KW 46
+    { id: '4', beerId: 'BS-000021', at: at(2026, 11, 13, 21) }, // Fr KW 46, 7,5 %, ohne Größe, Österreich
+    { id: '5', beerId: 'BS-000010', at: at(2026, 11, 15, 22) }, // So KW 46
+    { id: '6', beerId: 'BS-000011', at: at(2026, 11, 16, 0, 30) }, // Mo KW 47 (kurz nach Mitternacht)
+  ], m2);
+  const s = G.stats(d, m2, at(2026, 11, 18, 12));
+  assert.strictEqual(s.total, 6);
+  assert.strictEqual(s.weeks, 3);
+  assert.strictEqual(s.avgPerWeek, 20);           // 6 / 3 = 2,0
+  assert.strictEqual(s.thisWeek, 1);
+  assert.strictEqual(s.lastWeek, 3);
+  assert.deepStrictEqual(s.bestWeek, { count: 3, week: 46, year: 2026 });
+  assert.deepStrictEqual(s.history.map((h) => h.count).slice(-4), [0, 2, 3, 1]);
+  assert.strictEqual(s.history[11].week, 47); assert.strictEqual(s.history[0].week, 36);
+  assert.strictEqual(s.distinct, 4);
+  assert.deepStrictEqual(s.foundByStufe, { 1: 2, 2: 1, 3: 1, 4: 0, 5: 0 });
+  assert.strictEqual(s.favBeer.beer.id, 'BS-000010'); assert.strictEqual(s.favBeer.count, 3);
+  // Alle Testbiere haben (u. a.) die Sorte "Pils"; "Alkoholfrei" kommt nur einmal vor
+  assert.deepStrictEqual(s.favSorte, { name: 'Pils', count: 6 });
+  assert.deepStrictEqual(s.favCompany, { name: 'Testbrauerei GmbH', count: 4 });
+  assert.deepStrictEqual(s.favDay, { name: 'Freitag', count: 3 });
+  // Ø Alkohol: (49 + 0 + 49 + 75 + 49 + 49) / 6 = 271 / 6 = 45,17 → 45 Zehntel = 4,5 %
+  assert.strictEqual(s.avgAlc, 45);
+  // Liter: 0,5 + 0,33 + 0,5 + 0,5 + 0,5 = 2,33 l → 23 Zehntel; ein Eintrag ohne Größe
+  assert.strictEqual(s.liter, 23); assert.strictEqual(s.noSize, 1);
+  assert.strictEqual(s.freePct, 17); // 1 von 6
+  assert.deepStrictEqual(s.states, ['Bayern', 'Hamburg']); // Wien zählt nicht
+});
+
+test('Statistiken: Gleichstand bei Lieblingsbier → zuletzt getrunken', () => {
+  const d = G.normalizeDrinks([
+    { id: 'a', beerId: 'BS-000010', at: 1000 }, { id: 'b', beerId: 'BS-000012', at: 2000 },
+  ], map);
+  assert.strictEqual(G.stats(d, map, 3000).favBeer.beer.id, 'BS-000012');
+});
+
+/* ---------- Benutzername ---------- */
+
+test('Benutzername', () => {
+  assert.strictEqual(G.usernameKey('Max_Mustermann'), 'max_mustermann');
+  assert.strictEqual(G.usernameKey('ab'), null);
+  assert.strictEqual(G.usernameKey('a'.repeat(21)), null);
+  assert.strictEqual(G.usernameKey('Müller'), null);
+  assert.strictEqual(G.usernameKey('max-1'), null);
+});
+
+/* ---------- Echte Datenbank ---------- */
+
+test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
+  const dir = path.join(__dirname, '..', 'Datensammlung');
+  const main = JSON.parse(fs.readFileSync(path.join(dir, 'biere.json'), 'utf8'));
+  const kat = JSON.parse(fs.readFileSync(path.join(dir, 'kategorien.json'), 'utf8'));
+  const warns = [];
+  const r = G.mergeBeers(main, [], kat, (t) => warns.push(t));
+  assert.strictEqual(warns.length, 0, warns.slice(0, 3).join(' | '));
+  assert.strictEqual(r.list.length, 6368);
+  const t0 = Date.now();
+  const index = G.buildIndex(r.list);
+  const tIndex = Date.now() - t0;
+  const t1 = Date.now();
+  const hits = G.search(index, 'münchner hell');
+  const tSearch = Date.now() - t1;
+  assert.ok(hits.length > 0 && hits.length <= 10);
+  assert.strictEqual(G.search(index, 'bier').length, 10); // höchstens 10 Treffer
+  assert.strictEqual(G.search(index, 'bier', 3).length, 3);
+  // Nichts darf als Text "null" oder "undefined" enthalten
+  for (const b of r.list) for (const v of [b.title, b.brand, b.kategorie, ...b.sorten]) assert.ok(v && !/^(null|undefined)$/.test(v), b.id);
+  console.log(`     Index ${tIndex} ms, Suche ${tSearch} ms, Treffer „münchner hell“: ${hits.length}`);
+});
+
+console.log(`\n${passed} Tests bestanden${process.exitCode ? ', es gab FEHLER' : ''}.`);

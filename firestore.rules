@@ -1,0 +1,96 @@
+rules_version = '2';
+
+// Firestore-Regeln für Bier Sammler.
+// In der Firebase-Konsole unter Firestore Database → Regeln einfügen und veröffentlichen (siehe README.md).
+//
+// Datenmodell:
+//   users/<uid>                  { username?, usernameKey? }
+//   users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
+//   usernames/<usernameKey>      { uid }
+//
+// Grundsatz: Jede Person liest und schreibt nur users/<eigene uid>/**. Einzige Ausnahme sind einzelne Einträge
+// in usernames (lesen für alle Angemeldeten), damit Namen eindeutig bleiben.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    function nameDoc(key) {
+      return /databases/$(database)/documents/usernames/$(key);
+    }
+    function userDoc(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+    // Name, den das Konto VOR diesem Schreibvorgang hatte (null, wenn keiner)
+    function nameBefore(uid) {
+      return exists(userDoc(uid)) ? get(userDoc(uid)).data.get('usernameKey', null) : null;
+    }
+    // Ein bisheriger Name, der nach dem Vorgang nicht mehr verwendet wird, muss im selben Vorgang freigegeben sein.
+    // So kann niemand Namen horten oder einen Namen verwaist belegt lassen.
+    function oldNameReleased(uid, newKey) {
+      let before = nameBefore(uid);
+      return before == null || before == newKey || !existsAfter(nameDoc(before));
+    }
+
+    match /users/{uid} {
+      // Profil: entweder ohne Namen ({}) oder mit einem Namen, der im selben Schreibvorgang in
+      // usernames/<usernameKey> für dieses Konto eingetragen ist (bzw. schon war).
+      function validProfile(d) {
+        return d.keys().hasOnly(['username', 'usernameKey'])
+          && (
+            (!('username' in d) && !('usernameKey' in d))
+            || (d.username is string
+              && d.usernameKey is string
+              && d.usernameKey.matches('^[a-z0-9_]{3,20}$')
+              && d.username.lower() == d.usernameKey
+              && existsAfter(nameDoc(d.usernameKey))
+              && getAfter(nameDoc(d.usernameKey)).data.uid == uid)
+          )
+          && oldNameReleased(uid, d.get('usernameKey', null));
+      }
+
+      allow get: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validProfile(request.resource.data);
+      allow delete: if isOwner(uid) && oldNameReleased(uid, null);
+
+      // Trink-Protokoll: nur anlegen und löschen, nie ändern. Genau die Felder beerId und at.
+      // at darf nicht in der Zukunft liegen (5 Minuten Toleranz für ungenaue Geräteuhren). Eine Untergrenze gibt es
+      // bewusst nicht: Einträge aus der Offline-Warteschlange kommen später mit ihrem ursprünglichen Zeitpunkt an.
+      match /drinks/{drinkId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['beerId', 'at'])
+          && request.resource.data.keys().hasAll(['beerId', 'at'])
+          && request.resource.data.beerId is string
+          && request.resource.data.beerId.matches('^B[SM]-[0-9]{6}$')
+          && request.resource.data.at is int
+          && request.resource.data.at > 0
+          && request.resource.data.at <= request.time.toMillis() + 5 * 60 * 1000;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // Eindeutige Benutzernamen. Lesen dürfen alle Angemeldeten einzelne Einträge (nötig für „Name schon vergeben“
+    // und später für eine Rangliste); eine Liste aller Namen (list) gibt es nicht.
+    match /usernames/{key} {
+      allow get: if signedIn();
+
+      // Anlegen nur, wenn der Name frei ist (create greift nur bei nicht vorhandenem Dokument; update gibt es nicht),
+      // für das eigene Konto, im erlaubten Format, und nur zusammen mit users/<uid>.usernameKey == key.
+      // Ein bisheriger anderer Name muss im selben Vorgang freigegeben werden (oldNameReleased).
+      allow create: if signedIn()
+        && key.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(userDoc(request.auth.uid)).data.get('usernameKey', null) == key
+        && oldNameReleased(request.auth.uid, key);
+
+      // Freigeben nur durch den Besitzer
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!-- PLATZHALTER: Diese Seite enthält bewusst keine Datenschutzerklärung. Bitte selbst verfassen bzw. rechtlich prüfen lassen. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Datenschutz – Bier Sammler</title>
+  <script>try { var t = localStorage.getItem('biersammler-theme-v1'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="wrap legal-page">
+    <p><a href="./">← Zurück zur App</a></p>
+    <h1>Datenschutz</h1>
+
+    <div class="placeholder">
+      <p><b>PLATZHALTER – noch keine Datenschutzerklärung.</b></p>
+      <p>Der eigentliche Text fehlt und muss selbst verfasst bzw. rechtlich geprüft werden.
+        Die folgende Liste beschreibt nur, wie die App technisch arbeitet, als Arbeitshilfe dafür. Sie ist keine
+        Rechtsberatung und ersetzt keine Datenschutzerklärung.</p>
+    </div>
+
+    <h2>[PLATZHALTER: Datenschutzerklärung]</h2>
+    <p class="placeholder-line">[PLATZHALTER: Text der Datenschutzerklärung]</p>
+
+    <h2>Technische Arbeitshilfe (kein Rechtstext)</h2>
+    <ul>
+      <li>Hosting der Seite: GitHub Pages (GitHub).</li>
+      <li>Anmeldung: Google-Konto über Firebase Authentication (Google). Dabei werden Kontodaten wie Name, E-Mail-Adresse
+        und eine Konto-Kennung an Firebase übermittelt.</li>
+      <li>Gespeicherte Spieldaten: in Cloud Firestore (Google), Region europe-west3 (Frankfurt), je Konto unter
+        <code>users/&lt;Konto-Kennung&gt;</code>: getrunkene Biere als Bier-Kennung und Zeitpunkt, optional ein Benutzername.
+        Gewählte Benutzernamen stehen zusätzlich in einer Liste, die angemeldete Personen abfragen können, um doppelte Namen
+        zu verhindern.</li>
+      <li>Auf dem Gerät: Einstellungen und Hinweise in localStorage; Firestore hält eine Kopie der eigenen Daten im
+        Browser-Speicher (IndexedDB), damit die App ohne Netz funktioniert. Beim Abmelden wird diese Kopie gelöscht.</li>
+      <li>Ein Service Worker speichert die Dateien der App und die Bierdatenbank im Browser zwischen.</li>
+      <li>Programmbibliotheken von Firebase werden von www.gstatic.com (Google) geladen.</li>
+      <li>Keine Werbung, keine Analyse- oder Tracking-Werkzeuge, keine Schriften von Drittanbietern.</li>
+      <li>Ohne eingetragene Firebase-Konfiguration (lokaler Modus) bleiben alle Einträge nur im Browser des Geräts.</li>
+    </ul>
+  </main>
+</body>
+</html>

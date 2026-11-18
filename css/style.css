@@ -1,0 +1,503 @@
+/* Bier Sammler – Gestaltung.
+   Alle Farben stehen als Variablen in diesem ersten Abschnitt. Der dunkle Modus steht zweimal da
+   (System-Einstellung und Auswahl „dunkel“ in den Einstellungen): Änderungen bitte in beiden Blöcken. */
+
+/* ---------- Farben: hell ---------- */
+:root, ::backdrop {
+  color-scheme: light;
+  --bg: #FAF6EE;          /* Seitenhintergrund (cremeweiß) */
+  --surface: #FFFDF8;     /* Karten, Dialoge */
+  --surface-2: #F2EBDD;   /* Flächen innerhalb von Dialogen, Eingabefelder */
+  --text: #2B2620;
+  --muted: #6B6257;       /* gedämpfte Schrift (Kontrast 5,7 : 1 auf --bg) */
+  --line: #E4D9C6;
+  --accent: #C27A06;      /* Bernstein: Level-Ring, Hervorhebungen */
+  --strong: #3B2A1A;      /* Hauptknöpfe („+“, Bestätigen) */
+  --on-strong: #FFFAF0;
+  --focus: #2F6FA8;
+  --ok: #3F7A4C;
+  --danger: #B3261E;
+  --on-danger: #FFFFFF;
+  --shadow: rgb(70 50 20 / 0.16);
+  --backdrop: rgb(40 30 20 / 0.5);
+  --radius: 16px;
+
+  /* Kategorie-Farben (1 Standardgebräu … 5 Heiligtum) und die Schrift darauf */
+  --k1: #D8CFBF; --on-k1: #2B2620;  /* Standardgebräu: Malz-Beige */
+  --k2: #3F7A4C; --on-k2: #FFFFFF;  /* Klassiker: Hopfengrün */
+  --k3: #2F6FA8; --on-k3: #FFFFFF;  /* Spezialität: Blau */
+  --k4: #7B4FB3; --on-k4: #FFFFFF;  /* Zaubertrank: Violett */
+  --k5: #E0A91B; --on-k5: #2B2010;  /* Heiligtum: Gold */
+}
+
+/* ---------- Farben: dunkel (System-Einstellung, sofern nicht „hell“ gewählt) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]), :root:not([data-theme="light"]) ::backdrop {
+    color-scheme: dark;
+    --bg: #15130F;
+    --surface: #201D18;
+    --surface-2: #2B2720;
+    --text: #F1EBE0;
+    --muted: #A99F90;
+    --line: #3A342B;
+    --accent: #F2B33D;
+    --strong: #F1EBE0;
+    --on-strong: #15130F;
+    --focus: #78ACDC;
+    --ok: #79B886;
+    --danger: #FF8A80;
+    --on-danger: #15130F;
+    --shadow: rgb(0 0 0 / 0.5);
+    --backdrop: rgb(0 0 0 / 0.62);
+    --k1: #A39A8B; --on-k1: #15130F;
+    --k2: #79B886; --on-k2: #15130F;
+    --k3: #78ACDC; --on-k3: #15130F;
+    --k4: #B796E2; --on-k4: #15130F;
+    --k5: #F2C14E; --on-k5: #15130F;
+  }
+}
+/* ---------- Farben: dunkel (Auswahl „dunkel“) – identisch zum Block darüber ---------- */
+:root[data-theme="dark"], :root[data-theme="dark"] ::backdrop {
+  color-scheme: dark;
+  --bg: #15130F;
+  --surface: #201D18;
+  --surface-2: #2B2720;
+  --text: #F1EBE0;
+  --muted: #A99F90;
+  --line: #3A342B;
+  --accent: #F2B33D;
+  --strong: #F1EBE0;
+  --on-strong: #15130F;
+  --focus: #78ACDC;
+  --ok: #79B886;
+  --danger: #FF8A80;
+  --on-danger: #15130F;
+  --shadow: rgb(0 0 0 / 0.5);
+  --backdrop: rgb(0 0 0 / 0.62);
+  --k1: #A39A8B; --on-k1: #15130F;
+  --k2: #79B886; --on-k2: #15130F;
+  --k3: #78ACDC; --on-k3: #15130F;
+  --k4: #B796E2; --on-k4: #15130F;
+  --k5: #F2C14E; --on-k5: #15130F;
+}
+
+/* ---------- Grundlayout ---------- */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+/* Solange ein Dialog offen ist, scrollt die Seite dahinter nicht mit */
+html:has(dialog[open]) { overflow: hidden; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .rounded { font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+/* 16px in Eingabefeldern, damit iOS beim Antippen nicht hineinzoomt */
+input, select, textarea { font-size: 16px; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ico { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Knöpfe ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 8px 16px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--text);
+  font-weight: 600;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--strong); border-color: var(--strong); color: var(--on-strong); }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.icon-btn {
+  display: inline-grid; place-items: center;
+  width: 40px; height: 40px; padding: 0;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--surface); color: var(--text);
+}
+.icon-btn:hover { border-color: var(--muted); }
+
+/* ---------- Anmeldesperre ---------- */
+/* Solange <html> die Klasse "locked" trägt, ist nur die Anmeldeseite zu sehen; #main ist dann leer. */
+.gate { display: none; }
+.locked .top, .locked main, .locked .fab { display: none; }
+.locked .gate {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  min-height: 100vh; min-height: 100dvh;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  text-align: center;
+}
+.gate-logo { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 6px 20px var(--shadow); }
+.gate-title { margin: 4px 0 0; font-size: 30px; }
+.gate-sub { margin: 0 0 8px; max-width: 320px; color: var(--muted); }
+
+/* ---------- Kopfleiste ---------- */
+.top { padding-top: max(14px, env(safe-area-inset-top)); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { min-width: 0; }
+.brand h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; }
+.who { margin: 2px 0 0; color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Level-Ring: Kreis füllt sich mit dem Fortschritt im Level, Level-Zahl in der Mitte */
+.level { flex-shrink: 0; width: 56px; height: 56px; position: relative; }
+.level svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.level .track { fill: none; stroke: var(--line); stroke-width: 5; }
+.level .fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+.level .num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; font-weight: 800; font-size: 20px;
+}
+
+.tools { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-bottom: 6px; }
+/* Hinweis zwischen den Knöpfen; höchstens zwei kleine Zeilen, damit die Zeile (40px Knopfhöhe) nicht wächst */
+.sync {
+  flex: 1; min-width: 0; max-height: 2.5em; overflow: hidden;
+  color: var(--muted); font-size: 12px; line-height: 1.25; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* ---------- Inhalt ---------- */
+main { padding-top: 12px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.empty { margin: 32px auto; max-width: 420px; text-align: center; color: var(--muted); }
+.empty h2 { color: var(--text); font-size: 20px; margin: 12px 0 6px; }
+.empty .bottle-art { width: 64px; height: 64px; color: var(--accent); }
+.loading { display: grid; justify-items: center; gap: 12px; margin: 48px auto; color: var(--muted); }
+.spinner { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- „+“-Knopf ---------- */
+.fab {
+  position: fixed; z-index: 10;
+  left: 50%; bottom: calc(18px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 64px; height: 64px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 0; background: var(--strong); color: var(--on-strong);
+  box-shadow: 0 8px 24px var(--shadow), 0 0 0 4px var(--bg);
+  transition: transform 0.15s ease;
+}
+.fab svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.fab:active { transform: translateX(-50%) scale(0.94); }
+
+/* ---------- Dialoge ---------- */
+/* Auf dem Smartphone als Blatt von unten, ab 641px mittig */
+dialog.sheet {
+  width: 100%; max-width: 100%; max-height: 92vh; max-height: 92dvh;
+  margin: auto 0 0; padding: 0;
+  border: 0; border-radius: 22px 22px 0 0;
+  background: var(--surface); color: var(--text);
+  box-shadow: 0 -8px 40px var(--shadow);
+  overflow: hidden;
+}
+dialog.sheet[open] { display: flex; flex-direction: column; }
+dialog.sheet::backdrop { background: var(--backdrop); }
+.sheet-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; }
+/* flex: 1 – der Inhalt füllt den ganzen Dialog; sonst gälte ein Tipp in leere Fläche als Tipp auf den Hintergrund */
+.sheet-body {
+  flex: 1; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 16px max(16px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--surface-2); font-size: 22px; line-height: 1; }
+.sheet.small .sheet-body { text-align: center; }
+.sheet .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }
+@media (min-width: 641px) {
+  dialog.sheet { max-width: 560px; max-height: 86vh; margin: auto; border-radius: 22px; box-shadow: 0 12px 48px var(--shadow); }
+  dialog.sheet.small { max-width: 420px; }
+  .sheet-body { padding-bottom: 22px; }
+}
+.note { color: var(--muted); font-size: 14px; }
+
+.note.center, .center { text-align: center; }
+
+/* ---------- Sammelkarte ---------- */
+/* Kategorie-Farbe je Karte: .k1 … .k5 setzen --k (Fläche) und --on-k (Schrift darauf) */
+.k1 { --k: var(--k1); --on-k: var(--on-k1); }
+.k2 { --k: var(--k2); --on-k: var(--on-k2); }
+.k3 { --k: var(--k3); --on-k: var(--on-k3); }
+.k4 { --k: var(--k4); --on-k: var(--on-k4); }
+.k5 { --k: var(--k5); --on-k: var(--on-k5); }
+/* Raster: Smartphone 2 Spalten (beste Karten: 2 × 3), breiter mehr Spalten.
+   Die besten 6 Karten stehen ab 641px in 3, ab 1000px in 6 Spalten, damit keine Lücke in der letzten Reihe bleibt. */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 641px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .grid.top { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1000px) { .grid, .grid.top { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+button.bcard { font: inherit; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+button.bcard:hover { transform: translateY(-2px); }
+button.bcard:active { transform: scale(0.98); }
+
+/* ---------- Startseite ---------- */
+.home-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 6px; }
+.home-head h2 { margin: 0; font-size: 20px; }
+.progress { margin: 0; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.progress b { color: var(--text); }
+.progress-bar { height: 6px; margin-bottom: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.progress-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.more-toggle {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  margin: 18px 0 12px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); font-weight: 650; text-align: left;
+}
+.more-toggle:hover { border-color: var(--muted); }
+.chev { width: 9px; height: 9px; flex-shrink: 0; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s ease; }
+[aria-expanded="true"] > .chev { transform: rotate(45deg); }
+
+/* ---------- Große Kartenansicht ---------- */
+.card-view { width: min(240px, 72vw); margin: 4px auto 16px; }
+.card-view .bcard .title { font-size: 20px; }
+.sheet h3 { margin: 18px 0 8px; font-size: 16px; }
+.facts { display: grid; gap: 0; margin: 0; }
+.facts > div { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.facts > div:last-child { border-bottom: 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts.mine { padding: 4px 14px; border-radius: 14px; background: var(--surface-2); }
+.facts.mine > div { border-color: color-mix(in srgb, var(--line) 70%, transparent); }
+.desc { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; }
+.desc summary { padding: 12px 14px; font-weight: 650; cursor: pointer; }
+.desc p { margin: 0; padding: 0 14px 14px; white-space: pre-line; overflow-wrap: anywhere; }
+.bcard {
+  position: relative; display: flex; flex-direction: column;
+  width: 100%; min-width: 0; padding: 0; overflow: hidden;
+  border: 2px solid var(--k); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); text-align: left;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+/* Band: nur der Kategorie-Name, damit er auch in schmalen Karten ganz zu sehen ist */
+.band {
+  display: block; padding: 6px 10px; background: var(--k); color: var(--on-k);
+  font-size: 13px; font-weight: 750; letter-spacing: 0.01em; text-align: center;
+}
+.band .kat { display: block; overflow-wrap: anywhere; }
+/* Zähler „×n“ als Plakette oben rechts in der Karte */
+.count {
+  position: absolute; top: 8px; right: 8px;
+  min-width: 32px; padding: 2px 8px; border-radius: 999px;
+  background: var(--k); color: var(--on-k);
+  font: 800 14px/1.2 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; text-align: center;
+}
+.bcard-body { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 10px 12px; text-align: center; min-width: 0; }
+.bottle { width: 26px; height: 62px; margin-bottom: 4px; fill: var(--k); }
+.bottle .label { fill: var(--surface); opacity: 0.85; }
+.bcard .title {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  max-width: 100%; overflow-wrap: anywhere; /* bricht nur sehr lange Wörter um, ohne Silbentrennung */
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, sans-serif;
+  font-size: 17px; font-weight: 750; line-height: 1.2;
+}
+.bcard .brand { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
+.chips span { padding: 1px 8px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.bcard .sorte { max-width: 100%; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+
+/* Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: doppelter Goldrand, Leuchten und Glanz.
+   So unterscheiden sich die seltenen Karten nicht nur über die Farbe. */
+.bcard.k4 {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+              linear-gradient(135deg, var(--k4), var(--k3), var(--k4), var(--k5)) border-box;
+}
+.bcard.k5 {
+  border: 3px double var(--k5);
+  box-shadow: 0 0 0 1px var(--k5), 0 0 18px color-mix(in srgb, var(--k5) 55%, transparent), 0 2px 10px var(--shadow);
+}
+.bcard.k4::after, .bcard.k5::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  background-size: 250% 100%; background-position: 120% 0;
+  animation: sheen 3.6s ease-in-out infinite;
+}
+.bcard.k4::after { animation-duration: 5s; background-image: linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 0.22) 50%, transparent 60%); }
+@keyframes sheen { 0%, 55% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+
+/* ---------- Hinzufügen ---------- */
+/* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */
+#add[open] { height: 92vh; height: 92dvh; }
+@media (min-width: 641px) { #add[open] { height: min(680px, 86vh); } }
+.search-field input {
+  width: 100%; min-height: 48px; padding: 10px 16px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface-2); color: var(--text);
+}
+.search-field input:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: transparent; }
+.results { margin-top: 12px; }
+.results-head { margin: 4px 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hit {
+  display: flex; flex-direction: column; gap: 2px; width: 100%;
+  padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); text-align: left;
+}
+.hit:hover { border-color: var(--muted); }
+.hit-name { font-weight: 650; overflow-wrap: anywhere; }
+.hit-sub { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+
+/* Karte umdrehen: Rückseite ausgegraut (nur der Name), Vorderseite kommt erst nach dem Bestätigen ins Dokument */
+.flip { width: min(240px, 72vw); margin: 12px auto 8px; perspective: 1000px; }
+.flip-inner { display: grid; grid-template-columns: minmax(0, 1fr); transition: transform 0.75s cubic-bezier(0.3, 0.7, 0.3, 1.15); transform-style: preserve-3d; }
+.flip .face { grid-area: 1 / 1; min-width: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip .face.front { transform: rotateY(180deg); }
+.flip.revealed .flip-inner { transform: rotateY(180deg); }
+.flip .bcard { height: 100%; }
+.flip .bcard .title { font-size: 20px; }
+.hidden-card {
+  --k: var(--line);
+  align-items: center; justify-content: center; gap: 10px; min-height: 260px; padding: 20px 14px;
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 10px, var(--surface) 10px 20px);
+  color: var(--muted); text-align: center; filter: grayscale(1);
+}
+.hidden-card .bottle { fill: var(--muted); opacity: 0.5; }
+.hidden-card .ask { font: 800 34px/1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; opacity: 0.6; }
+.reveal-info { text-align: center; }
+.reveal-info p { margin: 6px 0; }
+.gain { font: 800 22px/1.2 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; color: var(--text); animation: pop 0.5s 0.6s both; }
+.levelup {
+  display: inline-block; padding: 6px 16px; border-radius: 999px;
+  background: var(--strong); color: var(--on-strong); font-weight: 800;
+  box-shadow: 0 0 0 3px var(--accent);
+  animation: pop 0.5s 0.8s both;
+}
+.new { color: var(--muted); font-weight: 650; animation: pop 0.5s 0.9s both; }
+@keyframes pop { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: none; } }
+
+/* ---------- Statistiken ---------- */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 480px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tile { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); min-width: 0; }
+.tile b { font: 800 24px/1.1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; }
+.tile span { font-size: 13px; color: var(--muted); }
+.tile small { font-size: 12px; color: var(--muted); }
+.facts dd .sub { color: var(--muted); font-size: 13px; }
+.h-sub { margin-left: 6px; color: var(--muted); font-size: 14px; font-weight: 500; }
+.stat-line { margin: 0 0 10px; color: var(--muted); }
+.stat-line b { color: var(--text); font-size: 18px; }
+
+/* Balkendiagramm: 12 Spalten, Höhe in Prozent der stärksten Woche */
+.weeks {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; align-items: end;
+  height: 150px;
+}
+.weeks li { display: grid; grid-template-rows: 16px 1fr 16px; height: 100%; text-align: center; min-width: 0; }
+.weeks .bar-val { font-size: 11px; font-weight: 700; color: var(--muted); align-self: end; }
+.weeks .bar { align-self: end; justify-self: stretch; min-height: 2px; border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.weeks li.now .bar { background: var(--accent); }
+.weeks .bar-kw { font-size: 11px; color: var(--muted); align-self: end; }
+.weeks li.now .bar-kw, .weeks li.now .bar-val { color: var(--text); font-weight: 700; }
+
+/* Kategorien: gefunden / vorhanden mit Balken in Kategoriefarbe */
+.kats { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.kats li { display: grid; grid-template-columns: minmax(0, 8.5em) 1fr auto; align-items: center; gap: 10px; }
+.kat-name { font-weight: 650; overflow-wrap: anywhere; }
+.kat-bar { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.kat-bar span { display: block; height: 100%; border-radius: inherit; background: var(--k); }
+.kat-num { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+
+/* Bundesländer: alle 16, entdeckte hervorgehoben (mit Haken, nicht nur Farbe) */
+.states { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.states li { padding: 4px 10px; border: 1px dashed var(--line); border-radius: 999px; color: var(--muted); font-size: 13px; }
+.states li.on { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--text); font-weight: 650; }
+.states li.on::before { content: "✓ "; }
+
+/* ---------- Einstellungen ---------- */
+.btn.small { min-height: 34px; padding: 4px 12px; font-size: 14px; }
+.btn.danger-ghost { background: transparent; border-color: var(--danger); color: var(--danger); }
+.set-sec { padding: 4px 0 14px; border-bottom: 1px solid var(--line); }
+.set-sec:last-of-type { border-bottom: 0; }
+.set-sec h3 { margin: 12px 0 8px; }
+.set-sec .note { margin: 8px 0; }
+.set-details > summary { padding: 12px 0; font: 700 16px/1.3 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; cursor: pointer; }
+.name-form { display: flex; gap: 8px; }
+.name-form .search-field { flex: 1; min-width: 0; }
+.name-msg { min-height: 1.45em; margin: 6px 0 0; font-size: 14px; }
+.name-msg.ok { color: var(--ok); font-weight: 650; }
+.name-msg.err { color: var(--danger); font-weight: 650; }
+/* Darstellung: Segmentschalter aus echten Optionsfeldern (Tastatur und Screenreader funktionieren) */
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); }
+.seg-opt { position: relative; }
+.seg-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg-opt span { display: block; padding: 7px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+.seg-opt input:checked + span { background: var(--surface); box-shadow: 0 1px 4px var(--shadow); }
+.seg-opt input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+/* Sammlung verwalten */
+.coll { list-style: none; margin: 10px 0 4px; padding: 0; display: grid; gap: 6px; }
+.coll > li:not(.note) {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 8px 12px; border: 1px solid var(--line); border-left: 5px solid var(--k); border-radius: 12px;
+}
+.coll-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.coll-title { font-weight: 650; overflow-wrap: anywhere; }
+.coll-sub { color: var(--muted); font-size: 13px; }
+.coll-btns { display: flex; flex-shrink: 0; gap: 6px; }
+@media (max-width: 400px) {
+  .coll > li:not(.note) { flex-wrap: wrap; }
+  .coll-btns { width: 100%; justify-content: flex-end; }
+}
+.howto p { margin: 0 0 10px; }
+.howto-kats { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }
+.howto-kats li { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.howto-kats .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--k); }
+.responsible p { margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 14px; }
+.legal { margin: 16px 0 0; text-align: center; font-size: 14px; }
+.legal a, .note a { color: inherit; }
+/* Bestätigung */
+.type-word { display: grid; gap: 6px; margin: 12px 0 0; text-align: left; font-size: 14px; }
+.type-word input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+#confirm .sheet-body h2 { margin: 4px 0 8px; font-size: 20px; }
+#confirm .sheet-body p { margin: 0; }
+
+/* ---------- Impressum und Datenschutz (Platzhalterseiten) ---------- */
+.legal-page { max-width: 720px; padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: 40px; }
+.legal-page a { color: inherit; }
+.legal-page h1 { font-size: 28px; }
+.legal-page h2 { margin-top: 26px; font-size: 18px; }
+.placeholder { padding: 12px 16px; border: 2px dashed var(--danger); border-radius: 14px; background: var(--surface); }
+.placeholder p { margin: 6px 0; }
+.placeholder-line { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-style: italic; }
+
+/* ---------- Hinweis (Toast) ---------- */
+/* Als Popover (oberste Ebene): die Standard-Abstände und -Rahmen des Browsers zurücksetzen */
+.toast, .toast[popover] {
+  inset: auto; margin: 0; border: 0;
+  position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 12px;
+  background: var(--strong); color: var(--on-strong);
+  box-shadow: 0 6px 20px var(--shadow);
+  font-size: 14px;
+}
+
+/* ---------- Weniger Bewegung ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  /* Glanz bleibt als ruhiger Schimmer stehen; Karte wird ohne Drehung aufgedeckt */
+  .bcard.k4::after, .bcard.k5::after { animation: none; background-position: 50% 0; opacity: 0.5; }
+  .flip-inner { transform: none !important; }
+  .flip .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
+  .flip .face.front { transform: none; opacity: 0; }
+  .flip.revealed .face.back { opacity: 0; }
+  .flip.revealed .face.front { opacity: 1; }
+}
