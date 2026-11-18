@@ -179,7 +179,9 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 
 ## Bekannte Grenzen und offene Punkte
 
-- Logo fehlt: `icons/` enthält Platzhalter (Bernstein-Fläche mit Flasche), erzeugt per Python-Skript.
+- Icons (18.11.2026): `icons/` aus dem Bild des Nutzers (512 × 512, gelber Grund, Flaschen mit „BIER Sammler“) erzeugt. `icon-maskable-512.png` hat
+  den Grund aufgefüllt und das Motiv auf 72 % verkleinert (Sicherheitszone). Auf dem iPhone erscheint das neue Symbol erst, wenn die
+  Web-App vom Home-Bildschirm entfernt und neu hinzugefügt wird.
 - Rangliste: Werte vom Client, fälschbar (bewusst hingenommen). Neue Regeln müssen VOR der neuen App-Version in der
   Konsole stehen. Ein Spieler ohne Netz erscheint erst nach der ersten Serverbestätigung. Eine Wochen-Rangliste gibt es nicht.
 - „Kein Nachtragen“ ist serverseitig nur nach oben begrenzt; eine Untergrenze würde die Offline-Warteschlange brechen.

@@ -29,7 +29,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `js/app.js` | Oberfläche und Bedienung |
 | `js/firebase-config.js` | Firebase-Konfiguration; leerer `apiKey` = lokaler Modus |
 | `sw.js` | Service Worker (Start ohne Netz) |
-| `manifest.webmanifest`, `icons/` | Web-App-Manifest und Symbole (vorerst Platzhalter) |
+| `manifest.webmanifest`, `icons/` | Web-App-Manifest und Symbole |
 | `firestore.rules` | Sicherheitsregeln zum Einfügen in die Firebase-Konsole |
 | `impressum.html`, `datenschutz.html` | Platzhalterseiten – **noch auszufüllen** |
 | `Datensammlung/biere.json` | Bierdatenbank (vom Scraper erzeugt, **nie von Hand ändern**) |
