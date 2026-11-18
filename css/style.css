@@ -122,6 +122,7 @@ button { cursor: pointer; }
 .btn.danger { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
 .btn.ghost { background: transparent; }
 .btn:disabled { opacity: 0.5; cursor: default; }
+.btn[hidden] { display: none; }
 .icon-btn {
   display: inline-grid; place-items: center;
   width: 40px; height: 40px; padding: 0;
@@ -167,6 +168,14 @@ button { cursor: pointer; }
   flex: 1; min-width: 0; max-height: 2.5em; overflow: hidden;
   color: var(--muted); font-size: 12px; line-height: 1.25; text-align: center;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+/* Mit dem Knopf „Platzierung“ bleibt auf schmalen Bildschirmen zu wenig Platz für den Sync-Hinweis (er würde zu
+   „Wird synch…“ abgeschnitten). Dort rutscht der Hinweis, solange er sichtbar ist, in eine eigene Zeile darunter. */
+.sync:empty { display: none; }
+@media (max-width: 479px) {
+  .tools.has-rank { flex-wrap: wrap; row-gap: 2px; }
+  .tools.has-rank .icon-btn { order: 2; margin-left: auto; }
+  .tools.has-rank .sync { order: 3; flex: 1 1 100%; max-height: none; }
 }
 
 /* ---------- Inhalt ---------- */
@@ -314,6 +323,37 @@ button.bcard:active { transform: scale(0.98); }
 .chips span { padding: 1px 8px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .bcard .sorte { max-width: 100%; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 
+/* Karten-Level: ab 4, 8, 16, 24 und 40 Mal getrunken verändert sich nur die MITTE der Karte (Hintergrund und Flasche),
+   Rahmen und Band bleiben, damit die Kategorie erkennbar bleibt. Die Stufen t1 … t5 setzt GAME.cardTier.
+   --kt ist die Tönung: die Kategorie-Farbe, bei Standardgebräu (blasses Beige) mit Bernstein gemischt. */
+.bcard { --kt: var(--k); }
+.bcard.k1 { --kt: color-mix(in srgb, var(--k1), var(--accent) 45%); }
+.bcard-body { isolation: isolate; }
+.bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, color-mix(in srgb, var(--kt) 16%, transparent), transparent); }
+.bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, color-mix(in srgb, var(--kt) 26%, transparent), transparent); }
+.bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, color-mix(in srgb, var(--kt) 34%, transparent), transparent); --ray: 14%; }
+.bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, color-mix(in srgb, var(--kt) 42%, transparent), transparent); --ray: 20%; }
+.bcard-body.t5 {
+  background: radial-gradient(circle 38px at 50% 46px, rgb(255 226 140 / 0.6), transparent),
+              radial-gradient(ellipse 105% 100px at 50% 46px, color-mix(in srgb, var(--kt) 52%, transparent), transparent);
+  --ray: 28%;
+}
+/* Strahlen hinter der Flasche (ab Stufe 3), zum Rand hin ausgeblendet */
+.bcard-body.t3::before, .bcard-body.t4::before, .bcard-body.t5::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 46px, color-mix(in srgb, var(--kt) var(--ray), transparent) 0 7deg, transparent 7deg 14deg);
+  -webkit-mask-image: radial-gradient(circle 120px at 50% 46px, #000, transparent);
+  mask-image: radial-gradient(circle 120px at 50% 46px, #000, transparent);
+}
+.bottle { overflow: visible; }
+.bottle .shine { fill: #fff; opacity: 0.45; }
+.bottle .foam circle { fill: #fff; stroke: var(--kt); stroke-width: 1.4; }
+.bottle .stars path { fill: #E8B424; }
+.bottle.t5 { filter: drop-shadow(0 0 4px rgb(242 193 78 / 0.9)); }
+.bottle.t5 .body { fill: #F2C14E; stroke: #B9820A; stroke-width: 1.2; }
+.bottle.t5 .stars path { transform-box: fill-box; transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes twinkle { 0%, 100% { opacity: 0.35; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.15); } }
+
 /* Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: doppelter Goldrand, Leuchten und Glanz.
    So unterscheiden sich die seltenen Karten nicht nur über die Farbe. */
 .bcard.k4 {
@@ -395,6 +435,25 @@ button.bcard:active { transform: scale(0.98); }
 .h-sub { margin-left: 6px; color: var(--muted); font-size: 14px; font-weight: 500; }
 .stat-line { margin: 0 0 10px; color: var(--muted); }
 .stat-line b { color: var(--text); font-size: 18px; }
+
+/* ---------- Platzierung ---------- */
+.rank { width: 100%; border-collapse: separate; border-spacing: 0; }
+.rank th { padding: 0 6px 8px; color: var(--muted); font-size: 12px; font-weight: 600; text-align: left; }
+.rank td { padding: 9px 6px; border-top: 1px solid var(--line); }
+.rank .pos { width: 44px; }
+.rank .nm { overflow-wrap: anywhere; font-weight: 650; }
+.rank .num { width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+.rank th.num { text-align: right; }
+.rank .you { color: var(--muted); font-weight: 500; }
+.rank tr.me td { background: var(--surface-2); border-top-color: var(--accent); }
+.rank tr.me td:first-child { border-radius: 10px 0 0 10px; }
+.rank tr.me td:last-child { border-radius: 0 10px 10px 0; }
+.rank tr.gap td { padding: 2px 6px; border: 0; color: var(--muted); text-align: center; letter-spacing: 2px; }
+/* Platz: Plätze 1 bis 3 als Medaille (feste Farben, dunkle Schrift in beiden Darstellungen gut lesbar) */
+.badge { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 999px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.badge.p1 { background: #E8B93C; color: #2B2620; }
+.badge.p2 { background: #C5C9CF; color: #2B2620; }
+.badge.p3 { background: #C98A56; color: #2B2620; }
 
 /* Balkendiagramm: 12 Spalten, Höhe in Prozent der stärksten Woche */
 .weeks {

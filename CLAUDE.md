@@ -29,9 +29,9 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 
 | Datei | Aufgabe |
 | --- | --- |
-| `index.html` | Gerüst, Dialoge (`#add`, `#card`, `#stats`, `#settings`, `#confirm`, `#age`), Hinweis `#toast` (Popover), modulepreload |
+| `index.html` | Gerüst, Dialoge (`#add`, `#card`, `#stats`, `#ranking`, `#settings`, `#confirm`, `#age`), Hinweis `#toast` (Popover), modulepreload |
 | `css/style.css` | Farbvariablen oben: hell, dunkel per System (`:root:not([data-theme=light])`) und dunkel per Auswahl (`[data-theme=dark]`) – beide Dunkel-Blöcke gleich halten |
-| `js/game.js` | Reine Funktionen (`window.GAME`, in Node per `require`): Punkte, Level, Formatierung, Bierdaten prüfen/zusammenführen, Suche, Protokoll, Sortierung, Wochen, Statistiken, Benutzername |
+| `js/game.js` | Reine Funktionen (`window.GAME`, in Node per `require`): Punkte, Level, Formatierung, Bierdaten prüfen/zusammenführen, Suche, Protokoll, Sortierung, Wochen, Statistiken, Benutzername, Rangliste (`rankBoard`) |
 | `js/store.js` | `window.STORE`: lokaler Modus (localStorage) oder Firebase (Auth, Firestore, Warteschlange, Namen) |
 | `js/app.js` | Oberfläche (eine IIFE, sieben nummerierte Abschnitte) |
 | `js/firebase-config.js` | Konfiguration; leerer `apiKey` = lokaler Modus. Werte nicht ausgeben |
@@ -66,6 +66,12 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 - Pflicht-Beispiele, die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
   0 → Level 1, Ring 0 · 10×Stufe 5 = 160 → Level 1, 16,0/20 · 20×Stufe 1 = 200 → Level 2, 0,0/20 ·
   19×Stufe 4 = 266 → Level 2, 6,6/20 · 13×Stufe 1 + 5×Stufe 5 = 210 → Level 2, 1,0/20 · 3×Stufe 2 = 33 → „3,3“.
+- Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
+  24 und 40 Mal verändert sich die Optik der Karte in fünf Stufen (`GAME.cardTier`, Klassen `t1`…`t5` auf `.bcard-body`
+  und `.bottle`): Farbschimmer in der Mitte, Glanz, Schaumkrone, Strahlen, Sterne, goldene Flasche mit Funkeln. Rahmen
+  und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht). Alles wird aus dem
+  Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 40 zählt die Zahl weiter.
+  „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
 - Wochen beginnen montags in Ortszeit (`weekStart`, `weekKey` über Kalendertage, DST-fest), KW nach ISO 8601.
   Ø/Woche = Anzahl / Wochen von der Woche des ersten Eintrags bis heute (beide eingeschlossen). Nie `toISOString()`.
 - Suche: `fold` (klein, ß→ss, Akzente weg, Bindestriche/Apostrophe weg) und `unumlaut` (ae/oe/ue → a/o/u); ein Wort
@@ -78,6 +84,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 users/<uid>                  { username?, usernameKey? }      optionale Felder fehlen, nie undefined/null
 users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <ms, Ganzzahl> }   nur create/delete
 usernames/<usernameKey>      { uid }
+leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zehnteln, Anzahl Biere (nur mit Benutzername)
 ```
 
 - `initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })`.
@@ -93,6 +100,23 @@ usernames/<usernameKey>      { uid }
   (`biersammler-uid-v1`) löscht ebenfalls den Zwischenspeicher, das neue Konto beginnt leer.
 - Firebase-SDK-Version `10.12.2` steht in `js/store.js`, `sw.js` und den drei `modulepreload`-Links in `index.html`.
 - localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`.
+
+## Rangliste („Platzierung“, 18.11.2026)
+
+- Knopf `[data-act="ranking"]` neben „Statistiken“, sichtbar nur im Firebase-Modus MIT Benutzernamen (`renderHeader`,
+  Klasse `has-rank` auf `.tools`: auf < 480 px rutscht der Sync-Hinweis in eine eigene Zeile, sonst würde er abgeschnitten).
+- Veröffentlichen: `render()` meldet `STORE.publishScore(summary.sum, drinks.length)` (erst wenn die Bierdatenbank geladen
+  ist). `store.js` schreibt `leaderboard/<uid>` gebündelt (1,5 s), nur bei Änderung, nur mit Namen und erst nach der
+  Serverbestätigung des Protokolls (`snap.metadata.fromCache` false), damit ein leerer Zwischenspeicher nichts Falsches
+  veröffentlicht. Beim Zurücksetzen löscht derselbe Batch das Dokument; ein Namenswechsel schreibt es neu.
+- Anzeige: `STORE.watchRanking` = `orderBy('sum','desc')` + `limit(15)` (nur Einzelfeld-Index, kein zusammengesetzter nötig),
+  `GAME.rankBoard` prüft (Name, Ganzzahlen, 10…16 je Bier), sortiert (Punkte, Biere, Name) und vergibt Ränge (gleiche
+  Punkte = gleicher Platz). Eigener Rang außerhalb der Besten: `getCountFromServer(where('sum','>',eigene Punkte)) + 1`;
+  ohne Netz „–“. Entscheidung des Nutzers: Top 15 + eigener Rang, Sortierung nach Punkten, keine Wochen-Rangliste.
+- Werte kommen vom Client und sind fälschbar; das ist gewollt hingenommen („es ist ein Spiel“).
+- Getestet mit nachgebildetem Firebase (siehe „Testen“): Veröffentlichen, Namenswechsel, Zurücksetzen, Top 15 + Rang 23,
+  Gleichstand, eigener Platz unter den Besten, offline, Ladefehler, ungültige Zeilen, lokaler Modus, 375 px hell/dunkel
+  und Desktop. NICHT getestet: echte Regeln/Firestore (Regeln gedanklich geprüft, kein Emulator).
 
 ## Firestore-Regeln (`firestore.rules`)
 
@@ -140,8 +164,8 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 ## Bekannte Grenzen und offene Punkte
 
 - Logo fehlt: `icons/` enthält Platzhalter (Bernstein-Fläche mit Flasche), erzeugt per Python-Skript.
-- Rangliste noch nicht gebaut; `usernames` ist dafür einzeln lesbar, Punkte müssten später z. B. in `users/<uid>`
-  oder einer eigenen Sammlung veröffentlicht werden.
+- Rangliste: Werte vom Client, fälschbar (bewusst hingenommen). Neue Regeln müssen VOR der neuen App-Version in der
+  Konsole stehen. Ein Spieler ohne Netz erscheint erst nach der ersten Serverbestätigung. Eine Wochen-Rangliste gibt es nicht.
 - „Kein Nachtragen“ ist serverseitig nur nach oben begrenzt; eine Untergrenze würde die Offline-Warteschlange brechen.
 - Geräteuhr > 5 min vor → Firestore lehnt neue Einträge ab (Eintrag verschwindet nach kurzem Aufblitzen wieder).
 - Der Listener liest nach längerer Pause alle Trink-Dokumente neu (Firestore-Lesekosten); für wenige Spieler unkritisch.

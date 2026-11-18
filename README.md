@@ -24,7 +24,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | --- | --- |
 | `index.html` | Seitengerüst, Dialoge, Vorab-Laden der Firebase-Module |
 | `css/style.css` | Gestaltung; alle Farben als Variablen ganz oben (hell/dunkel, Kategorien `--k1` … `--k5`) |
-| `js/game.js` | Spiellogik als reine Funktionen (Punkte, Level, Suche, Statistiken) – in Node testbar |
+| `js/game.js` | Spiellogik als reine Funktionen (Punkte, Level, Suche, Statistiken, Rangliste) – in Node testbar |
 | `js/store.js` | Speichern: lokal (localStorage) oder Firebase (Anmeldung, Firestore, Warteschlange ohne Netz) |
 | `js/app.js` | Oberfläche und Bedienung |
 | `js/firebase-config.js` | Firebase-Konfiguration; leerer `apiKey` = lokaler Modus |
@@ -163,14 +163,22 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 
 ## Spielregeln
 
-- Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, die Karte zeigt, wie oft (z. B. „×4“).
+- Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).
 - Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,1 · Spezialität 1,2 · Zaubertrank 1,4 · Heiligtum 1,6.
   Keine Extrapunkte für neue Biere.
 - 20 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
 - Kein Nachtragen: Es zählt der Zeitpunkt des Bestätigens.
-- Eine Rangliste gibt es noch nicht; Benutzernamen sind dafür schon vorbereitet.
+- **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die
+  besten 15 Spieler (Rang, Name, Level, Anzahl Biere) und, falls man nicht darunter ist, den eigenen Rang. Es zählen die
+  Punkte; gleiche Punkte teilen sich den Platz (Reihenfolge dann nach Anzahl Biere). Spieler ohne Benutzernamen erscheinen
+  nicht. Die App veröffentlicht dazu Name, Punkte und Anzahl in `leaderboard/<Konto>`; die Werte stammen vom eigenen Gerät
+  und lassen sich von technisch versierten Spielern fälschen (die Regeln prüfen nur, ob sie möglich sind). Eine Wochen-
+  Rangliste gibt es bewusst nicht.
+- **Nach dem Update:** Zuerst die neue `firestore.rules` in der Firebase-Konsole veröffentlichen, dann die App. Ohne die
+  neuen Regeln werden die Ranglisten-Einträge abgelehnt (nur eine Meldung in der Konsole, das Spiel läuft weiter) und die
+  Platzierung bleibt leer.
 
 ## Rechtliches
 

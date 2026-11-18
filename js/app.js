@@ -3,7 +3,7 @@
    1. Grundlagen (Hilfsfunktionen, Darstellung hell/dunkel)
    2. Zustand (Bierdatenbank laden, Protokoll, daraus berechnete Sammlung)
    3. Darstellung (Karte, Kopfleiste mit Level-Ring, Startseite)
-   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Einstellungen, Bestätigung, Altershinweis)
+   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Platzierung, Einstellungen, Bestätigung, Altershinweis)
    5. Bedienung (Klicks)
    6. Anmeldesperre (gesteuert über den Status aus js/store.js)
    7. Service Worker registrieren
@@ -91,17 +91,31 @@
 
   /* ---------- 3. Darstellung ---------- */
 
-  const BOTTLE = '<svg class="bottle" viewBox="0 0 40 96" aria-hidden="true"><path d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="label" x="10" y="52" width="20" height="18" rx="3"/></svg>';
+  // Vierzackiger Stern mit Mittelpunkt (x, y) und Radius r
+  const star = (x, y, r, delay) => `<path style="--d:${delay}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z"/>`;
+
+  /* Flasche. tier = Kartenstufe (G.cardTier): 0 schlicht, 1 Glanz, 2 + Schaumkrone, 3 + (Strahlen im Hintergrund, per CSS),
+     4 + Sterne, 5 goldene Flasche mit mehr Sternen. Die Kategorie bleibt davon unberührt. */
+  function bottle(tier = 0) {
+    const shine = tier >= 1 ? '<rect class="shine" x="9.5" y="40" width="3" height="44" rx="1.5"/>' : '';
+    const foam = tier >= 2 ? '<g class="foam"><circle cx="14.5" cy="3" r="4"/><circle cx="20" cy="0.5" r="4.6"/><circle cx="25.5" cy="3" r="4"/></g>' : '';
+    const stars = tier >= 4
+      ? `<g class="stars">${star(-4, 34, 5, 0)}${star(45, 52, 6, 0.7)}${star(-1, 76, 3.5, 1.4)}${tier >= 5 ? star(46, 22, 4, 0.35) + star(-6, 56, 3, 1.05) + star(44, 82, 3.5, 1.75) : ''}</g>`
+      : '';
+    return `<svg class="bottle${tier ? ` t${tier}` : ''}" viewBox="0 0 40 96" aria-hidden="true"><path class="body" d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="label" x="10" y="52" width="20" height="18" rx="3"/>${shine}${foam}${stars}</svg>`;
+  }
+  const BOTTLE = bottle();
 
   /* Sammelkarte. c = { beer, count } aus GAME.summarize (count 0 = noch nicht gesammelt).
      Innerhalb eines <button> sind nur <span> erlaubt; deshalb besteht die Karte nur aus <span>-Elementen. */
   function cardInner(c) {
     const b = c.beer;
     const chips = [G.fmtAlc(b.alc), G.fmtLiter(b.flasche)].filter(Boolean);
+    const tier = G.cardTier(c.count);
     return `<span class="band"><span class="kat">${esc(b.kategorie)}</span></span>
-      <span class="bcard-body">
-        ${c.count ? `<b class="count" title="${c.count}-mal getrunken">×${c.count}</b>` : ''}
-        ${BOTTLE}
+      <span class="bcard-body${tier ? ` t${tier}` : ''}">
+        ${c.count ? `<b class="count" title="${c.count}-mal getrunken">Lvl ${c.count}</b>` : ''}
+        ${bottle(tier)}
         <span class="title">${esc(b.title)}</span>
         ${b.brand ? `<span class="brand">${esc(b.brand)}</span>` : ''}
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
@@ -146,6 +160,10 @@
   function renderHeader() {
     const p = STORE.profile();
     $('#who').textContent = p.username ? '@' + p.username : 'Anonym';
+    // Die Rangliste gibt es nur mit Anmeldung und nur für Spieler mit Benutzernamen
+    const showRank = STORE.mode === 'firebase' && !!p.username;
+    $('[data-act="ranking"]').hidden = !showRank;
+    $('.tools').classList.toggle('has-rank', showRank);
     paintSync();
     renderLevel();
   }
@@ -198,6 +216,8 @@
     const active = document.activeElement;
     const keep = active && active.closest && active.closest('#main') && active.dataset.focus;
     recompute();
+    // Punkte und Anzahl für die Rangliste (erst wenn die Bierdatenbank geladen ist, sonst stünde dort 0)
+    if (db.ready) STORE.publishScore(summary.sum, drinks.length);
     renderHeader();
     renderMain();
     if (keep) {
@@ -206,6 +226,7 @@
     }
     if (cardDlg.open) paintCard();
     if (statsDlg.open) paintStats();
+    if (rankDlg.open) paintRanking();
     if (setDlg.open) paintSettings();
   }
 
@@ -498,6 +519,85 @@
   }
   statsDlg.addEventListener('close', () => { if (!statsDlg.open) statsDlg.innerHTML = ''; });
 
+  /* Platzierung. Die besten GAME.BOARD_SIZE Spieler live aus leaderboard/ (STORE.watchRanking), dazu der eigene Rang,
+     falls man nicht darunter ist. Zeilen prüft und sortiert GAME.rankBoard; alle Namen gehen durch esc().
+     Den eigenen Rang außerhalb der Besten liefert eine Zählabfrage beim Server (STORE.countAbove); ohne Netz
+     steht dort „–“. Die eigene Zeile zeigt immer die lokal berechneten Werte. */
+  const rankDlg = $('#ranking');
+  const rank = { rows: null, fromCache: false, failed: false, own: null, unwatch: null, seq: 0 };
+
+  function stopRanking() {
+    rank.seq++; // laufende Zählabfrage verwerfen
+    if (rank.unwatch) { rank.unwatch(); rank.unwatch = null; }
+  }
+  function openRanking() {
+    stopRanking();
+    Object.assign(rank, { rows: null, fromCache: false, failed: false, own: null });
+    rank.unwatch = STORE.watchRanking((rows, meta) => {
+      rank.rows = G.rankBoard(rows);
+      rank.fromCache = !!meta.fromCache;
+      rank.failed = false;
+      findOwnRank();
+      if (rankDlg.open) paintRanking();
+    }, () => {
+      rank.failed = true;
+      if (rankDlg.open) paintRanking();
+    });
+    paintRanking();
+    rankDlg.showModal();
+    $('.sheet-body', rankDlg).scrollTop = 0;
+  }
+  // Steht man nicht unter den Besten, den Rang beim Server zählen lassen: 1 + Anzahl Spieler mit mehr Punkten
+  function findOwnRank() {
+    const uid = STORE.uid();
+    if (!rank.rows || rank.rows.some((r) => r.uid === uid)) { rank.own = null; return; }
+    const seq = ++rank.seq;
+    rank.own = { state: 'loading' };
+    STORE.countAbove(summary.sum).then(
+      (n) => { if (seq === rank.seq) { rank.own = { state: 'ok', rank: n + 1 }; if (rankDlg.open) paintRanking(); } },
+      () => { if (seq === rank.seq) { rank.own = { state: 'err' }; if (rankDlg.open) paintRanking(); } },
+    );
+  }
+  function paintRanking() {
+    const scroll = $('.sheet-body', rankDlg)?.scrollTop || 0;
+    const head = '<div class="sheet-head"><h2>Platzierung</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>';
+    const wait = (text) => `<div class="loading" role="status"><span class="spinner"></span>${text}</div>`;
+    let body;
+    if (rank.failed) {
+      body = '<p class="note center">Die Rangliste konnte nicht geladen werden. Prüfe die Verbindung und öffne das Fenster noch einmal.</p>';
+    } else if (!rank.rows || (!rank.rows.length && rank.fromCache && navigator.onLine !== false)) {
+      body = wait('Rangliste wird geladen …');
+    } else {
+      const uid = STORE.uid();
+      const me = STORE.profile().username || '';
+      const row = (r, mine, label = String(r.rank)) => `<tr class="${mine ? 'me' : ''}">
+          <td class="pos"><span class="badge${r.rank <= 3 ? ` p${r.rank}` : ''}">${esc(label)}</span></td>
+          <td class="nm">${esc('@' + r.username)}${mine ? ' <span class="you">(du)</span>' : ''}</td>
+          <td class="num">${G.fmtInt(r.level)}</td>
+          <td class="num">${G.fmtInt(r.count)}</td></tr>`;
+      const own = rank.own;
+      let ownRow = '';
+      if (own) {
+        const label = own.state === 'ok' ? String(own.rank) : own.state === 'err' ? '–' : '…';
+        ownRow = `<tr class="gap" aria-hidden="true"><td colspan="4">⋯</td></tr>`
+          + row({ rank: own.state === 'ok' ? own.rank : 99, username: me, level: G.level(summary.sum), count: drinks.length }, true, label);
+      }
+      const list = rank.rows.map((r) => row(r, r.uid === uid)).join('');
+      const stale = rank.fromCache && navigator.onLine === false ? '<p class="note center">Keine Verbindung – das ist der zuletzt bekannte Stand.</p>' : '';
+      const err = own && own.state === 'err' ? '<p class="note center">Dein Rang konnte gerade nicht ermittelt werden (keine Verbindung).</p>' : '';
+      body = `${stale}${rank.rows.length ? `<table class="rank">
+          <caption class="sr-only">Die besten ${G.BOARD_SIZE} Spieler nach Punkten</caption>
+          <thead><tr><th class="pos" scope="col">Platz</th><th class="nm" scope="col">Spieler</th><th class="num" scope="col">Level</th><th class="num" scope="col">Biere</th></tr></thead>
+          <tbody>${list}${ownRow}</tbody></table>` : '<p class="note center">Noch niemand in der Rangliste.</p>'}
+        ${err}
+        <p class="note">Es zählen die Punkte. Wer gleich viele hat, teilt sich den Platz; danach entscheidet die Zahl der Biere.
+          Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang. Die Rangliste enthält nur Spieler mit Benutzernamen.</p>`;
+    }
+    rankDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
+    $('.sheet-body', rankDlg).scrollTop = scroll;
+  }
+  rankDlg.addEventListener('close', () => { if (!rankDlg.open) { stopRanking(); rankDlg.innerHTML = ''; } });
+
   /* Bestätigung vor dem Löschen. Gibt ein Promise<boolean> zurück.
      html: bereits mit esc() aufbereiteter Text. typeWord: Wort, das zur Bestätigung eingetippt werden muss.
      Der Fokus startet auf „Abbrechen“ (bzw. im Eingabefeld), damit Enter nicht versehentlich löscht. */
@@ -648,7 +748,7 @@
     if (!cards.length) { list.innerHTML = '<li class="note">Keine Karte passt zum Filter.</li>'; return; }
     list.innerHTML = cards.map((c) => `<li class="k${c.beer.stufe}">
         <span class="coll-name"><span class="coll-title">${esc(c.beer.name)}</span>
-          <span class="coll-sub">${esc(c.beer.kategorie)} · ×${c.count}${c.beer.flasche ? ` · ${esc(G.fmtLiter(c.beer.flasche))}` : ''}</span></span>
+          <span class="coll-sub">${esc(c.beer.kategorie)} · Lvl ${c.count}${c.beer.flasche ? ` · ${esc(G.fmtLiter(c.beer.flasche))}` : ''}</span></span>
         <span class="coll-btns">
           <button class="btn small" type="button" data-set="minus" data-id="${esc(c.beer.id)}" aria-label="${esc(`Letzten Eintrag von ${c.beer.name} löschen`)}">−1</button>
           <button class="btn small danger-ghost" type="button" data-set="delete" data-id="${esc(c.beer.id)}" aria-label="${esc(`Karte ${c.beer.name} löschen`)}">Karte löschen</button>
@@ -669,7 +769,7 @@
     const kats = [1, 2, 3, 4, 5].filter((st) => db.kat && db.kat[st])
       .map((st) => `<li class="k${st}"><span class="dot" aria-hidden="true"></span>${esc(db.kat[st].name)} <span class="h-sub">${fmtPoints(G.pointsFor(st))} pro Bier</span></li>`).join('');
     return `<p><b>So geht’s:</b> Tippe nach jedem Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt –
-        erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; die Karte zeigt, wie oft (z. B. „×4“).</p>
+        erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>
       <p><b>Kategorien</b> von häufig bis sehr selten:</p>
       ${kats ? `<ul class="howto-kats">${kats}</ul>` : '<p class="note">Die Kategorien erscheinen, sobald die Bierdatenbank geladen ist.</p>'}
       <p>Ein neues Bier bringt keine Extrapunkte – es zählt nur seine Kategorie.</p>
@@ -697,7 +797,7 @@
       const ok = await confirmBox({
         title: 'Letzten Eintrag löschen?',
         html: `${name}: Der zuletzt eingetragene von ${c.count} ${c.count === 1 ? 'Eintrag' : 'Einträgen'} wird gelöscht (−${fmtPoints(p)}).
-          ${c.count === 1 ? 'Danach verschwindet die Karte aus deiner Sammlung.' : `Danach steht die Karte auf ×${c.count - 1}.`}`,
+          ${c.count === 1 ? 'Danach verschwindet die Karte aus deiner Sammlung.' : `Danach steht die Karte auf Lvl ${c.count - 1}.`}`,
         ok: '1 Eintrag löschen',
       });
       const now = cardOf(id);
@@ -837,6 +937,7 @@
     }
     else if (act === 'reload') location.reload();
     else if (act === 'stats') openStats();
+    else if (act === 'ranking') openRanking();
     else if (act === 'settings') openSettings();
   });
 

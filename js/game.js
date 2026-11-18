@@ -339,6 +339,17 @@
     };
   }
 
+  /* ---------- Kartenstufe ---------- */
+
+  // Das Karten-Level ist die Anzahl, wie oft ein Bier getrunken wurde. Ab diesen Levels verändert sich die Optik
+  // der Karte (Stufe 1 … 5); dazwischen bleibt sie gleich. Die Kategorie ist davon unabhängig.
+  const CARD_TIER_AT = [4, 8, 16, 24, 40];
+  function cardTier(count) {
+    let tier = 0;
+    for (const n of CARD_TIER_AT) if (count >= n) tier++;
+    return tier;
+  }
+
   /* ---------- Bundesländer ---------- */
 
   const BUNDESLAENDER = ['Baden-Württemberg', 'Bayern', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hessen',
@@ -351,13 +362,35 @@
   // Anzeigeform darf Groß/klein mischen; eindeutig ist die kleingeschriebene Form (usernameKey)
   const usernameKey = (name) => (typeof name === 'string' && USERNAME_RE.test(name) ? name.toLowerCase() : null);
 
+  /* ---------- Rangliste ---------- */
+
+  const BOARD_SIZE = 15; // so viele Plätze zeigt die Rangliste (zusätzlich der eigene Rang)
+
+  /* Rohdaten der Rangliste (Dokumente aus leaderboard/<uid>: { uid, username, sum, count }) prüfen, sortieren und
+     mit Rängen versehen. Ungültige Zeilen (Name ungültig, Zahlen keine Ganzzahlen oder unmöglich) fallen weg.
+     Sortierung: Punkte absteigend, dann Anzahl Biere, dann Name. Gleiche Punkte teilen sich den Platz
+     (1, 2, 2, 4 …); der Rang eines Spielers ist 1 + Anzahl der Spieler mit MEHR Punkten. */
+  function rankBoard(rows) {
+    const ok = (r) => r && typeof r.uid === 'string' && usernameKey(r.username)
+      && Number.isInteger(r.sum) && Number.isInteger(r.count) && r.count >= 0
+      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * POINTS[5];
+    const list = (Array.isArray(rows) ? rows : []).filter(ok)
+      .sort((a, b) => b.sum - a.sum || b.count - a.count || (usernameKey(a.username) < usernameKey(b.username) ? -1 : 1));
+    let rank = 0;
+    return list.map((r, i) => {
+      if (i === 0 || r.sum !== list[i - 1].sum) rank = i + 1;
+      return { uid: r.uid, username: r.username, sum: r.sum, count: r.count, level: level(r.sum), rank };
+    });
+  }
+
   const api = {
     POINTS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
+    BOARD_SIZE, rankBoard,
     pointsFor, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,
     splitName, cleanBeer, mergeBeers,
     fold, unumlaut, searchEntry, buildIndex, search,
-    normalizeDrinks, summarize, compareCards,
+    normalizeDrinks, summarize, compareCards, CARD_TIER_AT, cardTier,
     weekStart, weekKey, weeksInclusive, dayNumber, isoWeek,
     WEEKDAYS, stats,
     usernameKey,

@@ -260,6 +260,46 @@ test('Benutzername', () => {
   assert.strictEqual(G.usernameKey('max-1'), null);
 });
 
+/* ---------- Rangliste ---------- */
+
+test('Rangliste: sortiert nach Punkten, dann Bieren, dann Name; gleiche Punkte teilen den Platz', () => {
+  const rows = [
+    { uid: 'u1', username: 'Anna', sum: 200, count: 20 },       // Level 2
+    { uid: 'u2', username: 'bernd', sum: 266, count: 19 },      // Level 2
+    { uid: 'u3', username: 'Carl', sum: 200, count: 18 },       // gleiche Punkte wie Anna, weniger Biere
+    { uid: 'u4', username: 'dora_1', sum: 0, count: 0 },
+    { uid: 'u5', username: 'Emil', sum: 200, count: 18 },       // gleich wie Carl → nach Name
+  ];
+  const b = G.rankBoard(rows);
+  assert.deepStrictEqual(b.map((r) => r.username), ['bernd', 'Anna', 'Carl', 'Emil', 'dora_1']);
+  assert.deepStrictEqual(b.map((r) => r.rank), [1, 2, 2, 2, 5]);
+  assert.deepStrictEqual(b.map((r) => r.level), [2, 2, 2, 2, 1]);
+  assert.strictEqual(b[0].count, 19); assert.strictEqual(b[0].uid, 'u2');
+});
+
+test('Rangliste: ungültige Zeilen fallen weg', () => {
+  const bad = [
+    null, 'x', {},
+    { uid: 'a', username: 'ab', sum: 10, count: 1 },            // Name zu kurz
+    { uid: 'b', username: '<b>hacker</b>', sum: 10, count: 1 }, // Name ungültig
+    { uid: 'c', username: 'Hans', sum: 10.5, count: 1 },        // keine Ganzzahl
+    { uid: 'd', username: 'Hans', sum: 9, count: 1 },           // weniger als 1,0 Punkte je Bier
+    { uid: 'e', username: 'Hans', sum: 17, count: 1 },          // mehr als 1,6 Punkte je Bier
+    { uid: 'f', username: 'Hans', sum: 10, count: -1 },
+    { uid: 'g', username: 'Hans', sum: '10', count: 1 },
+    { username: 'Hans', sum: 10, count: 1 },                    // ohne uid
+  ];
+  assert.deepStrictEqual(G.rankBoard(bad), []);
+  assert.deepStrictEqual(G.rankBoard(undefined), []);
+  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 16, count: 1 }]).length, 1);
+  assert.strictEqual(G.BOARD_SIZE, 15);
+});
+
+test('Kartenstufe: Veränderung ab 4, 8, 16, 24 und 40 Mal getrunken', () => {
+  const expected = [[0, 0], [1, 0], [3, 0], [4, 1], [7, 1], [8, 2], [15, 2], [16, 3], [23, 3], [24, 4], [39, 4], [40, 5], [41, 5], [500, 5]];
+  for (const [count, tier] of expected) assert.strictEqual(G.cardTier(count), tier, `count ${count}`);
+});
+
 /* ---------- Echte Datenbank ---------- */
 
 test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {

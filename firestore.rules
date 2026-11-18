@@ -7,9 +7,11 @@ rules_version = '2';
 //   users/<uid>                  { username?, usernameKey? }
 //   users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
 //   usernames/<usernameKey>      { uid }
+//   leaderboard/<uid>            { username, sum, count }   (Rangliste: Punkte in Zehnteln, Anzahl Biere)
 //
-// Grundsatz: Jede Person liest und schreibt nur users/<eigene uid>/**. Einzige Ausnahme sind einzelne Einträge
-// in usernames (lesen für alle Angemeldeten), damit Namen eindeutig bleiben.
+// Grundsatz: Jede Person liest und schreibt nur users/<eigene uid>/**. Ausnahmen sind einzelne Einträge
+// in usernames (lesen für alle Angemeldeten), damit Namen eindeutig bleiben, und die Rangliste leaderboard
+// (lesen für alle Angemeldeten, schreiben nur der Besitzer).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -74,8 +76,8 @@ service cloud.firestore {
       }
     }
 
-    // Eindeutige Benutzernamen. Lesen dürfen alle Angemeldeten einzelne Einträge (nötig für „Name schon vergeben“
-    // und später für eine Rangliste); eine Liste aller Namen (list) gibt es nicht.
+    // Eindeutige Benutzernamen. Lesen dürfen alle Angemeldeten einzelne Einträge (nötig für „Name schon vergeben“);
+    // eine Liste aller Namen (list) gibt es nicht. Die Rangliste liegt getrennt in leaderboard.
     match /usernames/{key} {
       allow get: if signedIn();
 
@@ -91,6 +93,28 @@ service cloud.firestore {
 
       // Freigeben nur durch den Besitzer
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Rangliste. Die App veröffentlicht hier Punkte und Anzahl Biere (beides berechnet sie selbst aus dem Protokoll;
+    // die Regeln können nicht nachzählen und prüfen deshalb nur, ob die Werte möglich sind). Es ist ein Spiel unter
+    // Freunden, kein Wettbewerb mit Preisen. Lesen (get, list und Zählabfragen) dürfen alle Angemeldeten.
+    // Schreiben nur für das eigene Dokument und nur mit Benutzernamen, der zum Profil passt.
+    // sum steht in Zehnteln: je Bier 10 bis 16 (Stufe 1 bis 5, siehe js/game.js POINTS).
+    match /leaderboard/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['username', 'sum', 'count'])
+        && request.resource.data.keys().hasAll(['username', 'sum', 'count'])
+        && request.resource.data.username is string
+        && request.resource.data.count is int
+        && request.resource.data.sum is int
+        && request.resource.data.count >= 0
+        && request.resource.data.count <= 1000000
+        && request.resource.data.sum >= request.resource.data.count * 10
+        && request.resource.data.sum <= request.resource.data.count * 16
+        && exists(userDoc(uid))
+        && getAfter(userDoc(uid)).data.get('username', null) == request.resource.data.username;
+      allow delete: if isOwner(uid);
     }
   }
 }

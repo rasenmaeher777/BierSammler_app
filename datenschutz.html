@@ -34,6 +34,10 @@
         <code>users/&lt;Konto-Kennung&gt;</code>: getrunkene Biere als Bier-Kennung und Zeitpunkt, optional ein Benutzername.
         Gewählte Benutzernamen stehen zusätzlich in einer Liste, die angemeldete Personen abfragen können, um doppelte Namen
         zu verhindern.</li>
+      <li>Rangliste („Platzierung“): Wer einen Benutzernamen gewählt hat, erscheint mit Benutzername, Punkten (daraus das
+        Level) und Anzahl der getrunkenen Biere in der Sammlung <code>leaderboard</code>. Alle angemeldeten Personen können
+        diese Einträge lesen. E-Mail-Adresse und einzelne Einträge sind dort nicht enthalten. Beim Zurücksetzen wird der
+        Eintrag gelöscht.</li>
       <li>Auf dem Gerät: Einstellungen und Hinweise in localStorage; Firestore hält eine Kopie der eigenen Daten im
         Browser-Speicher (IndexedDB), damit die App ohne Netz funktioniert. Beim Abmelden wird diese Kopie gelöscht.</li>
       <li>Ein Service Worker speichert die Dateien der App und die Bierdatenbank im Browser zwischen.</li>

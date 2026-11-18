@@ -10,6 +10,7 @@
      users/<uid>                 { username?, usernameKey? }   (optionale Felder fehlen, nie undefined/null)
      users/<uid>/drinks/<autoId> { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
      usernames/<usernameKey>     { uid }                         (sorgt für eindeutige Namen)
+     leaderboard/<uid>           { username, sum, count }        (Rangliste; nur mit Benutzernamen, siehe publishScore)
 
    Schreibvorgänge werden NICHT abgewartet: Ihre Promises erfüllen sich erst nach Bestätigung durch den Server und
    hängen ohne Netz. Die Anzeige kommt sofort aus dem lokalen Snapshot; ohne Netz landen die Schreibvorgänge in der
@@ -27,7 +28,11 @@
      status()           'local' | 'loading' | 'out' | 'in' | 'error'
      error()            Text zum Status 'error'
      pending()          true, solange Änderungen noch nicht beim Server angekommen sind
-     profile()          { username?, usernameKey?, email? } */
+     profile()          { username?, usernameKey?, email? }
+     publishScore(sum, count)        Punkte (Zehntel) und Anzahl Biere für die Rangliste veröffentlichen (gebündelt, im Hintergrund)
+     watchRanking(onData, onError)   die besten Plätze live lesen; gibt eine Funktion zum Beenden zurück
+     countAbove(sum)    Promise<Anzahl Spieler mit mehr Punkten> (nur mit Server), für den eigenen Rang
+     uid()              Kennung des angemeldeten Kontos oder null */
 window.STORE = (() => {
   'use strict';
 
@@ -38,9 +43,10 @@ window.STORE = (() => {
   const LS_OWNER = 'biersammler-uid-v1';     // Konto, dem der Zwischenspeicher auf diesem Gerät gehört
   const BATCH_MAX = 500;                      // Höchstzahl Vorgänge je Firestore-Batch
   const NAME_TIMEOUT = 10000;                 // ms; danach gilt der Server als nicht erreichbar
+  const SCORE_DELAY = 1500;                   // ms; Änderungen der Rangliste werden so lange gebündelt
 
   let onChange = () => {};
-  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {} };
+  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, score: null, synced: false };
   const emit = () => onChange();
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const fail = (code, message) => Object.assign(new Error(message || code), { code });
@@ -85,6 +91,11 @@ window.STORE = (() => {
     setUsername() { return Promise.reject(fail('local', 'Benutzernamen gibt es nur mit Anmeldung')); },
     signIn() { return Promise.resolve(); },
     signOut() { return Promise.resolve(); },
+    // Eine Rangliste gibt es nur mit Anmeldung
+    publishScore() {},
+    watchRanking(onData, onError) { onError(fail('local')); return () => {}; },
+    countAbove() { return Promise.reject(fail('local')); },
+    uid() { return null; },
   };
 
   /* ---------- Firebase ---------- */
@@ -94,6 +105,9 @@ window.STORE = (() => {
   let db = null;
   let user = null;
   let unsubs = [];        // laufende onSnapshot-Abos
+  let scoreTimer = null;  // gebündeltes Veröffentlichen der Rangliste
+  let lastScore = '';     // zuletzt veröffentlichter Stand („Name|Punkte|Anzahl“)
+  let scoreWanted = '';   // Stand, für den gerade ein Timer läuft
   const stopListening = () => { unsubs.forEach((u) => u()); unsubs = []; };
   const drinksCol = () => fb.collection(db, 'users', user.uid, 'drinks');
   const failed = (text) => (err) => {
@@ -125,6 +139,11 @@ window.STORE = (() => {
     s.drinks = [];
     s.pending = false;
     s.profile = {};
+    s.score = null;
+    s.synced = false;
+    clearTimeout(scoreTimer);
+    lastScore = '';
+    scoreWanted = '';
     if (!u) {
       // Gerade abgemeldet (hier oder in einem anderen Tab): Kopie auf diesem Gerät löschen und neu laden.
       // Beim Start ohne Anmeldung bleibt LS_OWNER stehen, damit ein anderes Konto später erkannt wird.
@@ -146,8 +165,12 @@ window.STORE = (() => {
       // Nur beerId und at übernehmen; die eigentliche Prüfung macht GAME.normalizeDrinks
       s.drinks = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, beerId: v.beerId, at: v.at }; });
       s.pending = snap.metadata.hasPendingWrites;
+      // Erst veröffentlichen, wenn der Server die Einträge bestätigt hat; ein unvollständiger Zwischenspeicher
+      // (z. B. neues Gerät) würde sonst kurz zu niedrige Werte in die Rangliste schreiben
+      s.synced = !snap.metadata.fromCache;
       s.status = 'in';
       emit();
+      scheduleScore();
     }, failed('Einträge konnten nicht geladen werden')));
     unsubs.push(fb.onSnapshot(fb.doc(db, 'users', u.uid), (snap) => {
       const v = (snap.exists() && snap.data()) || {};
@@ -155,7 +178,28 @@ window.STORE = (() => {
       // Nur einen stimmigen Namen anzeigen (Anzeigeform passt zum Schlüssel)
       s.profile = key && key === v.usernameKey ? { email: u.email || '', username: v.username, usernameKey: key } : { email: u.email || '' };
       emit();
+      scheduleScore();
     }, (err) => console.error('Profil konnte nicht geladen werden', err)));
+  }
+
+  /* Rangliste veröffentlichen: leaderboard/<uid> = { username, sum, count }. Nur mit Benutzernamen und erst nach der
+     Bestätigung durch den Server (s.synced). Änderungen werden gebündelt und nur gesendet, wenn sich etwas geändert hat.
+     Beim Auslösen wird der Zustand neu geprüft, damit nach einem Zurücksetzen nichts mehr geschrieben wird. */
+  const scoreKey = () => (s.score && s.profile.username ? `${s.profile.username}|${s.score.sum}|${s.score.count}` : '');
+  function scheduleScore() {
+    const key = scoreKey();
+    // Läuft für genau diesen Stand schon ein Timer, nicht neu starten (sonst würde häufiges Neuzeichnen ihn ewig verschieben)
+    if (!user || !s.synced || !key || key === lastScore || key === scoreWanted) return;
+    scoreWanted = key;
+    clearTimeout(scoreTimer);
+    scoreTimer = setTimeout(flushScore, SCORE_DELAY);
+  }
+  function flushScore() {
+    scoreWanted = '';
+    const key = scoreKey();
+    if (!user || !s.synced || !key || key === lastScore) return;
+    lastScore = key;
+    background(fb.setDoc(fb.doc(db, 'leaderboard', user.uid), { username: s.profile.username, sum: s.score.sum, count: s.score.count }), 'Rangliste veröffentlichen');
   }
 
   // Löschvorgänge in Batches mit höchstens 500 Vorgängen; extra = zusätzliche Vorgänge für den ersten Batch
@@ -210,8 +254,12 @@ window.STORE = (() => {
       const key = s.profile.usernameKey;
       const extra = key ? [
         (b) => b.delete(fb.doc(db, 'usernames', key)),
+        (b) => b.delete(fb.doc(db, 'leaderboard', user.uid)),
         (b) => b.set(fb.doc(db, 'users', user.uid), {}),
       ] : [];
+      clearTimeout(scoreTimer);
+      lastScore = '';
+      scoreWanted = '';
       deleteInBatches(s.drinks.map((d) => d.id), extra);
     },
 
@@ -242,6 +290,29 @@ window.STORE = (() => {
       });
     },
 
+    publishScore(sum, count) {
+      s.score = { sum, count };
+      scheduleScore();
+    },
+
+    // Beste Plätze live lesen. Jede Zeile: { uid, username, sum, count } (ungeprüft; GAME.rankBoard prüft und sortiert).
+    watchRanking(onData, onError) {
+      if (!user) { onError(fail('error', 'nicht angemeldet')); return () => {}; }
+      const q = fb.query(fb.collection(db, 'leaderboard'), fb.orderBy('sum', 'desc'), fb.limit(window.GAME.BOARD_SIZE));
+      return fb.onSnapshot(q, (snap) => {
+        const rows = snap.docs.map((d) => { const v = d.data() || {}; return { uid: d.id, username: v.username, sum: v.sum, count: v.count }; });
+        onData(rows, { fromCache: snap.metadata.fromCache });
+      }, (err) => { console.error('Rangliste konnte nicht geladen werden', err); onError(err); });
+    },
+
+    // Wie viele Spieler haben mehr Punkte? (Zählabfrage direkt beim Server; ohne Netz Fehler.) Rang = Ergebnis + 1.
+    async countAbove(sum) {
+      const q = fb.query(fb.collection(db, 'leaderboard'), fb.where('sum', '>', sum));
+      return (await fb.getCountFromServer(q)).data().count;
+    },
+
+    uid() { return user ? user.uid : null; },
+
     signIn() {
       return fb.signInWithPopup(auth, new fb.GoogleAuthProvider());
     },
@@ -270,5 +341,9 @@ window.STORE = (() => {
     error: () => s.error,
     pending: () => s.pending,
     profile: () => s.profile,
+    publishScore: (sum, count) => impl.publishScore(sum, count),
+    watchRanking: (onData, onError) => impl.watchRanking(onData, onError),
+    countAbove: (sum) => impl.countAbove(sum),
+    uid: () => impl.uid(),
   };
 })();
