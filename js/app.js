@@ -20,6 +20,7 @@
     main: 'Datensammlung/biere.json',
     manual: 'Datensammlung/biere_manuell.json',
     kategorien: 'Datensammlung/kategorien.json',
+    korrekturen: 'Datensammlung/biere_korrekturen.json',
   };
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
   const RECENT_MAX = 8; // zuletzt getrunkene Biere im leeren Suchfeld
@@ -48,7 +49,7 @@
 
   /* ---------- 2. Zustand ---------- */
 
-  // Bierdatenbank aus biere.json und biere_manuell.json (zusammengeführt in js/game.js)
+  // Bierdatenbank aus biere.json und biere_manuell.json plus biere_korrekturen.json (zusammengeführt in js/game.js)
   const db = { list: [], map: new Map(), index: [], ready: false, error: false };
   // Aus dem Protokoll berechnet; wird vor jedem Zeichnen neu bestimmt, nie gespeichert
   let drinks = [];
@@ -59,7 +60,7 @@
   }
   const cardOf = (beerId) => summary.cards.find((c) => c.beer.id === beerId) || null;
 
-  /* Bierdateien einmal laden. Fehlt biere_manuell.json oder ist sie fehlerhaft, geht es ohne sie weiter
+  /* Bierdateien einmal laden. Fehlt biere_manuell.json oder biere_korrekturen.json oder ist sie fehlerhaft, geht es ohne sie weiter
      (Warnung in der Konsole). Ohne biere.json kann die App nichts anzeigen. */
   async function loadBeers() {
     const get = async (url) => {
@@ -67,10 +68,10 @@
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       return r.json();
     };
-    const optional = (url) => get(url).catch((err) => { console.warn(`${url} nicht lesbar, wird ignoriert:`, err.message); return []; });
+    const optional = (url, empty = []) => get(url).catch((err) => { console.warn(`${url} nicht lesbar, wird ignoriert:`, err.message); return empty; });
     try {
-      const [main, manual, kategorien] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien)]);
-      const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text));
+      const [main, manual, kategorien, korrekturen] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {})]);
+      const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text), korrekturen);
       db.list = r.list;
       db.map = r.map;
       db.index = G.buildIndex(r.list);

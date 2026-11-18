@@ -91,17 +91,57 @@
     };
   }
 
-  /* biere.json und biere_manuell.json zusammenführen.
+  /* Korrekturen (biere_korrekturen.json): { "BS-000001": { feld: wert, … } } mit den Feldnamen aus biere.json.
+     Erlaubt sind nur Felder, die keine Spielwerte berühren; id, kategorie_stufe und kategorie_name nie (an der Stufe
+     hängen Punkte und Level aller Spieler). null entfernt eine Angabe (z. B. "beschreibung": null).
+     Jeder Wert wird auf den passenden Typ geprüft; ein falscher Wert wird mit Warnung ignoriert und
+     lässt den bisherigen stehen. brauerei_vertrieb wird je Unterfeld zusammengeführt. */
+  const FIX_TYPES = {
+    name: (v) => typeof v === 'string' && v.trim() !== '',
+    beschreibung: (v) => v === null || typeof v === 'string',
+    biersorte: (v) => v === null || Array.isArray(v),
+    zutaten: (v) => v === null || Array.isArray(v),
+    alkoholgehalt: (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100),
+    flaschengroesse: (v) => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 20),
+    brauerei_vertrieb: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+  };
+  const FIX_COMPANY = ['typ', 'name', 'adresse', 'region', 'land'];
+
+  // Rohdatensatz mit den Korrekturen für seine ID überlagern (neues Objekt; das Original bleibt unverändert)
+  function applyFix(raw, fix, warn) {
+    if (!fix || typeof fix !== 'object' || Array.isArray(fix)) { warn(`biere_korrekturen.json: ${raw.id}: erwartet { feld: wert }, wird ignoriert`); return raw; }
+    const out = { ...raw };
+    for (const [key, value] of Object.entries(fix)) {
+      if (!FIX_TYPES[key]) { warn(`biere_korrekturen.json: ${raw.id}: Feld „${key}“ ist nicht änderbar, wird ignoriert`); continue; }
+      if (!FIX_TYPES[key](value)) { warn(`biere_korrekturen.json: ${raw.id}: ungültiger Wert für „${key}“, wird ignoriert`); continue; }
+      if (key === 'brauerei_vertrieb') {
+        const base = raw.brauerei_vertrieb && typeof raw.brauerei_vertrieb === 'object' ? raw.brauerei_vertrieb : {};
+        const merged = { ...base };
+        for (const [k, v] of Object.entries(value)) {
+          if (FIX_COMPANY.includes(k) && (v === null || typeof v === 'string')) merged[k] = v;
+          else warn(`biere_korrekturen.json: ${raw.id}: brauerei_vertrieb.${k} wird ignoriert`);
+        }
+        out.brauerei_vertrieb = merged;
+      } else out[key] = value;
+    }
+    return out;
+  }
+
+  /* biere.json und biere_manuell.json zusammenführen, danach die Korrekturen darüberlegen.
      Ungültige Einträge werden weggelassen; bei doppelter ID gilt der erste Eintrag (biere.json kommt zuerst).
      warn(text) wird für jede Auffälligkeit aufgerufen (im Browser: console.warn).
+     fixes: Objekt aus biere_korrekturen.json oder undefined.
      Ergebnis: { list, map } mit map = Map(id → Bier). */
-  function mergeBeers(main, manual, kategorien, warn = () => {}) {
+  function mergeBeers(main, manual, kategorien, warn = () => {}, fixes) {
     const katNames = {};
     for (const k of Array.isArray(kategorien) ? kategorien : []) if (k && Number.isInteger(k.stufe)) katNames[k.stufe] = String(k.name || '');
+    const fixMap = fixes && typeof fixes === 'object' && !Array.isArray(fixes) ? fixes : {};
+    if (fixes != null && fixMap !== fixes) warn('biere_korrekturen.json: erwartet ein Objekt { "ID": { … } }, wird ignoriert');
     const map = new Map();
     const take = (arr, file) => {
       if (!Array.isArray(arr)) { if (arr != null) warn(`${file}: keine Liste, wird ignoriert`); return; }
-      arr.forEach((raw, i) => {
+      arr.forEach((raw0, i) => {
+        const raw = raw0 && typeof raw0 === 'object' && Object.prototype.hasOwnProperty.call(fixMap, raw0.id) ? applyFix(raw0, fixMap[raw0.id], warn) : raw0;
         const beer = cleanBeer(raw, katNames);
         if (!beer) { warn(`${file}: Eintrag ${i + 1} ungültig, wird ignoriert (${raw && raw.id})`); return; }
         if (map.has(beer.id)) { warn(`${file}: doppelte ID ${beer.id}, es gilt der Eintrag aus ${map.get(beer.id)._file}`); return; }
@@ -111,6 +151,7 @@
     };
     take(main, 'biere.json');
     take(manual, 'biere_manuell.json');
+    for (const id of Object.keys(fixMap)) if (!map.has(id)) warn(`biere_korrekturen.json: unbekannte ID ${id}, wird ignoriert`);
     return { list: [...map.values()], map };
   }
 

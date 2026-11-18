@@ -39,7 +39,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `firestore.rules` | Regeln (Nutzer fügt sie in der Konsole ein) |
 | `tests/game.test.js` | Node-Tests der Spiellogik |
 | `impressum.html`, `datenschutz.html` | Nur Platzhalter, KEINE Rechtstexte erfinden |
-| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `kategorien.json`, `scraper/` |
+| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `scraper/` |
 
 Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 
@@ -49,6 +49,12 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   (Kategorie fest aus der ID abgeleitet; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
   Skript verändern.
 - `biere_manuell.json`: gleiches Format, IDs `BM-000001` fortlaufend. Doppelte ID → Warnung, `biere.json` gilt.
+- `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
+  `GAME.mergeBeers` (5. Parameter, `applyFix`) auf den Rohdatensatz gelegt, bevor `cleanBeer` läuft. Änderbar: name,
+  beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,
+  kategorie_stufe, kategorie_name (Punkte/Level). `null` entfernt eine Angabe; falscher Typ, unzulässiges Feld,
+  unbekannte ID → Warnung und ignoriert. Fehlt die Datei, startet die App trotzdem. Beim Anlegen wurde `CACHE_VERSION`
+  in `sw.js` auf `v2` erhöht (neue Datei in `DATA_FILES`). Aktuell ist die Datei leer (`{}`); der Nutzer trägt selbst ein.
 - Die ID ist der Schlüssel für die Spielerdaten: nie ändern oder neu vergeben.
 - `GAME.cleanBeer` macht aus jedem Rohdatensatz ein bereinigtes Objekt: `title`/`brand` (Trennung am ERSTEN „ - “;
   ohne „ - “ ganzer Name als Titel, Firmenname als Marke), `sorten` (Liste, evtl. leer), `alc` (0 = „alkoholfrei“),

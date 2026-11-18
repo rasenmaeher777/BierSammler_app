@@ -34,6 +34,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `impressum.html`, `datenschutz.html` | Platzhalterseiten – **noch auszufüllen** |
 | `Datensammlung/biere.json` | Bierdatenbank (vom Scraper erzeugt, **nie von Hand ändern**) |
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
+| `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
 | `Datensammlung/kategorien.json` | Die fünf Kategorien |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
@@ -134,10 +135,32 @@ Beispiel:
 ]
 ```
 
+## Einzelne Angaben korrigieren
+
+Soll bei einem **bestehenden** Bier etwas anders stehen (z. B. die Beschreibung), trägst du es in
+`Datensammlung/biere_korrekturen.json` ein. `biere.json` bleibt unberührt und die Korrekturen überstehen einen neuen
+Scraper-Lauf, weil die Bier-ID der Schlüssel ist.
+
+```json
+{
+  "BS-000001": { "beschreibung": "Ein süffiges Export aus dem Allgäu." },
+  "BS-000042": { "beschreibung": null, "alkoholgehalt": 5.2, "brauerei_vertrieb": { "region": "Bayern" } }
+}
+```
+
+- Die Datei ist ein Objekt (`{ … }`): ID → die zu ändernden Felder. Nur diese Felder ändern sich, alles andere bleibt.
+- Feldnamen wie in `biere.json`. Änderbar: `name`, `beschreibung`, `biersorte` (Liste), `zutaten` (Liste), `alkoholgehalt`,
+  `flaschengroesse` und `brauerei_vertrieb` (nur die genannten Unterfelder `typ`, `name`, `adresse`, `region`, `land`).
+- `null` entfernt eine Angabe (die App lässt sie dann weg).
+- **Nicht änderbar:** `id`, `kategorie_stufe` und `kategorie_name`. An der Stufe hängen Punkte und Level aller Spieler.
+- Gilt auch für Biere aus `biere_manuell.json` (dort kannst du aber einfach den Eintrag selbst ändern).
+- Ungültige Felder, falsche Werttypen und unbekannte IDs werden mit einer Warnung ignoriert (siehe Prüfung unten).
+- Ändert sich der `name`, ändert sich auch Titel und Marke (Trennung am ersten „ - “), und die Suche findet ihn unter dem neuen Namen.
+
 Prüfen, ob alles lesbar ist (zeigt Warnungen oder „alles in Ordnung“):
 
 ```bash
-node -e "const G=require('./js/game.js'),fs=require('fs'),r=(f)=>JSON.parse(fs.readFileSync('Datensammlung/'+f,'utf8')),w=[];const m=G.mergeBeers(r('biere.json'),r('biere_manuell.json'),r('kategorien.json'),(t)=>w.push(t));console.log(w.length?w.join('\n'):'alles in Ordnung: '+m.list.length+' Biere')"
+node -e "const G=require('./js/game.js'),fs=require('fs'),r=(f)=>JSON.parse(fs.readFileSync('Datensammlung/'+f,'utf8')),w=[];const m=G.mergeBeers(r('biere.json'),r('biere_manuell.json'),r('kategorien.json'),(t)=>w.push(t),r('biere_korrekturen.json'));console.log(w.length?w.join('\n'):'alles in Ordnung: '+m.list.length+' Biere')"
 ```
 
 Nach dem Push erscheinen neue Biere ab dem **übernächsten** Start der App (siehe nächster Abschnitt).
@@ -149,7 +172,7 @@ Nach dem Push erscheinen neue Biere ab dem **übernächsten** Start der App (sie
 - **Eigene Dateien** (HTML, CSS, JS, Symbole): erst aus dem Netz, nur ohne Netz aus dem Cache. Nach einem Push kommt
   also beim nächsten Laden der neue Code.
 - **Bierdateien**: sofort aus dem Cache, im Hintergrund aktualisiert. Änderungen an `biere.json` oder
-  `biere_manuell.json` sind deshalb erst beim übernächsten Start sichtbar.
+  `biere_manuell.json` oder `biere_korrekturen.json` sind deshalb erst beim übernächsten Start sichtbar.
 - **Firebase-Module** von gstatic: einmal geladen, dann aus dem Cache (die Adresse enthält die Version).
 
 **`CACHE_VERSION` in `sw.js` erhöhen** (`'v1'` → `'v2'` …), wenn

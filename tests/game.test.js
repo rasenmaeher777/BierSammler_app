@@ -80,6 +80,57 @@ test('Zusammenführen: ungültig weg, doppelte ID → biere.json gilt, Warnung',
   assert.ok(warns.some((w) => w.includes('doppelte ID BS-000001')));
 });
 
+test('Korrekturen: überlagern einzelne Felder, Original bleibt unverändert', () => {
+  const warns = [];
+  const main = [raw('BS-000001', 'A - Eins', 2, { beschreibung: 'alt', zutaten: ['Wasser'] }), raw('BS-000002', 'B - Zwei', 3)];
+  const manual = [raw('BM-000001', 'C - Manuell', 1)];
+  const copy = JSON.stringify(main);
+  const r = G.mergeBeers(main, manual, KAT, (w) => warns.push(w), {
+    'BS-000001': { beschreibung: 'Neu geschrieben.', zutaten: null, alkoholgehalt: 5.5, brauerei_vertrieb: { region: 'Sachsen' } },
+    'BM-000001': { name: 'C - Umbenannt' },
+  });
+  const a = r.map.get('BS-000001');
+  assert.strictEqual(a.beschreibung, 'Neu geschrieben.');
+  assert.strictEqual(a.zutaten, null);           // null entfernt die Angabe
+  assert.strictEqual(a.alc, 5.5);
+  assert.strictEqual(a.company.region, 'Sachsen');
+  assert.strictEqual(a.company.name, 'Testbrauerei GmbH'); // übrige Unterfelder bleiben
+  assert.strictEqual(a.stufe, 2);
+  assert.strictEqual(r.map.get('BS-000002').beschreibung, null); // andere Biere unberührt
+  assert.strictEqual(r.map.get('BM-000001').name, 'C - Umbenannt');
+  assert.strictEqual(r.map.get('BM-000001').title, 'Umbenannt');
+  assert.strictEqual(JSON.stringify(main), copy, 'Eingabe darf nicht verändert werden');
+  assert.deepStrictEqual(warns, []);
+});
+
+test('Korrekturen: Stufe/ID nie änderbar, falsche Typen und unbekannte IDs → Warnung, Wert bleibt', () => {
+  const warns = [];
+  const r = G.mergeBeers([raw('BS-000001', 'A - Eins', 2, { beschreibung: 'alt' })], [], KAT, (w) => warns.push(w), {
+    'BS-000001': { kategorie_stufe: 5, kategorie_name: 'Z', id: 'BS-999999', beschreibung: 42, alkoholgehalt: 'viel', biersorte: 'Pils', name: '  ', brauerei_vertrieb: { plz: '1' } },
+    'BS-424242': { beschreibung: 'x' },
+    'BS-000002': 'kaputt',
+  });
+  const a = r.map.get('BS-000001');
+  assert.strictEqual(a.stufe, 2); assert.strictEqual(a.id, 'BS-000001');
+  assert.strictEqual(a.beschreibung, 'alt'); assert.strictEqual(a.alc, 4.9); assert.deepStrictEqual(a.sorten, ['Pils']);
+  assert.strictEqual(a.name, 'A - Eins');
+  assert.strictEqual(r.list.length, 1);
+  for (const w of ['„kategorie_stufe“', '„kategorie_name“', '„id“', 'ungültiger Wert für „beschreibung“', 'ungültiger Wert für „alkoholgehalt“',
+    'ungültiger Wert für „biersorte“', 'ungültiger Wert für „name“', 'brauerei_vertrieb.plz', 'unbekannte ID BS-424242', 'unbekannte ID BS-000002']) {
+    assert.ok(warns.some((x) => x.includes(w)), `Warnung fehlt: ${w}\n${warns.join('\n')}`);
+  }
+});
+
+test('Korrekturen: fehlend, leer oder keine Objektform → nichts passiert', () => {
+  const base = [raw('BS-000001', 'A - Eins', 2)];
+  for (const fx of [undefined, null, {}]) {
+    const w = []; const r = G.mergeBeers(base, [], KAT, (x) => w.push(x), fx);
+    assert.strictEqual(r.list.length, 1); assert.deepStrictEqual(w, []);
+  }
+  const w = []; const r = G.mergeBeers(base, [], KAT, (x) => w.push(x), []);
+  assert.strictEqual(r.list.length, 1); assert.strictEqual(w.length, 1);
+});
+
 /* ---------- Suche ---------- */
 
 test('Normalisierung', () => {
@@ -307,7 +358,8 @@ test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
   const main = JSON.parse(fs.readFileSync(path.join(dir, 'biere.json'), 'utf8'));
   const kat = JSON.parse(fs.readFileSync(path.join(dir, 'kategorien.json'), 'utf8'));
   const warns = [];
-  const r = G.mergeBeers(main, [], kat, (t) => warns.push(t));
+  const fixes = JSON.parse(fs.readFileSync(path.join(dir, 'biere_korrekturen.json'), 'utf8'));
+  const r = G.mergeBeers(main, [], kat, (t) => warns.push(t), fixes);
   assert.strictEqual(warns.length, 0, warns.slice(0, 3).join(' | '));
   assert.strictEqual(r.list.length, 6368);
   const t0 = Date.now();
