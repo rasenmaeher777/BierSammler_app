@@ -25,6 +25,8 @@
      setUsername(name)  Promise; Fehler mit err.code: 'local' | 'invalid' | 'taken' | 'offline' | 'error'
      signIn()           Promise; Anmeldung mit Google (Popup)
      signOut()          Promise; abmelden, Kopie auf diesem Gerät löschen, Seite neu laden
+     deleteAccount()    Promise; Konto endgültig löschen (erneute Google-Bestätigung, alle Daten, dann das Konto selbst), danach neu laden.
+                        Fehler mit err.code: 'local' | 'offline' | 'cancelled' | 'popup' | 'mismatch' | 'partial' | 'error'
      status()           'local' | 'loading' | 'out' | 'in' | 'error'
      error()            Text zum Status 'error'
      pending()          true, solange Änderungen noch nicht beim Server angekommen sind
@@ -44,6 +46,8 @@ window.STORE = (() => {
   const BATCH_MAX = 500;                      // Höchstzahl Vorgänge je Firestore-Batch
   const NAME_TIMEOUT = 10000;                 // ms; danach gilt der Server als nicht erreichbar
   const SCORE_DELAY = 1500;                   // ms; Änderungen der Rangliste werden so lange gebündelt
+  const DELETE_TIMEOUT = 30000;               // ms je Schritt beim Löschen des Kontos; danach gilt der Server als nicht erreichbar
+  const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: nach dem Neuladen „Konto gelöscht“ melden
 
   let onChange = () => {};
   const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, score: null, synced: false };
@@ -91,6 +95,7 @@ window.STORE = (() => {
     setUsername() { return Promise.reject(fail('local', 'Benutzernamen gibt es nur mit Anmeldung')); },
     signIn() { return Promise.resolve(); },
     signOut() { return Promise.resolve(); },
+    deleteAccount() { return Promise.reject(fail('local', 'Im lokalen Modus gibt es kein Konto')); },
     // Eine Rangliste gibt es nur mit Anmeldung
     publishScore() {},
     watchRanking(onData, onError) { onError(fail('local')); return () => {}; },
@@ -108,6 +113,7 @@ window.STORE = (() => {
   let scoreTimer = null;  // gebündeltes Veröffentlichen der Rangliste
   let lastScore = '';     // zuletzt veröffentlichter Stand („Name|Punkte|Anzahl“)
   let scoreWanted = '';   // Stand, für den gerade ein Timer läuft
+  let deleting = false;   // Konto wird gerade gelöscht: nichts mehr in die Rangliste schreiben
   const stopListening = () => { unsubs.forEach((u) => u()); unsubs = []; };
   const drinksCol = () => fb.collection(db, 'users', user.uid, 'drinks');
   const failed = (text) => (err) => {
@@ -189,7 +195,7 @@ window.STORE = (() => {
   function scheduleScore() {
     const key = scoreKey();
     // Läuft für genau diesen Stand schon ein Timer, nicht neu starten (sonst würde häufiges Neuzeichnen ihn ewig verschieben)
-    if (!user || !s.synced || !key || key === lastScore || key === scoreWanted) return;
+    if (!user || deleting || !s.synced || !key || key === lastScore || key === scoreWanted) return;
     scoreWanted = key;
     clearTimeout(scoreTimer);
     scoreTimer = setTimeout(flushScore, SCORE_DELAY);
@@ -197,7 +203,7 @@ window.STORE = (() => {
   function flushScore() {
     scoreWanted = '';
     const key = scoreKey();
-    if (!user || !s.synced || !key || key === lastScore) return;
+    if (!user || deleting || !s.synced || !key || key === lastScore) return;
     lastScore = key;
     background(fb.setDoc(fb.doc(db, 'leaderboard', user.uid), { username: s.profile.username, sum: s.score.sum, count: s.score.count }), 'Rangliste veröffentlichen');
   }
@@ -317,6 +323,74 @@ window.STORE = (() => {
       return fb.signInWithPopup(auth, new fb.GoogleAuthProvider());
     },
 
+    /* Konto endgültig löschen. Reihenfolge ist wichtig:
+       1. Erneute Anmeldung per Popup (Firebase verlangt für das Löschen eine frische Anmeldung; so schlägt der letzte Schritt nicht fehl,
+          nachdem schon alles gelöscht ist). Ein anderes Google-Konto wird abgelehnt.
+       2. Alle Daten löschen, mit Bestätigung des Servers (nichts im Hintergrund): Einträge, zuletzt in EINEM Batch Namensfreigabe,
+          Ranglisten-Eintrag und Profil (die Regeln verlangen, dass der Name im selben Vorgang freigegeben wird).
+       3. Erst danach das Anmeldekonto selbst. Danach wäre kein Zugriff auf die Daten mehr erlaubt.
+       Klappt Schritt 3 nicht, sind die Daten weg, das Konto besteht noch (err.code 'partial'); ein neuer Versuch ist gefahrlos. */
+    async deleteAccount() {
+      if (!user) throw fail('error', 'nicht angemeldet');
+      if (navigator.onLine === false) throw fail('offline');
+      const u = user;
+      const withTimeout = (p) => Promise.race([p, new Promise((_, reject) => setTimeout(() => reject(fail('offline')), DELETE_TIMEOUT))]);
+      try {
+        await fb.reauthenticateWithPopup(u, new fb.GoogleAuthProvider());
+      } catch (err) {
+        const code = err && err.code;
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') throw fail('cancelled');
+        if (code === 'auth/popup-blocked') throw fail('popup');
+        if (code === 'auth/user-mismatch') throw fail('mismatch');
+        if (code === 'auth/network-request-failed') throw fail('offline');
+        console.error('Erneute Anmeldung fehlgeschlagen', err);
+        throw fail('error');
+      }
+      deleting = true;
+      clearTimeout(scoreTimer);
+      scoreWanted = '';
+      try {
+        // Alle Einträge vom Server (nicht nur den lokalen Stand) plus noch nicht übertragene lokale
+        const [serverDrinks, serverProfile] = await withTimeout(Promise.all([fb.getDocsFromServer(drinksCol()), fb.getDocFromServer(fb.doc(db, 'users', u.uid))]));
+        const ids = [...new Set([...s.drinks.map((d) => d.id), ...serverDrinks.docs.map((d) => d.id)])];
+        const stored = serverProfile.exists() ? serverProfile.data().usernameKey : null;
+        const key = typeof stored === 'string' && /^[a-z0-9_]{3,20}$/.test(stored) ? stored : null;
+        const SIZE = BATCH_MAX - 3; // im letzten Batch kommen drei weitere Vorgänge dazu
+        const chunks = [];
+        for (let i = 0; i < ids.length; i += SIZE) chunks.push(ids.slice(i, i + SIZE));
+        if (!chunks.length) chunks.push([]);
+        for (let n = 0; n < chunks.length; n++) {
+          const batch = fb.writeBatch(db);
+          chunks[n].forEach((id) => batch.delete(fb.doc(drinksCol(), id)));
+          if (n === chunks.length - 1) {
+            if (key) batch.delete(fb.doc(db, 'usernames', key));
+            batch.delete(fb.doc(db, 'leaderboard', u.uid));
+            batch.delete(fb.doc(db, 'users', u.uid));
+          }
+          await withTimeout(batch.commit());
+        }
+      } catch (err) {
+        deleting = false;
+        lastScore = '';
+        if (err && err.code === 'offline') throw err;
+        if (err && (err.code === 'unavailable' || err.code === 'deadline-exceeded')) throw fail('offline');
+        console.error('Daten konnten nicht gelöscht werden', err);
+        throw fail('error');
+      }
+      try {
+        stopListening();
+        await fb.deleteUser(u);
+      } catch (err) {
+        deleting = false;
+        lastScore = '';
+        console.error('Konto konnte nicht gelöscht werden', err);
+        throw fail('partial');
+      }
+      try { sessionStorage.setItem(SS_DELETED, '1'); } catch { /* ohne Speicher entfällt nur die Meldung */ }
+      // Normalerweise meldet onAuthStateChanged das Ende der Anmeldung schon selbst (löscht den Zwischenspeicher und lädt neu)
+      if (user) onUser(null);
+    },
+
     async signOut() {
       stopListening();
       try { await fb.signOut(auth); } catch (err) { console.error('Abmelden fehlgeschlagen', err); }
@@ -337,6 +411,7 @@ window.STORE = (() => {
     setUsername: (name) => impl.setUsername(name),
     signIn: () => impl.signIn(),
     signOut: () => impl.signOut(),
+    deleteAccount: () => impl.deleteAccount(),
     status: () => s.status,
     error: () => s.error,
     pending: () => s.pending,

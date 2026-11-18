@@ -124,7 +124,7 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 - Abmelden: `signOut` → `terminate` + `clearIndexedDbPersistence` → neu laden. Ein anderes Konto als zuletzt
   (`biersammler-uid-v1`) löscht ebenfalls den Zwischenspeicher, das neue Konto beginnt leer.
 - Firebase-SDK-Version `10.12.2` steht in `js/store.js`, `sw.js` und den drei `modulepreload`-Links in `index.html`.
-- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`, `-welcome-v1`.
+- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`, `-welcome-v1`; sessionStorage `-deleted-v1`.
 
 ## Rangliste („Platzierung“, 18.11.2026)
 
@@ -150,6 +150,23 @@ Name wählen, ändern, nur Groß/klein ändern). Nicht automatisch getestet: Es 
 Wesentlich: drinks nur create/delete mit genau `beerId` (`^B[SM]-[0-9]{6}$`) und `at` (int, ≤ jetzt + 5 min);
 usernames nur anlegen, wenn frei, für sich selbst, mit passendem `users/<uid>.usernameKey` (getAfter) und nur, wenn ein
 bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen des Profils).
+
+## Konto löschen (18.11.2026)
+
+- Einstellungen → Konto → „Konto löschen …“ (`deleteAccountFlow` in `js/app.js`, `STORE.deleteAccount` in `js/store.js`), nur im Firebase-Modus.
+  Bestätigung mit Eintippen von „LÖSCHEN“. Reihenfolge im Store: (1) `reauthenticateWithPopup` (Firebase verlangt frische Anmeldung;
+  vorher, damit der letzte Schritt nicht scheitert, wenn schon alles weg ist; anderes Google-Konto → `user-mismatch`), (2) Daten löschen
+  MIT Serverbestätigung (`getDocsFromServer` für die Einträge, plus lokal noch nicht übertragene; Batches zu je ≤ 497 Einträgen, im
+  LETZTEN Batch zusammen Namensfreigabe `usernames/<key>`, `leaderboard/<uid>`, `users/<uid>`, weil die Regeln die Namensfreigabe im
+  selben Vorgang verlangen; Schlüssel aus `users/<uid>.usernameKey` vom Server), (3) `deleteUser`. Danach meldet `onAuthStateChanged` ab,
+  `wipeAndReload` leert den Zwischenspeicher, nach dem Neuladen erscheint „Dein Konto wurde gelöscht.“ (sessionStorage `biersammler-deleted-v1`).
+- Fehlercodes: `offline`, `cancelled`, `popup`, `mismatch`, `partial` (Daten weg, Konto besteht noch; erneuter Versuch ist gefahrlos), `error`.
+  `deleting` verhindert währenddessen das Neu-Veröffentlichen in der Rangliste.
+- Keine Regeländerung nötig (Besitzer darf alle eigenen Dokumente löschen). Neue Spieler-UID entsteht bei erneuter Anmeldung.
+- Getestet mit nachgebildetem Firebase (Import-Map auf lokale Module in einer Scratchpad-Kopie): Abbruch beim Google-Popup (nichts gelöscht),
+  Fehler bei `deleteUser` (Daten weg, Meldung „partial“, Wiederholung klappt), Erfolg (Abmelden, Neuladen, Meldung), Namensfreigabe im selben
+  Batch (nachgebildete Regel), 375 px. NICHT getestet: echtes Firebase (Popup, `requires-recent-login`, echte Regeln), Offline-Fall, > 497 Einträge
+  im echten Firestore, iPhone/Safari (Popup nach der Bestätigung im Dialog könnte dort blockiert werden → Meldung „Popups erlauben“).
 
 ## Willkommensfenster (18.11.2026)
 

@@ -193,6 +193,10 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
 - Kein Nachtragen: Es zählt der Zeitpunkt des Bestätigens.
+- **Konto löschen:** Einstellungen → Konto → „Konto löschen …“ (nur mit Anmeldung). Nach Eintippen von „LÖSCHEN“ bestätigt man sich noch einmal
+  bei Google; dann werden alle Einträge, der Benutzername, der Ranglisten-Eintrag und das Anmeldekonto endgültig gelöscht. Das braucht
+  Internet. Anders als „Profil zurücksetzen“ (behält das Konto) verschwindet hier auch das Konto selbst. Die Firestore-Regeln mussten dafür
+  nicht geändert werden.
 - **Willkommensfenster:** Nach der ersten Anmeldung (einmal je Konto und Gerät) erscheinen die wichtigsten Regeln samt Hinweis, dass man
   für die Platzierung einen Benutzernamen erstellen muss.
 - **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die

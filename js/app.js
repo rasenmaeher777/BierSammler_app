@@ -798,7 +798,7 @@
           <button class="btn danger-ghost" type="button" data-set="reset">Profil zurücksetzen …</button>
         </section>
         <section class="set-sec responsible">
-          <p><b>Verantwortungsvoll genießen.</b> Trink nie, um Punkte zu sammeln, und nie, wenn du noch fahren musst.
+          <p><b>Saufen, Saufen und Saufen</b> Trink nie, um Punkte zu sammeln, sondern nur, um zu Genießen.
             Bier Sammler ist nur für Personen ab 18 Jahren.</p>
         </section>
         <p class="legal"><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
@@ -879,7 +879,9 @@
     const p = STORE.profile();
     box.innerHTML = `<p class="note">Angemeldet mit Google${p.email ? ` als ${esc(p.email)}` : ''}. Beim Abmelden wird die Kopie deiner Daten auf diesem Gerät gelöscht;
         deine Sammlung bleibt im Konto gespeichert.</p>
-      <button class="btn" type="button" data-set="signout">Abmelden</button>`;
+      <button class="btn" type="button" data-set="signout">Abmelden</button>
+      <p class="note del-note"><b>Konto löschen:</b> Entfernt dein Konto samt Sammlung, Benutzernamen und Platz in der Rangliste endgültig vom Server.</p>
+      <button class="btn danger-ghost" type="button" data-set="deleteaccount">Konto löschen …</button>`;
   }
 
   function howtoHtml() {
@@ -972,6 +974,7 @@
     if (act === 'minus' || act === 'delete') deleteFromCard(b.dataset.id, act === 'delete');
     else if (act === 'reset') resetProfile();
     else if (act === 'signout') signOutFlow();
+    else if (act === 'deleteaccount') deleteAccountFlow();
   });
   setDlg.addEventListener('input', (e) => {
     if (e.target.id === 'set-filter') { set.filter = e.target.value; paintCollection(); }
@@ -987,6 +990,40 @@
     if (e.target.id === 'set-name-form') saveUsername(e.target);
   });
   setDlg.addEventListener('close', () => { if (!setDlg.open) setDlg.innerHTML = ''; });
+
+  /* Konto endgültig löschen (nur im Firebase-Modus, der Knopf steht unter „Konto“). Nach der Bestätigung mit Eintippen fragt Google
+     noch einmal nach der Anmeldung (Pflicht für das Löschen), dann wird alles gelöscht und die Seite lädt neu (siehe STORE.deleteAccount). */
+  let deletingAccount = false;
+  async function deleteAccountFlow() {
+    if (deletingAccount || STORE.mode !== 'firebase') return;
+    const n = STORE.drinks().length;
+    const ok = await confirmBox({
+      title: 'Konto endgültig löschen?',
+      html: `Dein Konto wird gelöscht, samt ${n === 0 ? 'allen gespeicherten Daten' : `${n === 1 ? 'dem einzigen Eintrag' : `allen ${G.fmtInt(n)} Einträgen`} und deiner Sammlung`}${STORE.profile().username ? ', deinem Benutzernamen und deinem Platz in der Rangliste' : ''}.
+        Das lässt sich nicht rückgängig machen. Du brauchst dafür Internet und musst dich gleich noch einmal bei Google bestätigen.`,
+      ok: 'Konto endgültig löschen',
+      typeWord: 'LÖSCHEN',
+    });
+    if (!ok) return;
+    deletingAccount = true;
+    toast('Konto wird gelöscht …');
+    try {
+      await STORE.deleteAccount();
+      // Erfolg: STORE meldet ab und lädt die Seite neu; dort erscheint „Konto gelöscht“
+    } catch (err) {
+      const text = {
+        offline: 'Keine Verbindung. Zum Löschen brauchst du Internet. Es wurde nichts gelöscht.',
+        cancelled: 'Abgebrochen. Dein Konto wurde nicht gelöscht.',
+        popup: 'Das Anmeldefenster wurde blockiert. Bitte Popups erlauben und noch einmal versuchen.',
+        mismatch: 'Bitte mit demselben Google-Konto bestätigen. Es wurde nichts gelöscht.',
+        partial: 'Deine Daten sind gelöscht, das Konto selbst ließ sich aber noch nicht entfernen. Bitte noch einmal versuchen.',
+      }[err && err.code] || 'Löschen hat nicht geklappt. Bitte später noch einmal versuchen.';
+      if (!(err && err.code)) console.error(err);
+      toast(text);
+    } finally {
+      deletingAccount = false;
+    }
+  }
 
   async function signOutFlow() {
     if (STORE.pending()) {
@@ -1154,6 +1191,8 @@
   }
 
   applyTheme(currentTheme());
+  // Nach dem Löschen des Kontos lädt STORE die Seite neu und merkt sich das in sessionStorage
+  try { if (sessionStorage.getItem('biersammler-deleted-v1')) { sessionStorage.removeItem('biersammler-deleted-v1'); toast('Dein Konto wurde gelöscht.'); } } catch { /* ohne Speicher keine Meldung */ }
   showAgeNotice();
   STORE.start(onStoreChange);
   loadBeers();
