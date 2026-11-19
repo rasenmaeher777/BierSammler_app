@@ -187,8 +187,8 @@ window.KARTE = (() => {
     const spin = el('span', 'spinner'); spin.setAttribute('aria-hidden', 'true');
     load.append(spin, document.createTextNode('Karte wird geladen …'));
     const attr = el('p', 'map-attr', ATTRIBUTION);
-    wrap.append(canvas, ctl, info, load, attr);
-    host.replaceChildren(wrap);
+    wrap.append(canvas, ctl, load, attr);
+    host.replaceChildren(wrap, info); // das Info-Feld liegt UNTER der Karte, nicht darüber (sonst überdeckt es Namen und Quellenangabe)
 
     const ctx = canvas.getContext('2d');
     const calm = matchMedia('(prefers-reduced-motion: reduce)');
@@ -249,11 +249,20 @@ window.KARTE = (() => {
     function resize() {
       const r = wrap.getBoundingClientRect();
       if (!r.width || !r.height) return;
+      const dh = fitted ? r.height - V.h : 0;
       V.w = r.width; V.h = r.height;
       V.dpr = Math.min(3, window.devicePixelRatio || 1);
       canvas.width = Math.round(V.w * V.dpr);
       canvas.height = Math.round(V.h * V.dpr);
-      if (!fitted) { fitAll(false); fitted = true; } else setView(V.cx, V.cy, V.z);
+      if (!fitted) { fitAll(false); fitted = true; } else {
+        // Wird die Karte höher oder niedriger (Info-Feld erscheint oder verschwindet), bleibt der obere Rand stehen
+        setView(V.cx, V.cy + dh / 2 / V.s, V.z);
+        // Der gewählte Punkt darf nicht unter dem Info-Feld verschwinden
+        if (selected) {
+          const y = (selected.y - V.cy) * V.s + V.h / 2;
+          if (y < 24 || y > V.h - 40) animateTo(V.cx, selected.y - (V.h * 0.45 - V.h / 2) / V.s, V.z, 220);
+        }
+      }
       schedule();
     }
 
@@ -296,7 +305,7 @@ window.KARTE = (() => {
       if (stroke) { ctx.beginPath(); trace(feats, skip); ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.stroke(); }
     }
 
-    const dotRadius = (n) => Math.min(13, 2.6 + 1.9 * Math.sqrt(n - 1));
+    const dotRadius = (n) => Math.min(14, 3.3 + 1.9 * Math.sqrt(n - 1));
 
     function draw() {
       raf = 0;
@@ -347,12 +356,12 @@ window.KARTE = (() => {
         const x = (g.x - cx) * s + w / 2, y = (g.y - cy) * s + h / 2, r = dotRadius(g.count) + 1;
         if (x > -r && x < w + r && y > -r && y < h + r) boxes.push([x - r, y - r, x + r, y + r]);
       }
-      const put = (text, f, size, minPx) => {
+      const put = (text, f, size, minPx, halo) => {
         const bw = (f.bbox[2] - f.bbox[0]) * s;
         if (bw < minPx) return;
         const x0 = (f.c[0] - cx) * s + w / 2, y0 = (f.c[1] - cy) * s + h / 2;
         if (x0 < 0 || x0 > w || y0 < 0 || y0 > h) return;
-        ctx.font = `600 ${size}px ${FONT}`;
+        ctx.font = `500 ${size}px ${FONT}`;
         const tw = ctx.measureText(text).width;
         // Liegt etwas im Weg (Punkt, anderer Name), versucht der Name noch Stellen darunter, darüber und seitlich
         const d = size + 3, side = tw / 2 + 12, diag = side * 0.7;
@@ -366,7 +375,7 @@ window.KARTE = (() => {
           ctx.textBaseline = 'middle';
           ctx.lineWidth = 3;
           ctx.lineJoin = 'round';
-          ctx.strokeStyle = C.land;
+          ctx.strokeStyle = halo;
           ctx.strokeText(text, x, y);
           ctx.fillStyle = C.label;
           ctx.fillText(text, x, y);
@@ -379,10 +388,10 @@ window.KARTE = (() => {
         for (const g of groups) { const f = findFeature(feats, g.x, g.y); if (f) hot.add(f); }
         return [...hot, ...feats.filter((f) => !hot.has(f))];
       };
-      if (z >= 10.2) prio(geo.ortsteile).forEach((f) => put(f.name, f, 11, 34));
-      else if (z >= 8.2) prio(geo.kreise).forEach((f) => put(f.name, f, 10.5, 40));
-      if (z >= 4.6 && z < 8.6) geo.bundeslaender.forEach((f) => put(f.name, f, 12, 30));
-      if (z < 6.8) geo.laender.forEach((f) => put(f.name, f, 11, 26));
+      if (z >= 10.2) prio(geo.ortsteile).forEach((f) => put(f.name, f, 11, 34, C.ort));
+      else if (z >= 8.2) prio(geo.kreise).forEach((f) => put(f.name, f, 10.5, 40, C.de));
+      if (z >= 4.6 && z < 8.6) geo.bundeslaender.forEach((f) => put(f.name, f, 12, 30, C.de));
+      if (z < 6.8) geo.laender.forEach((f) => put(f.name, f, 11, 26, C.land));
     }
 
     function schedule() { if (!raf && !dead) raf = requestAnimationFrame(frame); }

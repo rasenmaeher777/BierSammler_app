@@ -31,7 +31,7 @@
   --k6: #E0A91B; --on-k6: #2B2010;  /* Heiligtum: Gold */
   --foil-k5: 0.65; --foil-k6: 0.5;  /* Deckkraft der Holo-Folie: im dunklen Modus schwächer, sonst leidet die Lesbarkeit */
   /* STANDORT-KARTE (js/karte.js): Wasser/Außenfläche, Land, Deutschland, Grenzlinie, Berlin-Ortsteile, Beschriftung, Punkt, Punktrand */
-  --map-bg: #DCE5E8; --map-land: #F3EEE2; --map-de: #FFFBF0; --map-line: #BFB39C; --map-ort: #FBF0D6; --map-label: #5E5549; --map-dot: #E8730C; --map-ring: #FFFFFF;
+  --map-bg: #D3E1E8; --map-land: #ECEBE6; --map-de: #F6F5F1; --map-line: #BDBDB6; --map-ort: #E5ECE6; --map-label: #84857F; --map-dot: #F2690A; --map-ring: #FFFFFF;
 }
 
 /* ---------- Farben: dunkel (System-Einstellung, sofern nicht „hell“ gewählt) ---------- */
@@ -60,7 +60,7 @@
     --k5: #B796E2; --on-k5: #15130F;
     --k6: #F2C14E; --on-k6: #15130F;
     --foil-k5: 0.5; --foil-k6: 0.3;
-    --map-bg: #162126; --map-land: #25221C; --map-de: #302B23; --map-line: #4F473A; --map-ort: #3A3225; --map-label: #C4B9A7; --map-dot: #FF9A3A; --map-ring: #15130F;
+    --map-bg: #141D22; --map-land: #1F2327; --map-de: #272C30; --map-line: #454B50; --map-ort: #2C3935; --map-label: #98A0A2; --map-dot: #FFA23F; --map-ring: #15130F;
   }
 }
 /* ---------- Farben: dunkel (Auswahl „dunkel“) – identisch zum Block darüber ---------- */
@@ -88,7 +88,7 @@
   --k5: #B796E2; --on-k5: #15130F;
   --k6: #F2C14E; --on-k6: #15130F;
   --foil-k5: 0.5; --foil-k6: 0.3;
-  --map-bg: #162126; --map-land: #25221C; --map-de: #302B23; --map-line: #4F473A; --map-ort: #3A3225; --map-label: #C4B9A7; --map-dot: #FF9A3A; --map-ring: #15130F;
+  --map-bg: #141D22; --map-land: #1F2327; --map-de: #272C30; --map-line: #454B50; --map-ort: #2C3935; --map-label: #98A0A2; --map-dot: #FFA23F; --map-ring: #15130F;
 }
 
 /* ---------- Grundlayout ---------- */
@@ -901,13 +901,13 @@ button.bcard:active { transform: scale(0.98); }
 .map-btn:hover { border-color: var(--muted); }
 .map-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .map-info {
-  position: absolute; left: 10px; right: 60px; bottom: 26px; max-height: 40%; overflow-y: auto;
-  padding: 10px 12px; border-radius: 12px; background: var(--surface); color: var(--text);
-  box-shadow: 0 2px 12px var(--shadow); font-size: 14px;
+  flex: none; max-height: 40%; overflow-y: auto; overscroll-behavior: contain;
+  padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: var(--surface); color: var(--text); border-top: 1px solid var(--line); font-size: 15px;
 }
 .map-info[hidden] { display: none; }
 .map-info-head { margin: 0; }
-.map-info-list { margin: 6px 0 0; padding: 0 0 0 18px; color: var(--muted); font-size: 13px; }
+.map-info-list { margin: 6px 0 0; padding: 0 0 0 18px; color: var(--muted); font-size: 14px; }
 .map-info-list .more { list-style: none; margin-left: -18px; font-style: italic; }
 .map-load {
   position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px;
