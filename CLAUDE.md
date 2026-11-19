@@ -6,7 +6,7 @@ dort nachlesen statt hier doppeln. Stand: 18.11.2026.
 ## Worum es geht
 
 Spielerische Web-App: Nach jedem getrunkenen Bier trägt der Spieler es ein. Jedes Bier ist eine Sammelkarte in einer von
-fünf Seltenheits-Kategorien; Punkte lassen das Level steigen. Eigenes Konto per Google-Anmeldung, Fortschritt in
+sechs Seltenheits-Kategorien; Punkte lassen das Level steigen. Eigenes Konto per Google-Anmeldung, Fortschritt in
 Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohne Netz.
 
 - Hosting: GitHub Pages aus einem öffentlichen Repository, Branch `main`, Ordner `/ (root)`.
@@ -46,7 +46,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 ## Bierdaten
 
 - `biere.json`: 6.368 Biere, IDs `BS-000001` … `BS-006368`, erzeugt von `Datensammlung/scraper/scraper.py`
-  (Kategorie fest aus der ID abgeleitet; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
+  (Kategorie fest aus der ID abgeleitet, siehe „Kategorien“; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
   Skript verändern.
 - `biere_manuell.json`: gleiches Format, IDs `BM-000001` fortlaufend. Doppelte ID → Warnung, `biere.json` gilt.
   Stand 18.11.2026: `BM-000001`…`BM-000004` = die vier Kosmonaut-Biere (REWE-Marke, Quelle rewe-kosmonaut.de/de): Helles Flasche,
@@ -64,9 +64,30 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   ohne „ - “ ganzer Name als Titel, Firmenname als Marke), `sorten` (Liste, evtl. leer), `alc` (0 = „alkoholfrei“),
   `flasche`, `company { typ, name, adresse, region, land }`, `beschreibung`, `zutaten`, `stufe`, `kategorie`.
   Fehlende Werte sind `null` bzw. `[]` und werden in der Oberfläche weggelassen.
-- Die Kategorie-STUFE ist intern (Sortierung, Punkte, Farbe `.k1`…`.k5`) und wird NIE angezeigt, nur der Name.
+- Die Kategorie-STUFE ist intern (Sortierung, Punkte, Farbe `.k1`…`.k6`) und wird NIE angezeigt, nur der Name.
 - Eigenheiten: 1.092× keine Beschreibung, 252× 0,0 % Alkohol, 2.064× mehrere Sorten, 1.082× keine Region,
   18 doppelte Namen (Treffer zeigen deshalb Flaschengröße und Alkohol), 2.379× Marke ≠ Firmenname, 1.518 ausländische Biere.
+
+## Kategorien (19.11.2026)
+
+- Sechs Stufen: 1 Standardgebräu (50 %), 2 Klassiker (15 %), 3 Spezialität (15 %), 4 **Raddelfuß** (10 %), 5 Zaubertrank (7 %), 6 Heiligtum (3 %).
+  Punkte 10, 11, 12, 14, 14, 16 (Raddelfuß = Zaubertrank). Raddelfuß wurde am 19.11.2026 aus den früheren Klassikern (25 %) herausgeschnitten;
+  Zaubertrank wurde Stufe 5, Heiligtum Stufe 6. Tatsächliche Zahlen in `biere.json`: 3.200 / 933 / 983 / 599 / 459 / 194.
+- Zuordnung im Scraper (`kategorie()`): fester Zufallswert je ID, Bereiche in der Reihenfolge `ZIEH_REIHENFOLGE` (Raddelfuß liegt im Zufallsbereich
+  zwischen Klassiker und Spezialität, NICHT bei Stufe 4 in der Reihe). Nur so behielt jedes andere Bier seine Kategorie – geprüft gegen die alte
+  `biere.json`: 599 Klassiker → Raddelfuß, alle übrigen nur umnummeriert (4→5, 5→6), alle anderen Felder unverändert. `FESTE_KATEGORIE` hält einzelne
+  Biere unabhängig vom Zufall: `BS-000887` Sternburg - Export bleibt Klassiker (wäre sonst Raddelfuß geworden; Wunsch des Nutzers).
+  Neu erzeugt mit `python3 scraper.py --nur-export` (aus dem Cache, ohne Netz). `biere.json` weiter NIE von Hand ändern.
+- Auswirkung auf Spieler: Die Umnummerierung (Zaubertrank 4→5, Heiligtum 5→6) ändert keine Punkte, denn die Punkte hängen am Wert, nicht an der Nummer
+  (1,4 und 1,6 wie vorher). Geändert hat sich nur bei den 599 Bieren, die von Klassiker (1,1) auf Raddelfuß (1,4) gewechselt sind: Wer eines davon
+  getrunken hat, bekommt rückwirkend 0,3 Punkte mehr je Eintrag. Die Rangliste korrigiert sich beim Öffnen selbst. In Firestore ist nichts zu migrieren.
+- Firestore-Regeln unverändert nötig (Spanne 10…16 je Bier bleibt); nur der Kommentar in `firestore.rules` wurde angepasst.
+- Daten-Cache: `biere.json` und `kategorien.json` werden mit `?stufen=6` geladen (`STUFEN_MARKE` in `js/app.js`, `DATA_FILES` in `sw.js`), `CACHE_VERSION` = `v4`.
+  Ohne die Marke hätte der Service Worker (stale-while-revalidate) neuem Code einmal die alten Daten geliefert (falsche Punkte/Farben/Rangliste).
+  Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
+- Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); Neue Stufe = `POINTS`, `kategorien.json`/Scraper, CSS (`--kN`, `.kN`, Muster, Rahmen, Band, drei Farbblöcke), Tests.
+- Design Raddelfuß (`.k4`): Rot `--k4` (hell `#C62F2F`, dunkel `#F08A82`), rot-weißes Karo als Material (Maske aus zwei Streifenscharen), Zuckerstangen-Rahmen
+  (rot-weiße Schrägstreifen, 3 px), Band rot mit zwei weißen Zierlinien, keine Holo-Folie und kein wandernder Glanz (die bleiben Zaubertrank und Heiligtum).
 
 ## Glückskeks-Sprüche (18.11.2026)
 
@@ -80,13 +101,13 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 
 ## Spielregeln und Rechnen
 
-- Punkte in Zehnteln: Stufe 1–5 = 10, 11, 12, 14, 16. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
+- Punkte in Zehnteln: Stufe 1–6 = 10, 11, 12, 14, 14, 16. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
   seit 18.11.2026; vorher 20). `LEVEL_POINTS` in `js/game.js`; Text in Spielanleitung, Willkommensfenster, `aria-label` in `index.html` und README mitändern.
 - Alles (Punkte, Level, Sammlung, Statistiken) wird aus dem Protokoll berechnet, nie gespeichert.
 - Kein Nachtragen: Zeitpunkt = Geräteuhr beim Bestätigen. Keine Tages-Serien.
 - Pflicht-Beispiele, die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
-  0 → Level 1, Ring 0 · 10×Stufe 5 = 160 → Level 2, 6,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
-  19×Stufe 4 = 266 → Level 3, 6,6/10 · 13×Stufe 1 + 5×Stufe 5 = 210 → Level 3, 1,0/10 · 3×Stufe 2 = 33 → „3,3“.
+  0 → Level 1, Ring 0 · 10×Stufe 6 = 160 → Level 2, 6,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
+  19×Stufe 4 = 266 (Stufe 4 = Raddelfuß, 1,4) → Level 3, 6,6/10 · 13×Stufe 1 + 5×Stufe 6 = 210 → Level 3, 1,0/10 · 3×Stufe 2 = 33 → „3,3“.
 - Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
   24 und 40 Mal verändert sich die Optik der Karte in fünf Stufen (`GAME.cardTier`, Klassen `t1`…`t5` auf `.bcard-body`
   und `.bottle`): Farbschimmer in der Mitte, Glanz, Schaumkrone, Strahlen, Sterne, goldene Flasche mit Funkeln. Rahmen

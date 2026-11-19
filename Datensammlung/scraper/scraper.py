@@ -5,7 +5,7 @@ BierSammler – Datensammler für bier-universum.de
 Lädt alle Biere aus https://www.bier-universum.de/datenbank/biersuche und
 erzeugt daraus:
     Datensammlung/biere.json       (alle Biere)
-    Datensammlung/kategorien.json  (die 5 Seltenheits-Kategorien)
+    Datensammlung/kategorien.json  (die 6 Seltenheits-Kategorien)
     Datensammlung/biere.csv        (dieselben Daten für Excel/Numbers)
 
 Nur Python-Standardbibliothek, keine Installation nötig.
@@ -45,13 +45,25 @@ DETAILS_DATEI = CACHE_ORDNER / "details.jsonl"     # Rohdaten je Bier (eine Zeil
 FEHLER_DATEI = CACHE_ORDNER / "fehler.json"        # Seiten, die nicht geladen werden konnten
 ID_DATEI = CACHE_ORDNER / "id_zuordnung.json"      # interne Quell-Nr. -> BierSammler-ID (bleibt stabil!)
 
-KATEGORIEN = [
+KATEGORIEN = [  # Reihenfolge = Stufe (Punkte und Sortierung in der App hängen daran)
     {"stufe": 1, "name": "Standardgebräu", "anteil": 0.50},
-    {"stufe": 2, "name": "Klassiker", "anteil": 0.25},
+    {"stufe": 2, "name": "Klassiker", "anteil": 0.15},
     {"stufe": 3, "name": "Spezialität", "anteil": 0.15},
-    {"stufe": 4, "name": "Zaubertrank", "anteil": 0.07},
-    {"stufe": 5, "name": "Heiligtum", "anteil": 0.03},
+    {"stufe": 4, "name": "Raddelfuß", "anteil": 0.10},
+    {"stufe": 5, "name": "Zaubertrank", "anteil": 0.07},
+    {"stufe": 6, "name": "Heiligtum", "anteil": 0.03},
 ]
+
+# Reihenfolge, in der der Zufallswert (0 bis 1) auf die Kategorien verteilt wird. Sie weicht von der Stufenreihenfolge ab:
+# Raddelfuß wurde aus dem hinteren Teil der früheren Klassiker (damals 25 %) herausgeschnitten und liegt deshalb im
+# Zufallsbereich zwischen Klassiker und Spezialität. Nur so behält jedes andere Bier seine bisherige Kategorie.
+# NICHT umsortieren und die Anteile nur ändern, wenn bewusst Biere die Kategorie wechseln sollen.
+ZIEH_REIHENFOLGE = ["Standardgebräu", "Klassiker", "Raddelfuß", "Spezialität", "Zaubertrank", "Heiligtum"]
+
+# Biere, die unabhängig vom Zufall in einer festen Kategorie bleiben (ID -> Name der Kategorie)
+FESTE_KATEGORIE = {
+    "BS-000887": "Klassiker",  # Sternburg - Export (läge sonst im Raddelfuß-Bereich)
+}
 
 PRO_SEITE = 20
 
@@ -330,8 +342,13 @@ def firma(roh):
 
 def kategorie(bier_id):
     """Zufällige, aber feste Kategorie je Bier (gleiche ID -> immer gleiche Kategorie)."""
-    rng = random.Random(f"biersammler-{bier_id}")
-    k = rng.choices(KATEGORIEN, weights=[k["anteil"] for k in KATEGORIEN])[0]
+    nach_name = {k["name"]: k for k in KATEGORIEN}
+    if bier_id in FESTE_KATEGORIE:
+        k = nach_name[FESTE_KATEGORIE[bier_id]]
+    else:
+        rng = random.Random(f"biersammler-{bier_id}")
+        name = rng.choices(ZIEH_REIHENFOLGE, weights=[nach_name[n]["anteil"] for n in ZIEH_REIHENFOLGE])[0]
+        k = nach_name[name]
     return k["name"], k["stufe"]
 
 

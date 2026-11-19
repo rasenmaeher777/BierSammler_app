@@ -18,10 +18,15 @@
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
   const LS_WELCOME = 'biersammler-welcome-v1'; // Kontokennungen (Komma-getrennt), die das Willkommensfenster schon gesehen haben; „local“ = lokaler Modus
   const LS_MOTION = 'biersammler-motion-v1'; // „0“ = Neigungssensor abgelehnt, nicht mehr fragen
+  /* biere.json und kategorien.json tragen die Zahl der Stufen in der Adresse (?stufen=6). Der Service Worker liefert Bierdateien
+     zuerst aus dem Cache (stale-while-revalidate); ohne diese Marke bekäme neuer Code beim ersten Start nach einer Änderung der
+     Stufen noch die alten Daten (falsche Punkte und Farben, falsche Werte in der Rangliste). Muss zu DATA_FILES in sw.js passen
+     und bei jeder Änderung der Stufen mitgeändert werden. */
+  const STUFEN_MARKE = '?stufen=6';
   const BEER_FILES = {
-    main: 'Datensammlung/biere.json',
+    main: 'Datensammlung/biere.json' + STUFEN_MARKE,
     manual: 'Datensammlung/biere_manuell.json',
-    kategorien: 'Datensammlung/kategorien.json',
+    kategorien: 'Datensammlung/kategorien.json' + STUFEN_MARKE,
     korrekturen: 'Datensammlung/biere_korrekturen.json',
     nachrichten: 'Datensammlung/nachrichten.json', // Glückskeks-Sprüche nach dem Bestätigen eines Biers
   };
@@ -611,7 +616,7 @@
     }).join('');
 
     // Kategorien: seltenste zuerst, nur Namen (keine Stufenzahlen)
-    const kats = [5, 4, 3, 2, 1].filter((st) => db.kat[st]).map((st) => {
+    const kats = [...G.STUFEN].reverse().filter((st) => db.kat[st]).map((st) => {
       const k = db.kat[st];
       const found = s.foundByStufe[st] || 0;
       return `<li class="k${st}"><span class="kat-name">${esc(k.name)}</span>
@@ -899,7 +904,7 @@
   }
 
   function howtoHtml() {
-    const kats = [1, 2, 3, 4, 5].filter((st) => db.kat && db.kat[st])
+    const kats = G.STUFEN.filter((st) => db.kat && db.kat[st])
       .map((st) => `<li class="k${st}"><span class="dot" aria-hidden="true"></span>${esc(db.kat[st].name)} <span class="h-sub">${fmtPoints(G.pointsFor(st))} pro Bier</span></li>`).join('');
     return `<p><b>So geht’s:</b> Tippe nach jedem Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt –
         erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>

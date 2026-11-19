@@ -9,10 +9,12 @@
    - Alles andere (Firestore, Google-Anmeldung) geht ungefiltert ans Netz; das regelt Firebase selbst.
 
    CACHE_VERSION erhöhen, wenn sich die LISTE der vorab gespeicherten Dateien ändert (neue, umbenannte oder
-   gelöschte Datei) oder die Firebase-Version. Für normale Änderungen am Code ist das nicht nötig. */
+   gelöschte Datei) oder die Firebase-Version. Für normale Änderungen am Code ist das nicht nötig.
+   Ändern sich die Seltenheitsstufen (Anzahl oder Bedeutung), zusätzlich die Marke ?stufen=… in DATA_FILES UND in
+   js/app.js (STUFEN_MARKE) hochsetzen, sonst läuft neuer Code einmal mit alten Bierdaten. */
 'use strict';
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -35,10 +37,11 @@ const APP_FILES = [
   'impressum.html',
   'datenschutz.html',
 ];
+// biere.json und kategorien.json mit der Marke ?stufen=6 wie in js/app.js (STUFEN_MARKE): sechs Seltenheitsstufen seit der Aufnahme von Raddelfuß
 const DATA_FILES = [
-  'Datensammlung/biere.json',
+  'Datensammlung/biere.json?stufen=6',
   'Datensammlung/biere_manuell.json',
-  'Datensammlung/kategorien.json',
+  'Datensammlung/kategorien.json?stufen=6',
   'Datensammlung/biere_korrekturen.json',
   'Datensammlung/nachrichten.json',
 ];

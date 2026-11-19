@@ -1,7 +1,7 @@
 # Bier Sammler
 
-Spielerische Web-App: Nach jedem getrunkenen Bier trägst du es ein. Jedes Bier ist eine Sammelkarte in einer von fünf
-Seltenheits-Kategorien (Standardgebräu, Klassiker, Spezialität, Zaubertrank, Heiligtum). Punkte lassen dein Level steigen.
+Spielerische Web-App: Nach jedem getrunkenen Bier trägst du es ein. Jedes Bier ist eine Sammelkarte in einer von sechs
+Seltenheits-Kategorien (Standardgebräu, Klassiker, Spezialität, Raddelfuß, Zaubertrank, Heiligtum). Punkte lassen dein Level steigen.
 Anmeldung mit Google, Speicherung in Cloud Firestore, nutzbar auf iPhone und Mac, auch als installierte Web-App und ohne Netz.
 
 Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine npm-Abhängigkeiten.
@@ -23,7 +23,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | Datei | Aufgabe |
 | --- | --- |
 | `index.html` | Seitengerüst, Dialoge, Vorab-Laden der Firebase-Module |
-| `css/style.css` | Gestaltung; alle Farben als Variablen ganz oben (hell/dunkel, Kategorien `--k1` … `--k5`) |
+| `css/style.css` | Gestaltung; alle Farben als Variablen ganz oben (hell/dunkel, Kategorien `--k1` … `--k6`) |
 | `js/game.js` | Spiellogik als reine Funktionen (Punkte, Level, Suche, Statistiken, Rangliste) – in Node testbar |
 | `js/store.js` | Speichern: lokal (localStorage) oder Firebase (Anmeldung, Firestore, Warteschlange ohne Netz) |
 | `js/app.js` | Oberfläche und Bedienung |
@@ -35,7 +35,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/biere.json` | Bierdatenbank (vom Scraper erzeugt, **nie von Hand ändern**) |
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
 | `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
-| `Datensammlung/kategorien.json` | Die fünf Kategorien |
+| `Datensammlung/kategorien.json` | Die sechs Kategorien |
 | `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
@@ -113,7 +113,7 @@ Fehlt ein Bier, trägst du es in `Datensammlung/biere_manuell.json` ein. **`bier
 - Gleiches Format wie in `biere.json`. Die Datei ist eine Liste (`[ … ]`), Einträge durch Komma getrennt.
 - IDs fortlaufend `BM-000001`, `BM-000002`, … Eine vergebene ID **nie ändern oder neu vergeben**: Sie ist der Schlüssel
   für die Einträge aller Spieler. Auch ein gelöschtes Bier behält seine ID für immer.
-- `kategorie_stufe` 1 bis 5 bestimmt Seltenheit und Punkte; der angezeigte Name kommt aus `kategorien.json`.
+- `kategorie_stufe` 1 bis 6 bestimmt Seltenheit und Punkte; der angezeigte Name kommt aus `kategorien.json`.
 - Unbekannte Werte als `null` (bzw. bei `biersorte` eine leere Liste); die App lässt fehlende Angaben einfach weg.
 - Hat ein Eintrag dieselbe ID wie ein Bier aus `biere.json`, gilt das aus `biere.json` (Warnung in der Browser-Konsole).
 
@@ -188,7 +188,7 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 ## Spielregeln
 
 - Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).
-- Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,1 · Spezialität 1,2 · Zaubertrank 1,4 · Heiligtum 1,6.
+- Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,1 · Spezialität 1,2 · Raddelfuß 1,4 · Zaubertrank 1,4 · Heiligtum 1,6.
   Keine Extrapunkte für neue Biere.
 - 10 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,

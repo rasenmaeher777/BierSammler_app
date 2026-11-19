@@ -7,7 +7,7 @@
   {
     "stufe": 2,
     "name": "Klassiker",
-    "anteil": 0.25
+    "anteil": 0.15
   },
   {
     "stufe": 3,
@@ -16,11 +16,16 @@
   },
   {
     "stufe": 4,
+    "name": "Raddelfuß",
+    "anteil": 0.1
+  },
+  {
+    "stufe": 5,
     "name": "Zaubertrank",
     "anteil": 0.07
   },
   {
-    "stufe": 5,
+    "stufe": 6,
     "name": "Heiligtum",
     "anteil": 0.03
   }

@@ -27,4 +27,6 @@ Abbrechen mit `Ctrl + C` – beim nächsten Start geht es an derselben Stelle we
 - **Ordner `cache/` nicht löschen.** Dort liegt `id_zuordnung.json`, die dafür sorgt, dass jedes
   Bier dauerhaft dieselbe ID (`BS-000123`) und dieselbe Kategorie behält – auch nach Updates.
 - Die Kategorie wird zufällig, aber fest aus der ID abgeleitet
-  (50 % Standardgebräu, 25 % Klassiker, 15 % Spezialität, 7 % Zaubertrank, 3 % Heiligtum).
+  (50 % Standardgebräu, 15 % Klassiker, 15 % Spezialität, 10 % Raddelfuß, 7 % Zaubertrank, 3 % Heiligtum).
+  Raddelfuß ist aus dem hinteren Teil der früheren Klassiker herausgeschnitten (siehe `ZIEH_REIHENFOLGE` im Skript);
+  `FESTE_KATEGORIE` hält einzelne Biere (z. B. Sternburg - Export) unabhängig vom Zufall in ihrer Kategorie.

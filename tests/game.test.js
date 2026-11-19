@@ -25,15 +25,22 @@ function check(sum, wantSum, wantLevel, wantRing) {
 }
 
 test('0 Einträge → Level 1, Ring 0', () => { check(0, 0, 1, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(0), 0); });
-test('10 × Stufe 5 = 160 → Level 2, 6,0 / 10', () => check(sumOf([10, 5]), 160, 2, '6,0 / 10 Punkte'));
+test('10 × Stufe 6 = 160 → Level 2, 6,0 / 10', () => check(sumOf([10, 6]), 160, 2, '6,0 / 10 Punkte'));
 test('10 × Stufe 1 = 100 → Level 2, 0,0 / 10', () => { check(sumOf([10, 1]), 100, 2, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(100), 0); assert.strictEqual(G.level(99), 1); });
 test('20 × Stufe 1 = 200 → Level 3, 0,0 / 10', () => { check(sumOf([20, 1]), 200, 3, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(200), 0); });
 test('19 × Stufe 4 = 266 → Level 3, 6,6 / 10', () => check(sumOf([19, 4]), 266, 3, '6,6 / 10 Punkte'));
-test('13 × Stufe 1 + 5 × Stufe 5 = 210 → Level 3, 1,0 / 10', () => check(sumOf([13, 1], [5, 5]), 210, 3, '1,0 / 10 Punkte'));
+test('13 × Stufe 1 + 5 × Stufe 6 = 210 → Level 3, 1,0 / 10', () => check(sumOf([13, 1], [5, 6]), 210, 3, '1,0 / 10 Punkte'));
 test('3 × Stufe 2 = 33 → 3,3', () => { assert.strictEqual(sumOf([3, 2]), 33); assert.strictEqual(G.fmt1(33), '3,3'); });
 test('Überschuss: 9,6 + 1,4 → Level steigt, Ring 1,0', () => {
   const s = 96 + G.pointsFor(4);
   assert.strictEqual(G.level(96), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,0 / 10 Punkte');
+});
+test('Sechs Stufen: Raddelfuß (4) bringt so viel wie Zaubertrank (5), Heiligtum (6) am meisten', () => {
+  assert.deepStrictEqual(G.STUFEN, [1, 2, 3, 4, 5, 6]);
+  assert.strictEqual(G.MAX_STUFE, 6);
+  assert.deepStrictEqual(G.STUFEN.map(G.pointsFor), [10, 11, 12, 14, 14, 16]);
+  assert.strictEqual(G.pointsFor(4), G.pointsFor(5));
+  assert.strictEqual(G.pointsFor(7), 0); assert.strictEqual(G.pointsFor(0), 0);
 });
 test('Punkte bis zum nächsten Level', () => { assert.strictEqual(G.toNext(266), 34); assert.strictEqual(G.toNext(200), 100); });
 
@@ -53,7 +60,7 @@ test('Zahlen deutsch', () => {
 
 /* ---------- Bierdaten ---------- */
 
-const KAT = [{ stufe: 1, name: 'Standardgebräu' }, { stufe: 2, name: 'Klassiker' }, { stufe: 3, name: 'Spezialität' }, { stufe: 4, name: 'Zaubertrank' }, { stufe: 5, name: 'Heiligtum' }];
+const KAT = [{ stufe: 1, name: 'Standardgebräu' }, { stufe: 2, name: 'Klassiker' }, { stufe: 3, name: 'Spezialität' }, { stufe: 4, name: 'Raddelfuß' }, { stufe: 5, name: 'Zaubertrank' }, { stufe: 6, name: 'Heiligtum' }];
 const raw = (id, name, stufe, extra = {}) => ({
   id, name, biersorte: ['Pils'], alkoholgehalt: 4.9,
   brauerei_vertrieb: { typ: 'Brauerei', name: 'Testbrauerei GmbH', adresse: 'Weg 1', region: 'Bayern', land: 'Deutschland' },
@@ -281,7 +288,7 @@ test('Statistiken: Wochen, Ø, Lieblinge, Liter, Bundesländer', () => {
   assert.deepStrictEqual(s.history.map((h) => h.count).slice(-4), [0, 2, 3, 1]);
   assert.strictEqual(s.history[11].week, 47); assert.strictEqual(s.history[0].week, 36);
   assert.strictEqual(s.distinct, 4);
-  assert.deepStrictEqual(s.foundByStufe, { 1: 2, 2: 1, 3: 1, 4: 0, 5: 0 });
+  assert.deepStrictEqual(s.foundByStufe, { 1: 2, 2: 1, 3: 1, 4: 0, 5: 0, 6: 0 });
   assert.strictEqual(s.favBeer.beer.id, 'BS-000010'); assert.strictEqual(s.favBeer.count, 3);
   // Alle Testbiere haben (u. a.) die Sorte "Pils"; "Alkoholfrei" kommt nur einmal vor
   assert.deepStrictEqual(s.favSorte, { name: 'Pils', count: 6 });
@@ -419,6 +426,14 @@ test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
   const r = G.mergeBeers(main, [], kat, (t) => warns.push(t), fixes);
   assert.strictEqual(warns.length, 0, warns.slice(0, 3).join(' | '));
   assert.strictEqual(r.list.length, 6368);
+  // Sechs Kategorien in der Reihenfolge der Stufen; Zahl der Biere je Stufe (Raddelfuß aus den früheren Klassikern, Sternburg - Export bleibt Klassiker)
+  assert.deepStrictEqual(kat.map((k) => [k.stufe, k.name]), [[1, 'Standardgebräu'], [2, 'Klassiker'], [3, 'Spezialität'], [4, 'Raddelfuß'], [5, 'Zaubertrank'], [6, 'Heiligtum']]);
+  const proStufe = {}; for (const b of r.list) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
+  assert.deepStrictEqual(proStufe, { 1: 3200, 2: 933, 3: 983, 4: 599, 5: 459, 6: 194 });
+  const sternburg = r.map.get('BS-000887');
+  assert.ok(sternburg && sternburg.title === 'Export' && sternburg.brand === 'Sternburg');
+  assert.strictEqual(sternburg.kategorie, 'Klassiker'); assert.strictEqual(sternburg.stufe, 2);
+  assert.strictEqual(r.map.get('BS-000001').stufe, main.find((b) => b.id === 'BS-000001').kategorie_stufe);
   const t0 = Date.now();
   const index = G.buildIndex(r.list);
   const tIndex = Date.now() - t0;

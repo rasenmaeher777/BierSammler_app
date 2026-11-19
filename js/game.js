@@ -10,8 +10,11 @@
 
   /* ---------- Punkte und Level ---------- */
 
-  // Punkte pro Trinken je Kategorie-Stufe, in Zehnteln (Stufe 4 = 1,4 Punkte)
-  const POINTS = { 1: 10, 2: 11, 3: 12, 4: 14, 5: 16 };
+  // Punkte pro Trinken je Kategorie-Stufe, in Zehnteln (Stufe 4 = 1,4 Punkte).
+  // Stufen: 1 Standardgebräu, 2 Klassiker, 3 Spezialität, 4 Raddelfuß, 5 Zaubertrank, 6 Heiligtum (Raddelfuß = Zaubertrank)
+  const POINTS = { 1: 10, 2: 11, 3: 12, 4: 14, 5: 14, 6: 16 };
+  const STUFEN = Object.keys(POINTS).map(Number).sort((a, b) => a - b); // [1 … 6]
+  const MAX_STUFE = STUFEN[STUFEN.length - 1];
   const LEVEL_POINTS = 100; // 10 Punkte = 1 Level
 
   const pointsFor = (stufe) => POINTS[stufe] || 0;
@@ -62,7 +65,7 @@
     const id = typeof raw.id === 'string' && ID_RE.test(raw.id) ? raw.id : null;
     const name = str(raw.name);
     const stufe = raw.kategorie_stufe;
-    if (!id || !name || !Number.isInteger(stufe) || stufe < 1 || stufe > 5) return null;
+    if (!id || !name || !Number.isInteger(stufe) || stufe < 1 || stufe > MAX_STUFE) return null;
     const bv = raw.brauerei_vertrieb && typeof raw.brauerei_vertrieb === 'object' ? raw.brauerei_vertrieb : {};
     const num = (v, max) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max ? v : null);
     const flasche = num(raw.flaschengroesse, 20);
@@ -348,7 +351,7 @@
       const monday = new Date(nowMonday.getFullYear(), nowMonday.getMonth(), nowMonday.getDate() - 7 * i);
       history.push({ monday, ...isoWeek(monday.getTime()), count: weekCount(nowKey - 7 * i) });
     }
-    const foundByStufe = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const foundByStufe = Object.fromEntries(STUFEN.map((st) => [st, 0]));
     for (const id of beers.keys()) foundByStufe[beerMap.get(id).stufe]++;
     const favBeer = favorite(beers);
     const favDay = (() => { // Gleichstand: früherer Wochentag
@@ -453,7 +456,7 @@
   function rankBoard(rows) {
     const ok = (r) => r && typeof r.uid === 'string' && usernameKey(r.username)
       && Number.isInteger(r.sum) && Number.isInteger(r.count) && r.count >= 0
-      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * POINTS[5];
+      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * POINTS[MAX_STUFE];
     const list = (Array.isArray(rows) ? rows : []).filter(ok)
       .sort((a, b) => b.sum - a.sum || b.count - a.count || (usernameKey(a.username) < usernameKey(b.username) ? -1 : 1));
     let rank = 0;
@@ -464,7 +467,7 @@
   }
 
   const api = {
-    POINTS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
+    POINTS, STUFEN, MAX_STUFE, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
     BOARD_SIZE, rankBoard,
     pointsFor, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,

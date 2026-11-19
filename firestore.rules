@@ -99,7 +99,7 @@ service cloud.firestore {
     // die Regeln können nicht nachzählen und prüfen deshalb nur, ob die Werte möglich sind). Es ist ein Spiel unter
     // Freunden, kein Wettbewerb mit Preisen. Lesen (get, list und Zählabfragen) dürfen alle Angemeldeten.
     // Schreiben nur für das eigene Dokument und nur mit Benutzernamen, der zum Profil passt.
-    // sum steht in Zehnteln: je Bier 10 bis 16 (Stufe 1 bis 5, siehe js/game.js POINTS).
+    // sum steht in Zehnteln: je Bier 10 bis 16 (Stufe 1 bis 6, siehe js/game.js POINTS).
     match /leaderboard/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid)
