@@ -198,6 +198,10 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
 - Kein Nachtragen: Es zählt der Zeitpunkt des Bestätigens.
+- **Neigungssensor:** Einstellungen → Neigung → „Neigungssensor aktivieren“. Der Glanz der Karten in der großen Ansicht folgt dann dem geneigten Telefon.
+  Auf dem iPhone fragt iOS nur auf einen Tipp hin nach; der Knopf ist dafür gedacht, falls die Nachfrage beim Antippen einer Karte nicht erschien (z. B. in der
+  installierten Web-App). Er hebt eine frühere Ablehnung auf und meldet, ob wirklich Messwerte ankommen. Wurde abgelehnt, hilft auf dem iPhone meist: Web-App
+  schließen, neu öffnen, Knopf noch einmal tippen. Die App speichert keine Sensordaten.
 - **Konto löschen:** Einstellungen → Konto → „Konto löschen …“ (nur mit Anmeldung). Nach Eintippen von „LÖSCHEN“ bestätigt man sich noch einmal
   bei Google; dann werden alle Einträge, der Benutzername, der Ranglisten-Eintrag und das Anmeldekonto endgültig gelöscht. Das braucht
   Internet. Anders als „Profil zurücksetzen“ (behält das Konto) verschwindet hier auch das Konto selbst. Die Firestore-Regeln mussten dafür

@@ -594,13 +594,16 @@
      Folie, --tx/--ty Verschiebung der Flasche, --lift); gezeichnet wird per CSS. Bei „weniger Bewegung“ bleibt alles ruhig.
      Der Dialog zeichnet sich bei Sync neu (innerHTML); die Schleife sucht die Karte deshalb in jedem Bild neu.
      Neigungssensor: Android liefert ihn ohne Nachfrage. iOS fragt einmal nach, und zwar beim ersten Antippen der Karte
-     (nur auf Berührung hin erlaubt). Lehnt der Nutzer ab, wird nicht mehr gefragt (LS_MOTION). */
+     (nur auf Berührung hin erlaubt). Lehnt der Nutzer ab, wird nicht mehr gefragt (LS_MOTION).
+     Zusätzlich gibt es in den Einstellungen den Knopf „Neigungssensor aktivieren“ (enable): Er fragt ausdrücklich nach,
+     hebt eine frühere Ablehnung auf und meldet, ob wirklich Messwerte ankommen. Das ist der Weg, wenn die Nachfrage
+     beim Antippen der Karte (z. B. in der installierten Web-App) nicht erschien. */
   const tilt = (() => {
     const MAX = 15;       // größte Neigung in Grad
     const HAND = 30;      // Handneigung in Grad, die die volle Kartenneigung ergibt
     const calm = matchMedia('(prefers-reduced-motion: reduce)');
     const s = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4, amp: 0.4, touched: false, raf: 0, last: 0 };
-    const g = { b0: null, g0: null, tx: 0.5, ty: 0.5, at: -1e9, asked: false };
+    const g = { b0: null, g0: null, tx: 0.5, ty: 0.5, at: -1e9, asked: false, seen: false };
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     function frame(now) {
       s.raf = 0;
@@ -637,6 +640,7 @@
     }
     // Neigungssensor: nur Hochformat; die Ruhelage wandert langsam mit, damit jede Haltung des Telefons passt
     function onOrient(e) {
+      if (e.beta != null && e.gamma != null) g.seen = true; // auch bei geschlossener Karte: der Einstellungs-Knopf wartet darauf
       if (!cardDlg.open || calm.matches || e.beta == null || e.gamma == null) return;
       if (screen.orientation && screen.orientation.angle) return;
       if (g.b0 === null) { g.b0 = e.beta; g.g0 = e.gamma; }
@@ -657,6 +661,22 @@
         }
         window.addEventListener('deviceorientation', onOrient);
       } catch { g.asked = false; /* kein Sensor oder keine Geste: bleibt bei Finger/Maus, beim nächsten Antippen erneut */ }
+    }
+    // Ausdrückliche Aktivierung (Knopf in den Einstellungen). Muss direkt im Klick laufen, ohne vorheriges await (iOS verlangt die Geste).
+    // Ergebnis: 'ok' | 'nosensor' (erlaubt, aber keine Messwerte) | 'denied' | 'unsupported' | 'error'
+    async function enable() {
+      if (typeof DeviceOrientationEvent === 'undefined') return 'unsupported';
+      try {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          if (await DeviceOrientationEvent.requestPermission() !== 'granted') { lsSet(LS_MOTION, '0'); return 'denied'; }
+        }
+      } catch { return 'error'; }
+      lsSet(LS_MOTION, null); // frühere Ablehnung aufheben
+      g.asked = true; g.seen = false;
+      window.addEventListener('deviceorientation', onOrient); // dieselbe Funktion nur einmal registriert
+      const t0 = performance.now();
+      while (!g.seen && performance.now() - t0 < 1500) await new Promise((r) => setTimeout(r, 100));
+      return g.seen ? 'ok' : 'nosensor';
     }
     function start() {
       g.b0 = null; s.last = 0;
@@ -683,7 +703,7 @@
     cardDlg.addEventListener('pointercancel', release);
     cardDlg.addEventListener('pointerleave', release);
     document.addEventListener('visibilitychange', () => { if (!document.hidden && cardDlg.open) start(); });
-    return { start };
+    return { start, enable };
   })();
 
   /* Statistiken. Alle Zahlen kommen aus GAME.stats (aus dem Protokoll berechnet).
@@ -944,6 +964,13 @@
             als Punkte auf der Karte. Nur du siehst sie; die Rangliste bekommt keine Orte. Ohne Erlaubnis oder ohne Signal wird der Eintrag ohne Ort
             gespeichert. Ältere Einträge haben keinen Ort. Löschst du einen Eintrag oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
         </section>` : '';
+    // Neigungssensor: Knopf für die ausdrückliche Erlaubnis (iPhone fragt nur auf einen Klick hin); ohne Sensor-Unterstützung entfällt der Abschnitt
+    const tiltSec = typeof DeviceOrientationEvent !== 'undefined' ? `<section class="set-sec"><h3>Neigung</h3>
+          <button class="btn" type="button" data-set="tilt" id="set-tilt">Neigungssensor aktivieren</button>
+          <p class="note" id="set-tilt-msg" role="status" aria-live="polite">${lsGet(LS_MOTION) === '0' ? 'Der Zugriff wurde abgelehnt. Tippe den Knopf, um noch einmal zu fragen.' : ''}</p>
+          <p class="note">Mit dem Sensor folgt der Glanz der Karten in der großen Ansicht deinem Telefon, wenn du es neigst. Auf dem iPhone fragt iOS erst nach
+            deinem Tipp auf den Knopf. Die App speichert keine Sensordaten.</p>
+        </section>` : '';
     setDlg.innerHTML = `<div class="sheet-head"><h2>Einstellungen</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
       <div class="sheet-body">
         <section class="set-sec"><h3>Benutzername</h3><div id="set-name"></div></section>
@@ -960,6 +987,7 @@
         <section class="set-sec"><h3>Darstellung</h3>
           <div class="seg" role="radiogroup" aria-label="Darstellung">${radio('system', 'System')}${radio('light', 'Hell')}${radio('dark', 'Dunkel')}</div>
         </section>
+        ${tiltSec}
         ${standort}
         ${account}
         <section class="set-sec"><h3>Profil zurücksetzen</h3>
@@ -1136,12 +1164,29 @@
     }
   }
 
+  async function enableTilt(btn) {
+    const msg = $('#set-tilt-msg', setDlg);
+    const say = (text) => { if (msg) msg.textContent = text; };
+    btn.disabled = true;
+    say('Zugriff wird angefragt …');
+    const r = await tilt.enable(); // läuft bis zur Nachfrage direkt im Klick
+    btn.disabled = false;
+    say({
+      ok: 'Neigungssensor ist aktiv. Öffne eine Karte in der großen Ansicht und neige dein Telefon. Nach einem Neustart der App kann iOS erneut fragen.',
+      nosensor: 'Erlaubt, aber es kommen keine Messwerte an. Dieses Gerät hat wohl keinen Neigungssensor (z. B. ein Computer).',
+      denied: 'Zugriff abgelehnt. Auf dem iPhone: Web-App vom Home-Bildschirm schließen und neu öffnen, dann den Knopf noch einmal tippen und „Erlauben“ wählen.',
+      unsupported: 'Dieses Gerät oder dieser Browser unterstützt keinen Neigungssensor.',
+      error: 'Das hat nicht geklappt. Bitte noch einmal tippen.',
+    }[r]);
+  }
+
   setDlg.addEventListener('click', (e) => {
     const b = e.target.closest('[data-set]');
     if (!b) return;
     const act = b.dataset.set;
     if (act === 'minus' || act === 'delete') deleteFromCard(b.dataset.id, act === 'delete');
     else if (act === 'reset') resetProfile();
+    else if (act === 'tilt') enableTilt(b);
     else if (act === 'signout') signOutFlow();
     else if (act === 'deleteaccount') deleteAccountFlow();
   });

@@ -199,7 +199,10 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
   beide Dunkel-Blöcke gleich halten). Große Ansicht: `tilt` in `js/app.js` setzt pro Bild nur CSS-Variablen (Maus/Finger
   neigt, sonst leichtes Schwanken; `.live` auf der Karte); `touch-action: pan-y`, damit der Dialog weiter scrollt; bei
   „weniger Bewegung“ keine Schleife. Zeitabhängige Glättung, Anheben (`--lift`) und Neigungssensor: Android sofort, iOS fragt beim ersten Antippen der
-  Karte einmal nach (Ablehnung → `biersammler-motion-v1` = `0`, nie wieder fragen). Getestet im eingebauten
+  Karte einmal nach (Ablehnung → `biersammler-motion-v1` = `0`, nie wieder fragen).
+  Seit 19.11.2026 zusätzlich Einstellungen → „Neigung“ → Knopf „Neigungssensor aktivieren“ (`data-set="tilt"`, `enableTilt` → `tilt.enable()` in `js/app.js`): fragt ausdrücklich nach (läuft ohne `await` davor
+  direkt im Klick, sonst lehnt iOS die Geste ab), hebt die Ablehnung `-motion-v1` auf, wartet bis 1,5 s auf einen echten Messwert und meldet `ok`/`nosensor`/`denied`/`unsupported`/`error`; der Abschnitt entfällt ohne `DeviceOrientationEvent`.
+  Das Antippen der Karte fragt weiterhin von selbst (so belassen; Rückfrage des Nutzers dazu blieb offen). Getestet mit nachgebildetem `requestPermission` (abgelehnt, erlaubt ohne/mit Messwert, Fehler) und nachgebildetem Ereignis; NICHT auf echtem iPhone (ob iOS in der installierten Web-App nachfragt, wie oft, und ob nach Ablehnung ein Neustart nötig ist). Getestet im eingebauten
   Browser (hell/dunkel, 390 px, Desktop, Aufdecken, Sensor per nachgebildeten Ereignissen); NICHT auf echtem iPhone/Safari
   (Masken, `isolation`, Neigung per Finger, echter Sensor und dessen Richtung). Der eingebaute Browser zeichnet bei
   ausgeblendetem Bereich keine Animationen (Schleife steht).
