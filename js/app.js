@@ -875,7 +875,7 @@
           <td class="nm">${esc('@' + r.username)}${mine ? ' <span class="you">(du)</span>' : ''}</td>
           <td class="num">${G.fmtInt(r.level)}</td>
           <td class="num">${G.fmtInt(r.count)}</td>
-          <td class="num cards">${G.fmtInt(r.cards)}<span class="of">/${total}</span></td></tr>`;
+          <td class="num cards">${G.fmtInt(r.cards)}</td></tr>`;
       const own = rank.own;
       let ownRow = '';
       if (own) {
@@ -891,9 +891,8 @@
           <thead><tr><th class="pos" scope="col">Platz</th><th class="nm" scope="col">Spieler</th><th class="num" scope="col">Level</th><th class="num" scope="col">Biere</th><th class="num cards" scope="col">Karten</th></tr></thead>
           <tbody>${list}${ownRow}</tbody></table>` : '<p class="note center">Noch niemand in der Rangliste.</p>'}
         ${err}
-        <p class="note">Es zählt das Level, bei gleichem Level die Punkte. Wer gleich viele Punkte hat, teilt sich den Platz; danach entscheidet die Zahl der Biere.
-          „Karten“ zeigt, wie viele verschiedene Biere jemand von allen ${total} gesammelt hat.
-          Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang. Die Rangliste enthält nur Spieler mit Benutzernamen.</p>`;
+        <p class="note">Es zählt das Level, bei gleichem Level die Punkte. „Karten“ zeigt, wie viele verschiedene Biere jemand von allen ${total} gesammelt hat.
+          Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang.</p>`;
     }
     rankDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
     $('.sheet-body', rankDlg).scrollTop = scroll;

@@ -579,7 +579,12 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   const zufall = [['aussenseiter', 'Außenseiter', 'sp-weltall'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'],
     ['raddelfuss', 'Raddelfuß', 'sp-raddel'], ['regenbogen', 'Spezial-Edition 04', 'sp-regenbogen'], ['sanchi', 'Sanchi', 'sp-sanchi'], ['schwarzweiss', 'Schwarze Nachtigal', 'sp-noir'],
     ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', ...zufall.map((z) => z[0])].sort());
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0])].sort());
+  // Astra - Rakete: eigene Karte, sieht aus wie die Hamburger Legende, bringt aber feste 1,0 statt 1,3 (Stufe bleibt Spezialität)
+  assert.deepStrictEqual(by['hh-rakete'].map((b) => b.id), ['BS-004132']);
+  const rakete = r.map.get('BS-004132');
+  assert.deepStrictEqual([rakete.label, rakete.look, rakete.spezial.design, rakete.stufe, G.beerPoints(rakete)], ['Hamburger Legende', 'k1 sp-icon', 'anker', 3, 10]);
+  assert.ok(!by['legende-hh'].some((b) => b.id === 'BS-004132'));
   // Zufallskarten: je 40 Biere, gleichmäßig mit leichter Tendenz zu den selteneren (9 / 10 / 10 / 11), kein Standardgebräu, Punkte der Stufe + 1,0
   for (const [k, titel, look] of zufall) {
     const proStufe = {}; for (const b of by[k]) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;

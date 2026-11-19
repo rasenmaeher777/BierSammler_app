@@ -917,22 +917,24 @@ button.bcard:active { transform: scale(0.98); }
 .stat-line b { color: var(--text); font-size: 18px; }
 
 /* ---------- Platzierung ---------- */
-.rank { width: 100%; border-collapse: separate; border-spacing: 0; }
-.rank th { padding: 0 6px 8px; color: var(--muted); font-size: 12px; font-weight: 600; text-align: left; }
-.rank td { padding: 9px 6px; border-top: 1px solid var(--line); }
-.rank .pos { width: 44px; }
+/* Feste Spaltenbreiten: Platz und die drei Zahlenspalten (Level, Biere, Karten) sind gleich breit und
+   rechtsbündig, der Name bekommt den ganzen Rest. Kopfzeile und Zahlen stehen so exakt übereinander. */
+.rank { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.rank th { padding: 0 6px 8px; color: var(--muted); font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
+.rank td { padding: 9px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+.rank .pos { width: 52px; text-align: center; }
+.rank th.pos { text-align: center; }
 .rank .nm { overflow-wrap: anywhere; font-weight: 650; }
-.rank .num { width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+.rank .num { width: 54px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rank th.num { text-align: right; }
-/* Karten „16/6.372“: eigene Breite, Gesamtzahl kleiner und blasser */
-.rank .num.cards { width: auto; white-space: nowrap; }
-.rank .of { color: var(--muted); font-size: 12px; }
-/* Schmale Bildschirme: fünf Spalten, deshalb engere Zahlenspalten, damit der Name Platz behält */
+/* Schmale Bildschirme: Name behält möglichst viel Platz */
 @media (max-width: 420px) {
-  .rank th, .rank td { padding-left: 4px; padding-right: 4px; }
-  .rank .pos { width: 38px; }
-  .rank .num { width: 40px; }
-  .rank .of { font-size: 11px; }
+  .rank th, .rank td { padding-left: 3px; padding-right: 3px; }
+  .rank th { font-size: 11px; }
+  .rank .pos { width: 44px; }
+  .rank .num { width: 46px; }
+  .rank th:last-child, .rank td:last-child { padding-right: 6px; }
+  .rank th.nm, .rank td.nm { padding-left: 6px; }
 }
 .rank .you { color: var(--muted); font-weight: 500; }
 .rank tr.me td { background: var(--surface-2); border-top-color: var(--accent); }

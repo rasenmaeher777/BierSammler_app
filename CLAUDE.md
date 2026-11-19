@@ -113,6 +113,10 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Kölner Dom NRW, Weintraube RLP, Schlägel und Eisen Saarland, Schwibbogen Sachsen, Himmelsscheibe von Nebra Sachsen-Anhalt („Anhalt Legende“), Strandkorb SH, Rostbratwurst Thüringen.
   Die Legenden haben KEIN `punkte`: Die Biere behalten die Punkte ihrer Stufe (die Biere sind bunt gemischt, nur Berlin ist reines Standardgebräu); Legende ändert also nur Band und Aussehen.
   Wer Standardpunkte für alle will, trägt `"punkte": 1.0` ein (wirkt rückwirkend).
+  Nachtrag 19.11.2026 (Wunsch des Nutzers): `BS-004132` Astra - Rakete ist eine Hamburger Legende mit festen 1,0 Punkten. Weil `punkte` immer für eine ganze
+  Karte gilt, liegt sie auf einer EIGENEN Karte `hh-rakete` (Titel „Hamburger Legende“, Design `anker`, `"punkte": 1.0`, direkt nach `legende-hh`; dort bleiben 8 Biere).
+  Sieht für Spieler gleich aus. Stufe bleibt intern Spezialität (nur über `stufen_zuordnung.json` + Scraper-Export änderbar), sichtbar ist nur „Hamburger Legende“.
+  Die ID beginnt bewusst nicht mit `legende-`: Der Test der echten Datei zählt 16 Legenden mit Stufenpunkten; `hh-rakete` prüft er gesondert.
   **Schwarze Nachtigal** (Design `noir`, id `schwarzweiss`; zuerst „Schwarz-Weiß“) und **Spezial-Edition 04** (Design `regenbogen`, id `regenbogen`; zuerst „Regenbogen“) – Titel am 19.11.2026 auf Wunsch umbenannt, IDs unverändert: je 40 Standardgebräu-Biere, gezogen mit `random.Random("schwarzweiss-2026-11-19" / "regenbogen-2026-11-19").sample`
   aus den noch freien `BS`-Standardgebräu-Bieren (nach Sanchi und Legenden, in dieser Reihenfolge; nicht neu würfeln). Noir: fest Papierweiß/Tinte, Comic-Raster, Strahlenkranz, harter Schatten,
   `filter: grayscale(1)` (macht auch die Herkunfts-Box grau). Regenbogen: Pastell mit Regenbogenbögen, funkelnde Glitzer-Sterne (`@keyframes glitter`, bei „weniger Bewegung“ ruhig),
@@ -289,8 +293,8 @@ leaderboard/<uid>            { username, sum, count, cards }   Rangliste: Punkte
   ohne Netz „–“. Entscheidung des Nutzers: Top 15 + eigener Rang, Sortierung nach Punkten, keine Wochen-Rangliste.
   19.11.2026: Der Nutzer wollte nach Profillevel statt nach Anzahl Bieren sortieren. Das war schon so (Punkte bestimmen das Level, Sortierung nach Punkten =
   nach Level, feiner); deshalb nicht geändert, nur der Hinweistext sagt jetzt „Es zählt das Level, bei gleichem Level die Punkte“.
-  Neue Spalte „Karten“: `16/6.372` (eigene Zahl / `db.map.size`, Gesamtzahl kleiner und blass, `.rank .of`); unter 420 px engere Zahlenspalten
-  (`.rank .num` 40 px, Abstand 4 px), damit der Name nicht mitten im Wort umbricht. Getestet mit nachgebildetem `STORE.watchRanking` in einer Kopie ohne Schlüssel
+  Spalte „Karten“ zeigt nur die eigene Zahl (z. B. `16`; bis 19.11.2026 `16/6.372`, die Gesamtzahl steht nur noch im Hinweistext). Tabelle mit `table-layout: fixed`:
+  Platz (52 px, mittig) und Level/Biere/Karten (je 54 px, rechtsbündig) gleich breit, der Name bekommt den Rest; unter 420 px 44 bzw. 46 px. Getestet mit nachgebildetem `STORE.watchRanking` in einer Kopie ohne Schlüssel
   (375 px hell/dunkel, 4-stellige Werte, eigener Rang 23, Zeile ohne `cards` fällt weg).
 - Werte kommen vom Client und sind fälschbar; das ist gewollt hingenommen („es ist ein Spiel“).
 - Getestet mit nachgebildetem Firebase (siehe „Testen“): Veröffentlichen, Namenswechsel, Zurücksetzen, Top 15 + Rang 23,

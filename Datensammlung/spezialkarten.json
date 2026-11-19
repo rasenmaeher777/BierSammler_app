@@ -149,6 +149,15 @@
     ]
   },
   {
+    "id": "hh-rakete",
+    "titel": "Hamburger Legende",
+    "design": "anker",
+    "punkte": 1.0,
+    "biere": [
+      "BS-004132"
+    ]
+  },
+  {
     "id": "legende-he",
     "titel": "Hessen Legende",
     "design": "bembel",
