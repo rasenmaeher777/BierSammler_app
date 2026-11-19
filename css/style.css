@@ -22,7 +22,7 @@
   --backdrop: rgb(40 30 20 / 0.5);
   --radius: 16px;
 
-  /* Kategorie-Farben (1 Standardgebräu … 6 Heiligtum) und die Schrift darauf */
+  /* Kategorie-Farben (1 Standardgebräu … 5 Heiligtum) und die Schrift darauf; --rd gehört zur Spezialkarte Raddelfuß */
   --k1: #D8CFBF; --on-k1: #2B2620;  /* Standardgebräu: Malz-Beige */
   --k2: #3F7A4C; --on-k2: #FFFFFF;  /* Klassiker: Hopfengrün */
   --k3: #2F6FA8; --on-k3: #FFFFFF;  /* Spezialität: Blau */
@@ -104,7 +104,7 @@ body {
   font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .rounded { font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3 { font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 button, input, select, textarea { font: inherit; color: inherit; }
 /* 16px in Eingabefeldern, damit iOS beim Antippen nicht hineinzoomt */
 input, select, textarea { font-size: 16px; }

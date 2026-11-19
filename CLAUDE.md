@@ -90,7 +90,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
 - Daten-Cache: Marke `?stufen=5` an `biere.json`, `biere_manuell.json`, `kategorien.json` und `spezialkarten.json` (`STUFEN_MARKE` in `js/app.js`, `DATA_FILES` in `sw.js`),
   `CACHE_VERSION` = `v11` (seit dem Kartenbonus; vorher `v10`). Vorher `?stufen=6` (nur biere/kategorien). Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
 - Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); `MAX_BONUS` = 10, `MAX_BEER_POINTS` = 35 (Rangliste, Regeln).
-- Sicherung des Stands vor dem Umbau: nur im Scratchpad dieser Sitzung (kein Git im Projekt).
+- Sicherung des Stands vor dem Umbau: damals nur im Scratchpad der Sitzung. Inzwischen ist das Projekt ein Git-Repository (Branch `main`); der Nutzer committet selbst.
 
 ## Spezialkarten (19.11.2026)
 
@@ -138,9 +138,9 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Design bewusst das Gegenteil aller anderen Karten: eine flache Einfarbfläche (`--c`, Schrift/Zeichnung `--ink`, Farben fest in hell und dunkel: Rot `#BD3B44`/Weiß, Türkis `#46B3AC`/`#062F2D`, Orange `#F0883A`/`#3A1A04`, Rosa `#F0A3BC`/`#4A1429`),
   kein Rahmen, Muster, Körnung, Verlauf, Zierrand, keine Folie, kein Balken; alles linksbündig, Band = kleine Großbuchstaben mit kurzem Strich, Titel in System-Sans statt Rounded, Chips und Herkunft nur als Umriss in der Schriftfarbe,
   Flasche einfarbig in der Schriftfarbe (auch auf der höchsten Stufe nicht golden), Karten-Level nur als heller Schimmer hinter der Flasche (`.sp-mono .bcard-body.t1…t5`) plus Glanz/Schaum/Sterne der Flasche. Kein JS nötig (Flasche bleibt das Symbol), nur `SPECIAL_DESIGNS` in `js/game.js`.
-  `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` = `v9` seit der Plakette (davor v8 mit der Herkunftsfarbe (vorher v7: CSS und Spiellogik geändert; sonst bekäme der Service Worker einmal das alte CSS).
+  `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` damals `v7` bis `v9` (aktueller Stand siehe „Kategorien“: `v11`).
   Getestet: Node-Tests (48, die Spezialkarten-Prüfung der echten Datei um die vier Karten erweitert), eingebauter Browser mit Kopie ohne Schlüssel (430 px, hell und dunkel, Lvl 1/5/8/16/24/40, große Ansicht). NICHT getestet: iPhone/Safari, Desktop-Breite, Sammlungsliste (Streifenfarbe).
-- Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
+- Feste Punkte (`punkte`) haben nur Bierball-Bier und `hh-rakete` (je 1,0); die Legenden behalten die Punkte ihrer Stufe, die elf Zufallskarten haben `bonus` 1,0 (siehe unten).
 - **Neu gezogen und Bonus (19.11.2026, abends, mit dem Umbau auf 5 Stufen):** Die elf Zufallskarten (Sanchi, Schwarze Nachtigal, Spezial-Edition 04, Heiliger Hopfen,
   Bierkönig, Außenseiter, Spezial Rot/Türkis/Orange/Rosa und NEU Raddelfuß, id/Design `raddelfuss`, ans Ende der Datei) haben jetzt je 40 Biere und `"bonus": 1.0`
   (Wunsch: Punkte der Hauptkategorie + 1 Punkt). Gezogen mit `random.Random("<id>-2026-11-19-stufen5").sample` in Dateireihenfolge aus den freien `BS`-Bieren der
@@ -153,7 +153,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
 - Getestet (Umbau): Node-Tests (48), eingebauter Browser mit Kopie ohne Schlüssel (375 px hell/dunkel): Raddelfuß-, Sanchi-, Spezial-Rot-, Heiligtum-, Zaubertrank-Karten,
   Kartenansicht mit „+3,5“/„+2,5“/„+1,5“/„+1,3“ und richtigen Summen, Kategorie verborgen, Statistik „Sammlung“ mit 5 Stufen, Spielanleitung, keine Konsolenfehler.
   NICHT getestet: iPhone/Safari, echtes Firebase mit den neuen Regeln, Service-Worker-Wechsel von v9 auf v10.
-- `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
+- `CACHE_VERSION` wurde damals auf `v5` erhöht (neue Datei in `DATA_FILES`; aktueller Stand `v11`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
   `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.
 - Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (hell/dunkel, 390 px und Desktop, große Kartenansicht, Karten-Level 1/4/8/24/40).
   NICHT getestet: iPhone/Safari (Masken, `clip-path`, Verlaufsrahmen mit `border-box`), Service Worker mit der neuen Datei, echtes Firebase.
@@ -372,6 +372,12 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 - Gesamtprüfung 18.11.2026: Schadcode in allen Textfeldern eines Biers (Startseite, Kartenansicht samt Beschreibung,
   Statistiken, Einstellungen, Bestätigung) und als Eingabe (Suche inkl. Zurückschreiben ins Feld, Filter, Name) –
   nichts eingeschleust; 375/390 px und Desktop in hell/dunkel; „+“-Knopf verdeckt unten gescrollt nichts.
+- Gesamtprüfung 19.11.2026 (Code-Aufräumen ohne Funktionsänderung): doppelte Sternen-Funktion (Bär nutzt jetzt `heroStars`), `tenths` und
+  Kategoriename in `js/game.js` nur noch einmal, `db.kat` von Anfang an `{}`, sessionStorage-Schlüssel als Konstante `SS_DELETED` auch in `js/app.js`,
+  `toggleGeo` zeichnet statt der Kopfleiste ggf. die Statistiken neu (der Karten-Knopf steht dort), ungenutzte CSS-Klasse `.rounded` entfernt, veraltete
+  Kommentare berichtigt, zwei Tippfehler in Oberflächentexten. Getestet: Node-Tests (49, auch mit anderen Zeitzonen), Kopie ohne Schlüssel im eingebauten
+  Browser (Startseite mit Bär/Brezel auf Kartenstufe 4, Einstellungen, Standort-Schalter mit nachgebildetem Standort, Statistiken, Karte, Hinzufügen, Kartenansicht).
+  Der Service Worker ließ sich im eingebauten Browser nicht registrieren (Einschränkung der Umgebung; `sw.js` unverändert).
 - Im eingebauten Browser von Claude kommen bei ausgeblendetem Bereich keine `close`-Ereignisse von Dialogen an.
 - Nicht getestet: echtes Firebase-Projekt (Regeln, Popup, Persistenz) und echtes iPhone / installierte Web-App.
 

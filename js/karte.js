@@ -440,7 +440,7 @@ window.KARTE = (() => {
 
     const pts = new Map(); // pointerId → { x, y }
     let pan = null;        // { moved, t0 } während eines Zugs mit einem Finger
-    let pinch = null;      // { d0, z0, wx, wy }
+    let pinch = null;      // { d0, z0, mid } während eines Zugs mit zwei Fingern (Abstand und Zoom zu Beginn, letzter Mittelpunkt)
     let lastTap = null;    // { t, x, y }
     const local = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 

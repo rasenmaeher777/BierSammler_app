@@ -119,7 +119,7 @@ window.STORE = (() => {
   let user = null;
   let unsubs = [];        // laufende onSnapshot-Abos
   let scoreTimer = null;  // gebündeltes Veröffentlichen der Rangliste
-  let lastScore = '';     // zuletzt veröffentlichter Stand („Name|Punkte|Anzahl“)
+  let lastScore = '';     // zuletzt veröffentlichter Stand („Name|Punkte|Anzahl|Karten“)
   let scoreWanted = '';   // Stand, für den gerade ein Timer läuft
   let deleting = false;   // Konto wird gerade gelöscht: nichts mehr in die Rangliste schreiben
   const stopListening = () => { unsubs.forEach((u) => u()); unsubs = []; };

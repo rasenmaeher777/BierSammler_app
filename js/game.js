@@ -84,6 +84,7 @@
     const zutaten = strList(raw.zutaten);
     const company = str(bv.name);
     const parts = splitName(name, company);
+    const katName = (katNames && katNames[stufe]) || str(raw.kategorie_name) || '';
     return {
       id,
       name,
@@ -102,9 +103,9 @@
       zutaten: zutaten.length ? zutaten : null,
       flasche: flasche > 0 ? flasche : null,
       stufe,
-      kategorie: (katNames && katNames[stufe]) || str(raw.kategorie_name) || '',
+      kategorie: katName,
       // Darstellung: Beschriftung im Band, CSS-Klassen der Karte, eigene Punkte; bei Spezialkarten von applySpecials überschrieben
-      label: (katNames && katNames[stufe]) || str(raw.kategorie_name) || '',
+      label: katName,
       look: `k${stufe}`,
       punkte: null,
       bonus: 0,
@@ -139,6 +140,12 @@
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 
+  // Zahl in Zehntel umrechnen, wenn sie genau auf Zehntel endet und im erlaubten Bereich liegt, sonst null
+  const tenths = (v, lo, hi) => {
+    const t = Math.round(v * 10);
+    return typeof v === 'number' && Math.abs(v * 10 - t) < 1e-9 && t >= lo && t <= hi ? t : null;
+  };
+
   // Rohdaten prüfen; ungültige Karten fallen mit Warnung weg. Ergebnis: [{ id, titel, design, punkte (Zehntel oder null), bonus (Zehntel), biere }]
   function cleanSpecials(raw, warn = () => {}) {
     if (raw == null) return [];
@@ -152,11 +159,6 @@
       if (!id || !titel || titel.length > 40 || !DESIGNS.includes(r.design) || !Array.isArray(r.biere)) { warn(`${where} ungültig, wird ignoriert`); return; }
       if (seen.has(id)) { warn(`${where}: doppelte ID „${id}“, wird ignoriert`); return; }
       seen.add(id);
-      // Zahl in Zehntel umrechnen, wenn sie genau auf Zehntel endet und im erlaubten Bereich liegt, sonst null
-      const tenths = (v, lo, hi) => {
-        const t = Math.round(v * 10);
-        return typeof v === 'number' && Math.abs(v * 10 - t) < 1e-9 && t >= lo && t <= hi ? t : null;
-      };
       let punkte = null;
       if (r.punkte != null) {
         punkte = tenths(r.punkte, POINTS[1], POINTS[MAX_STUFE]);

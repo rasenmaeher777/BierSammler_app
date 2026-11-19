@@ -34,6 +34,7 @@
   };
   const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
+  const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: gesetzt von js/store.js nach dem Löschen des Kontos
   const RECENT_MAX = 8; // zuletzt getrunkene Biere im leeren Suchfeld
   const TOP_COUNT = 6;  // beste Karten auf der Startseite
 
@@ -61,7 +62,8 @@
   /* ---------- 2. Zustand ---------- */
 
   // Bierdatenbank aus biere.json und biere_manuell.json plus biere_korrekturen.json (zusammengeführt in js/game.js)
-  const db = { list: [], map: new Map(), index: [], messages: [], ready: false, error: false };
+  // kat: je Stufe { name, total } (Name der Kategorie und Anzahl Biere), gefüllt in loadBeers
+  const db = { list: [], map: new Map(), index: [], messages: [], kat: {}, ready: false, error: false };
   // Aus dem Protokoll berechnet; wird vor jedem Zeichnen neu bestimmt, nie gespeichert
   let drinks = [];
   let summary = G.summarize([], db.map);
@@ -88,11 +90,12 @@
       db.map = r.map;
       db.index = G.buildIndex(r.list);
       // Je Kategorie: Name und Anzahl vorhandener Biere (für „gefunden / vorhanden“ in den Statistiken)
-      db.kat = {};
+      const kat = {};
       for (const b of r.list) {
-        const k = db.kat[b.stufe] || (db.kat[b.stufe] = { name: b.kategorie, total: 0 });
+        const k = kat[b.stufe] || (kat[b.stufe] = { name: b.kategorie, total: 0 });
         k.total++;
       }
+      db.kat = kat;
       db.ready = true;
     } catch (err) {
       console.error('Bierdatenbank konnte nicht geladen werden', err);
@@ -122,12 +125,14 @@
   }
   const BOTTLE = bottle();
 
+  // Sterne um Bär und Wahrzeichen (Bildfeld 60 × 86; ab Kartenstufe 4, bei 5 mehr)
+  const heroStars = (tier) => tier >= 4
+    ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
+    : '';
+
   /* Berliner Bär (Spezialkarte „baer“) statt der Flasche: aufrecht schreitend, Zunge rot. Gleiche Kartenstufen wie die Flasche:
      ab 4 Sterne, bei 5 golden. Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel), siehe .bear in css/style.css. */
   function bear(tier = 0) {
-    const stars = tier >= 4
-      ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
-      : '';
     return `<svg class="bottle bear${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">
       <path class="body" d="M19 58q-6 1-7 6q4-1 8-3z"/>
       <path class="limb leg" d="M25 58Q21 70 14 80M32 58Q37 68 44 78"/>
@@ -137,7 +142,7 @@
       <circle class="body" cx="33" cy="19" r="10.5"/><circle class="body" cx="27" cy="10" r="3.8"/><circle class="body" cx="38.5" cy="9" r="3.8"/>
       <ellipse class="body" cx="43.5" cy="22" rx="8.5" ry="5.4"/>
       <ellipse class="nose" cx="50" cy="20.5" rx="2" ry="1.5"/><circle class="eye" cx="38" cy="16" r="1.4"/>
-      <path class="tongue" d="M41 26.4q3 7.2 6.2 0z"/>${stars}</svg>`;
+      <path class="tongue" d="M41 26.4q3 7.2 6.2 0z"/>${heroStars(tier)}</svg>`;
   }
 
   /* Wahrzeichen der Länder-Legenden (Spezialkarten „kuckucksuhr“ … „bratwurst“) statt der Flasche, wie der Bär: gleiche Größe (60 × 86),
@@ -218,10 +223,6 @@
       <path class="cutline" style="stroke-width:1.5" d="M14 35l5 9M23 35l5 9M32 35l5 9M41 35l5 9"/></g>`,
   };
 
-  // Sterne um das Symbol (ab Kartenstufe 4, bei 5 mehr), gleiche Plätze wie beim Bär
-  const heroStars = (tier) => tier >= 4
-    ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
-    : '';
   const icon = (name, tier = 0) => `<svg class="bottle bear icon ico-${name}${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">${ICONS[name]}${heroStars(tier)}</svg>`;
   // Symbol in der Mitte der Karte: Flasche, bei Spezialkarten der Bär oder das Wahrzeichen
   const symbol = (b, tier) => {
@@ -964,7 +965,7 @@
     const standort = KARTE.supported() ? `<section class="set-sec"><h3>Standort</h3>
           <label class="check-row"><input type="checkbox" id="set-geo"${KARTE.enabled() ? ' checked' : ''}><span>Standort beim Eintragen speichern</span></label>
           <p class="note" id="set-geo-msg" role="status" aria-live="polite"></p>
-          <p class="note">Ist der Schalter an, merkt sich die App bei eingetragenen Bier, wo du gerade bist und zeigt die Orte
+          <p class="note">Ist der Schalter an, merkt sich die App bei jedem eingetragenen Bier, wo du gerade bist, und zeigt die Orte
             als Punkte auf der Karte (nur du siehst sie). Löschst du ein getrunkenes Bier oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
         </section>` : '';
     // Neigungssensor: Knopf für die ausdrückliche Erlaubnis (iPhone fragt nur auf einen Klick hin); ohne Sensor-Unterstützung entfällt der Abschnitt
@@ -1000,7 +1001,7 @@
           <button class="btn danger-ghost" type="button" data-set="reset">Profil zurücksetzen …</button>
         </section>
         <section class="set-sec responsible">
-          <p><b>Saufen, Saufen und Saufen</b> Trink nie, um Punkte zu sammeln, sondern nur, um zu Genießen.
+          <p><b>Saufen, Saufen und Saufen</b> Trink nie, um Punkte zu sammeln, sondern nur, um zu genießen.
             Bier Sammler ist nur für Personen ab 18 Jahren.</p>
         </section>
         <p class="legal"><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
@@ -1087,7 +1088,7 @@
   }
 
   function howtoHtml() {
-    const kats = G.STUFEN.filter((st) => db.kat && db.kat[st])
+    const kats = G.STUFEN.filter((st) => db.kat[st])
       .map((st) => `<li class="k${st}"><span class="dot" aria-hidden="true"></span>${esc(db.kat[st].name)} <span class="h-sub">${fmtPoints(G.pointsFor(st))} pro Bier</span></li>`).join('');
     return `<p><b>So geht’s:</b> Tippe nach jedem Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt –
         erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>
@@ -1220,7 +1221,8 @@
     } else {
       say('Ausgeschaltet. Es wird nichts mehr gespeichert. Schon gespeicherte Orte bleiben bei ihren Einträgen.');
     }
-    renderHeader(); // zeigt oder verbirgt den Knopf „Karte“
+    // Der Knopf „Karte der Orte öffnen“ steht in den Statistiken (paintStats) und richtet sich beim Öffnen nach dem Schalter
+    if (statsDlg.open) paintStats();
   }
   setDlg.addEventListener('change', (e) => {
     if (e.target.id === 'set-geo') { toggleGeo(e.target); return; }
@@ -1441,7 +1443,7 @@
 
   applyTheme(currentTheme());
   // Nach dem Löschen des Kontos lädt STORE die Seite neu und merkt sich das in sessionStorage
-  try { if (sessionStorage.getItem('biersammler-deleted-v1')) { sessionStorage.removeItem('biersammler-deleted-v1'); toast('Dein Konto wurde gelöscht.'); } } catch { /* ohne Speicher keine Meldung */ }
+  try { if (sessionStorage.getItem(SS_DELETED)) { sessionStorage.removeItem(SS_DELETED); toast('Dein Konto wurde gelöscht.'); } } catch { /* ohne Speicher keine Meldung */ }
   showAgeNotice();
   STORE.start(onStoreChange);
   loadBeers();
