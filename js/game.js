@@ -19,6 +19,9 @@
   // Extrapunkte einer Spezialkarte ("bonus" in spezialkarten.json), höchstens 1 Punkt; ein Bier bringt also höchstens 3,5
   const MAX_BONUS = 10;
   const MAX_BEER_POINTS = POINTS[MAX_STUFE] + MAX_BONUS;
+  // Extrapunkte für eine NEUE Karte (das erste Trinken eines Biers, das man noch nicht hat): 3,5 Punkte, einmal je Karte.
+  // Sie hängen an der Karte, nicht an einem bestimmten Eintrag: Solange noch ein Eintrag des Biers da ist, bleiben sie.
+  const NEW_CARD_BONUS = 35;
 
   const pointsFor = (stufe) => POINTS[stufe] || 0;
   // Punkte eines Biers in Zehnteln: feste Punkte der Spezialkarte ("punkte"), sonst Punkte der Stufe plus Extrapunkte der Spezialkarte ("bonus")
@@ -363,6 +366,7 @@
 
   /* Sammlung und Punkte aus dem Protokoll berechnen (nie gespeichert).
      beerMap: Map(id → Bier). Einträge mit unbekannter beerId zählen nicht.
+     Jede Karte bringt einmal NEW_CARD_BONUS zusätzlich; points einer Karte enthält diesen Bonus.
      Ergebnis: { sum (Zehntel), count, cards: [{ beer, count, first, last, points, drinks: [ids] }] } */
   function summarize(drinks, beerMap) {
     const cards = new Map();
@@ -375,7 +379,11 @@
       sum += p;
       count++;
       let c = cards.get(beer.id);
-      if (!c) { c = { beer, count: 0, first: d.at, last: d.at, points: 0, drinks: [] }; cards.set(beer.id, c); }
+      if (!c) {
+        c = { beer, count: 0, first: d.at, last: d.at, points: NEW_CARD_BONUS, drinks: [] };
+        cards.set(beer.id, c);
+        sum += NEW_CARD_BONUS;
+      }
       c.count++;
       c.points += p;
       if (d.at < c.first) c.first = d.at;
@@ -575,25 +583,30 @@
 
   const BOARD_SIZE = 15; // so viele Plätze zeigt die Rangliste (zusätzlich der eigene Rang)
 
-  /* Rohdaten der Rangliste (Dokumente aus leaderboard/<uid>: { uid, username, sum, count }) prüfen, sortieren und
+  /* Rohdaten der Rangliste (Dokumente aus leaderboard/<uid>: { uid, username, sum, count, cards }) prüfen, sortieren und
      mit Rängen versehen. Ungültige Zeilen (Name ungültig, Zahlen keine Ganzzahlen oder unmöglich) fallen weg.
+     cards = Zahl der verschiedenen Karten; jede bringt einmal NEW_CARD_BONUS, deshalb gehört sie in die Grenzen von sum
+     (gleiche Prüfung wie in firestore.rules). Zeilen ohne cards (alte App-Version) fallen ebenfalls weg.
      Sortierung: Punkte absteigend, dann Anzahl Biere, dann Name. Gleiche Punkte teilen sich den Platz
-     (1, 2, 2, 4 …); der Rang eines Spielers ist 1 + Anzahl der Spieler mit MEHR Punkten. */
+     (1, 2, 2, 4 …); der Rang eines Spielers ist 1 + Anzahl der Spieler mit MEHR Punkten. Das Level folgt aus den
+     Punkten, die Reihenfolge ist also zugleich die nach Level (bei gleichem Level entscheiden die Punkte). */
   function rankBoard(rows) {
     const ok = (r) => r && typeof r.uid === 'string' && usernameKey(r.username)
-      && Number.isInteger(r.sum) && Number.isInteger(r.count) && r.count >= 0
-      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * MAX_BEER_POINTS;
+      && Number.isInteger(r.sum) && Number.isInteger(r.count) && Number.isInteger(r.cards)
+      && r.count >= 0 && r.cards >= 0 && r.cards <= r.count && (r.cards > 0 || r.count === 0)
+      && r.sum >= r.count * POINTS[1] + r.cards * NEW_CARD_BONUS
+      && r.sum <= r.count * MAX_BEER_POINTS + r.cards * NEW_CARD_BONUS;
     const list = (Array.isArray(rows) ? rows : []).filter(ok)
       .sort((a, b) => b.sum - a.sum || b.count - a.count || (usernameKey(a.username) < usernameKey(b.username) ? -1 : 1));
     let rank = 0;
     return list.map((r, i) => {
       if (i === 0 || r.sum !== list[i - 1].sum) rank = i + 1;
-      return { uid: r.uid, username: r.username, sum: r.sum, count: r.count, level: level(r.sum), rank };
+      return { uid: r.uid, username: r.username, sum: r.sum, count: r.count, cards: r.cards, level: level(r.sum), rank };
     });
   }
 
   const api = {
-    POINTS, STUFEN, MAX_STUFE, MAX_BONUS, MAX_BEER_POINTS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
+    POINTS, STUFEN, MAX_STUFE, MAX_BONUS, MAX_BEER_POINTS, NEW_CARD_BONUS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
     BOARD_SIZE, rankBoard,
     pointsFor, beerPoints, SPECIAL_DESIGNS, LEGEND_ICONS, cleanSpecials, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,

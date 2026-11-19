@@ -88,7 +88,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   rückwirkend, die Rangliste korrigiert sich beim Öffnen. In Firestore ist nichts zu migrieren, aber `firestore.rules` erlaubt jetzt 10…35 je Bier (vorher 16):
   NEUE REGELN VOR DER APP VERÖFFENTLICHEN, sonst lehnt Firestore die Ranglisten-Einträge von Spielern mit Heiligtum/Spezialkarten ab.
 - Daten-Cache: Marke `?stufen=5` an `biere.json`, `biere_manuell.json`, `kategorien.json` und `spezialkarten.json` (`STUFEN_MARKE` in `js/app.js`, `DATA_FILES` in `sw.js`),
-  `CACHE_VERSION` = `v10`. Vorher `?stufen=6` (nur biere/kategorien). Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
+  `CACHE_VERSION` = `v11` (seit dem Kartenbonus; vorher `v10`). Vorher `?stufen=6` (nur biere/kategorien). Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
 - Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); `MAX_BONUS` = 10, `MAX_BEER_POINTS` = 35 (Rangliste, Regeln).
 - Sicherung des Stands vor dem Umbau: nur im Scratchpad dieser Sitzung (kein Git im Projekt).
 
@@ -207,11 +207,16 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
 
 ## Spielregeln und Rechnen
 
-- Punkte in Zehnteln: Stufe 1–5 = 10, 12, 13, 15, 25; Zufalls-Spezialkarten + 10 (`bonus`). Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
+- **Bonus für eine neue Karte (19.11.2026, Wunsch des Nutzers: neue Biere ausprobieren soll sich lohnen):** `NEW_CARD_BONUS` = 35 (3,5 Punkte) in `js/game.js`,
+  einmal je Karte, in `summarize` beim Anlegen der Karte addiert (steckt in `summary.sum` und in `card.points`). Hängt an der Karte, nicht an einem Eintrag:
+  bleibt, solange noch ein Eintrag des Biers da ist. Gilt rückwirkend (Nutzer: im Testlauf egal). Anzeige: Aufdecken „+4,7 Punkte“ und „Neu in deiner Sammlung ·
+  davon +3,5 Bonus“; Löschen der Karte bzw. des letzten Eintrags nennt den Abzug samt Bonus; Spielanleitung und Willkommensfenster erklären ihn (vorher stand dort
+  ausdrücklich „Ein neues Bier bringt keine Extrapunkte“). Die Pille „+1,2“ in der Kartenansicht bleibt der Wert je Trinken (ohne Bonus).
+- Punkte in Zehnteln: Stufe 1–5 = 10, 12, 13, 15, 25; Zufalls-Spezialkarten + 10 (`bonus`); je neue Karte + 35. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
   seit 18.11.2026; vorher 20). `LEVEL_POINTS` in `js/game.js`; Text in Spielanleitung, Willkommensfenster, `aria-label` in `index.html` und README mitändern.
 - Alles (Punkte, Level, Sammlung, Statistiken) wird aus dem Protokoll berechnet, nie gespeichert.
 - Kein Nachtragen: Zeitpunkt = Geräteuhr beim Bestätigen. Keine Tages-Serien.
-- Pflicht-Beispiele, die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
+- Pflicht-Beispiele (reine Summen über `level`/`fmtRing`, ohne Kartenbonus), die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
   0 → Level 1, Ring 0 · 10×Stufe 5 = 250 → Level 3, 5,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
   19×Stufe 4 = 285 → Level 3, 8,5/10 · 13×Stufe 1 + 5×Stufe 5 = 255 → Level 3, 5,5/10 · 3×Stufe 3 = 39 → „3,9“ (seit 19.11.2026, vorher mit 6 Stufen).
 - Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
@@ -251,7 +256,7 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
 users/<uid>                  { username?, usernameKey? }      optionale Felder fehlen, nie undefined/null
 users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <ms, Ganzzahl>, lat?, lng? }   nur create/delete; lat/lng nur mit Standort-Schalter (siehe „Standort-Karte“)
 usernames/<usernameKey>      { uid }
-leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zehnteln, Anzahl Biere (nur mit Benutzername)
+leaderboard/<uid>            { username, sum, count, cards }   Rangliste: Punkte in Zehnteln, Anzahl Biere, verschiedene Karten (nur mit Benutzername)
 ```
 
 - `initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })`.
@@ -272,14 +277,21 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 
 - Knopf `[data-act="ranking"]` neben „Statistiken“, sichtbar nur im Firebase-Modus MIT Benutzernamen (`renderHeader`,
   Klasse `has-rank` auf `.tools`: auf < 480 px rutscht der Sync-Hinweis in eine eigene Zeile, sonst würde er abgeschnitten).
-- Veröffentlichen: `render()` meldet `STORE.publishScore(summary.sum, drinks.length)` (erst wenn die Bierdatenbank geladen
+- Veröffentlichen: `render()` meldet `STORE.publishScore(summary.sum, summary.count, summary.cards.length)` (seit 19.11.2026 mit `cards`; alle drei aus `summary`,
+  damit sie zu den Regeln passen; erst wenn die Bierdatenbank geladen
   ist). `store.js` schreibt `leaderboard/<uid>` gebündelt (1,5 s), nur bei Änderung, nur mit Namen und erst nach der
   Serverbestätigung des Protokolls (`snap.metadata.fromCache` false), damit ein leerer Zwischenspeicher nichts Falsches
   veröffentlicht. Beim Zurücksetzen löscht derselbe Batch das Dokument; ein Namenswechsel schreibt es neu.
 - Anzeige: `STORE.watchRanking` = `orderBy('sum','desc')` + `limit(15)` (nur Einzelfeld-Index, kein zusammengesetzter nötig),
-  `GAME.rankBoard` prüft (Name, Ganzzahlen, 10…35 je Bier, `MAX_BEER_POINTS`), sortiert (Punkte, Biere, Name) und vergibt Ränge (gleiche
+  `GAME.rankBoard` prüft (Name, Ganzzahlen, `count·10 + cards·35 ≤ sum ≤ count·35 + cards·35`, `0 ≤ cards ≤ count`, `cards > 0` sobald `count > 0`; Zeilen ohne
+  `cards` von alten App-Versionen fallen weg, bis der Spieler die neue Version öffnet), sortiert (Punkte, Biere, Name) und vergibt Ränge (gleiche
   Punkte = gleicher Platz). Eigener Rang außerhalb der Besten: `getCountFromServer(where('sum','>',eigene Punkte)) + 1`;
   ohne Netz „–“. Entscheidung des Nutzers: Top 15 + eigener Rang, Sortierung nach Punkten, keine Wochen-Rangliste.
+  19.11.2026: Der Nutzer wollte nach Profillevel statt nach Anzahl Bieren sortieren. Das war schon so (Punkte bestimmen das Level, Sortierung nach Punkten =
+  nach Level, feiner); deshalb nicht geändert, nur der Hinweistext sagt jetzt „Es zählt das Level, bei gleichem Level die Punkte“.
+  Neue Spalte „Karten“: `16/6.372` (eigene Zahl / `db.map.size`, Gesamtzahl kleiner und blass, `.rank .of`); unter 420 px engere Zahlenspalten
+  (`.rank .num` 40 px, Abstand 4 px), damit der Name nicht mitten im Wort umbricht. Getestet mit nachgebildetem `STORE.watchRanking` in einer Kopie ohne Schlüssel
+  (375 px hell/dunkel, 4-stellige Werte, eigener Rang 23, Zeile ohne `cards` fällt weg).
 - Werte kommen vom Client und sind fälschbar; das ist gewollt hingenommen („es ist ein Spiel“).
 - Getestet mit nachgebildetem Firebase (siehe „Testen“): Veröffentlichen, Namenswechsel, Zurücksetzen, Top 15 + Rang 23,
   Gleichstand, eigener Platz unter den Besten, offline, Ladefehler, ungültige Zeilen, lokaler Modus, 375 px hell/dunkel
@@ -289,6 +301,8 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 
 Gedanklich gegen jeden Schreibvorgang der App geprüft (Eintrag anlegen, −1, Karte löschen, Zurücksetzen mit/ohne Namen,
 Name wählen, ändern, nur Groß/klein ändern). Nicht automatisch getestet: Es gibt keinen Emulator (bräuchte npm/Java).
+Rangliste (19.11.2026): `cards` Pflichtfeld (int, 0…count, > 0 sobald count > 0), `sum` zwischen `count·10 + cards·35` und `count·35 + cards·35`.
+NEUE REGELN VOR DER APP VERÖFFENTLICHEN, sonst lehnt Firestore jeden Ranglisten-Eintrag ab (das Feld `cards` ist mit den alten Regeln nicht erlaubt).
 Wesentlich: drinks nur create/delete mit genau `beerId` (`^B[SM]-[0-9]{6}$`) und `at` (int, ≤ jetzt + 5 min);
 usernames nur anlegen, wenn frei, für sich selbst, mit passendem `users/<uid>.usernameKey` (getAfter) und nur, wenn ein
 bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen des Profils).

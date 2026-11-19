@@ -351,8 +351,9 @@
     const active = document.activeElement;
     const keep = active && active.closest && active.closest('#main') && active.dataset.focus;
     recompute();
-    // Punkte und Anzahl für die Rangliste (erst wenn die Bierdatenbank geladen ist, sonst stünde dort 0)
-    if (db.ready) STORE.publishScore(summary.sum, drinks.length);
+    // Punkte, Anzahl und verschiedene Karten für die Rangliste (erst wenn die Bierdatenbank geladen ist, sonst stünde dort 0).
+    // Alle drei aus summary, damit sie zusammenpassen (die Regeln prüfen sum gegen count und cards).
+    if (db.ready) STORE.publishScore(summary.sum, summary.count, summary.cards.length);
     renderHeader();
     renderMain();
     if (keep) {
@@ -431,7 +432,7 @@
         ${done ? `<div class="reveal-info" role="status">
             <p class="gain">+${G.fmt1(r.gain)} Punkte</p>
             ${r.levelUp ? `<p class="levelup">Level ${r.level} erreicht!</p>` : ''}
-            ${r.isNew ? '<p class="new">Neu in deiner Sammlung</p>' : ''}
+            ${r.isNew ? `<p class="new">Neu in deiner Sammlung · davon +${G.fmt1(G.NEW_CARD_BONUS)} Bonus</p>` : ''}
           </div>
           ${r.fortune ? `<p class="fortune">${esc(r.fortune)}</p>` : ''}
           <div class="actions"><button class="btn primary" type="button" data-close>Fertig</button></div>`
@@ -492,7 +493,8 @@
       // Stand VOR dem Speichern festhalten (im Firebase-Modus kommt der neue Stand erst kurz danach per Snapshot)
       const before = summary.sum;
       const old = cardOf(beer.id);
-      const gain = G.beerPoints(beer);
+      // Erstes Trinken dieses Biers: zusätzlich der Bonus für die neue Karte
+      const gain = G.beerPoints(beer) + (old ? 0 : G.NEW_CARD_BONUS);
       // Zeitpunkt = Geräteuhr beim Bestätigen. Nicht auf den Server warten: Die Anzeige kommt aus dem lokalen Stand.
       STORE.add(beer.id, Date.now(), KARTE.place()); // STANDORT-KARTE: place() ist null, wenn aus oder kein Standort da
       this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune() };
@@ -867,27 +869,30 @@
     } else {
       const uid = STORE.uid();
       const me = STORE.profile().username || '';
+      const total = G.fmtInt(db.map.size); // alle Karten der Bierdatenbank
       const row = (r, mine, label = String(r.rank)) => `<tr class="${mine ? 'me' : ''}">
           <td class="pos"><span class="badge${r.rank <= 3 ? ` p${r.rank}` : ''}">${esc(label)}</span></td>
           <td class="nm">${esc('@' + r.username)}${mine ? ' <span class="you">(du)</span>' : ''}</td>
           <td class="num">${G.fmtInt(r.level)}</td>
-          <td class="num">${G.fmtInt(r.count)}</td></tr>`;
+          <td class="num">${G.fmtInt(r.count)}</td>
+          <td class="num cards">${G.fmtInt(r.cards)}<span class="of">/${total}</span></td></tr>`;
       const own = rank.own;
       let ownRow = '';
       if (own) {
         const label = own.state === 'ok' ? String(own.rank) : own.state === 'err' ? '–' : '…';
-        ownRow = `<tr class="gap" aria-hidden="true"><td colspan="4">⋯</td></tr>`
-          + row({ rank: own.state === 'ok' ? own.rank : 99, username: me, level: G.level(summary.sum), count: drinks.length }, true, label);
+        ownRow = `<tr class="gap" aria-hidden="true"><td colspan="5">⋯</td></tr>`
+          + row({ rank: own.state === 'ok' ? own.rank : 99, username: me, level: G.level(summary.sum), count: summary.count, cards: summary.cards.length }, true, label);
       }
       const list = rank.rows.map((r) => row(r, r.uid === uid)).join('');
       const stale = rank.fromCache && navigator.onLine === false ? '<p class="note center">Keine Verbindung – das ist der zuletzt bekannte Stand.</p>' : '';
       const err = own && own.state === 'err' ? '<p class="note center">Dein Rang konnte gerade nicht ermittelt werden (keine Verbindung).</p>' : '';
       body = `${stale}${rank.rows.length ? `<table class="rank">
-          <caption class="sr-only">Die besten ${G.BOARD_SIZE} Spieler nach Punkten</caption>
-          <thead><tr><th class="pos" scope="col">Platz</th><th class="nm" scope="col">Spieler</th><th class="num" scope="col">Level</th><th class="num" scope="col">Biere</th></tr></thead>
+          <caption class="sr-only">Die besten ${G.BOARD_SIZE} Spieler nach Level und Punkten</caption>
+          <thead><tr><th class="pos" scope="col">Platz</th><th class="nm" scope="col">Spieler</th><th class="num" scope="col">Level</th><th class="num" scope="col">Biere</th><th class="num cards" scope="col">Karten</th></tr></thead>
           <tbody>${list}${ownRow}</tbody></table>` : '<p class="note center">Noch niemand in der Rangliste.</p>'}
         ${err}
-        <p class="note">Es zählen die Punkte. Wer gleich viele hat, teilt sich den Platz; danach entscheidet die Zahl der Biere.
+        <p class="note">Es zählt das Level, bei gleichem Level die Punkte. Wer gleich viele Punkte hat, teilt sich den Platz; danach entscheidet die Zahl der Biere.
+          „Karten“ zeigt, wie viele verschiedene Biere jemand von allen ${total} gesammelt hat.
           Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang. Die Rangliste enthält nur Spieler mit Benutzernamen.</p>`;
     }
     rankDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
@@ -1089,9 +1094,10 @@
         erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>
       <p><b>Kategorien</b> von häufig bis sehr selten:</p>
       ${kats ? `<ul class="howto-kats">${kats}</ul>` : '<p class="note">Die Kategorien erscheinen, sobald die Bierdatenbank geladen ist.</p>'}
-      <p>Ein neues Bier bringt keine Extrapunkte – es zählt nur seine Kategorie. Manche Karten erscheinen als besondere
-        Sonderkarte mit eigenem Design; sie bringen einen Punkt mehr als ihre Kategorie. Wie viele Punkte ein Bier bringt,
-        steht in seiner Kartenansicht neben den gesammelten Punkten (z. B. „+1,5“).</p>
+      <p><b>Neue Biere lohnen sich:</b> Trinkst du ein Bier zum ersten Mal, bekommst du für die neue Karte einmalig
+        ${fmtPoints(G.NEW_CARD_BONUS)} extra. Manche Karten erscheinen als besondere
+        Sonderkarte mit eigenem Design; sie bringen einen Punkt mehr als ihre Kategorie. Wie viele Punkte ein Bier bei jedem Trinken bringt,
+        steht in seiner Kartenansicht neben den gesammelten Punkten (z. B. „+1,5“); die gesammelten Punkte enthalten den Bonus für die neue Karte.</p>
       <p><b>Level:</b> 10 Punkte ergeben ein Level. Du startest bei Level 1; Punkte über 10 werden ins nächste Level mitgenommen.
         Der Ring oben rechts zeigt den Fortschritt im aktuellen Level. Löschst du Einträge, sinken die Punkte und notfalls auch das Level.</p>
       <p><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst. Ein Datum lässt sich nicht auswählen.</p>`;
@@ -1106,7 +1112,7 @@
     if (all) {
       const ok = await confirmBox({
         title: 'Karte löschen?',
-        html: `${name}: ${c.count === 1 ? 'Der einzige Eintrag wird' : `Alle ${c.count} Einträge werden`} gelöscht (−${fmtPoints(p * c.count)}).
+        html: `${name}: ${c.count === 1 ? 'Der einzige Eintrag wird' : `Alle ${c.count} Einträge werden`} gelöscht (−${fmtPoints(c.points)}, samt Bonus für die neue Karte).
           Die Karte verschwindet aus deiner Sammlung. Das lässt sich nicht rückgängig machen.`,
         ok: c.count === 1 ? 'Karte löschen' : `${c.count} Einträge löschen`,
       });
@@ -1115,7 +1121,7 @@
     } else {
       const ok = await confirmBox({
         title: 'Letzten Eintrag löschen?',
-        html: `${name}: Der zuletzt eingetragene von ${c.count} ${c.count === 1 ? 'Eintrag' : 'Einträgen'} wird gelöscht (−${fmtPoints(p)}).
+        html: `${name}: Der zuletzt eingetragene von ${c.count} ${c.count === 1 ? 'Eintrag' : 'Einträgen'} wird gelöscht (−${fmtPoints(c.count === 1 ? c.points : p)}${c.count === 1 ? ', samt Bonus für die neue Karte' : ''}).
           ${c.count === 1 ? 'Danach verschwindet die Karte aus deiner Sammlung.' : `Danach steht die Karte auf Lvl ${c.count - 1}.`}`,
         ok: '1 Eintrag löschen',
       });
@@ -1320,7 +1326,7 @@
         <p>Das sind die wichtigsten Regeln:</p>
         <ul class="rules">
           <li><b>Sammeln:</b> Tippe nach jedem getrunkenen Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt – erst dann siehst du, wie selten dein Bier ist.</li>
-          <li><b>Punkte:</b> Je nach Kategorie bringt ein Bier ${esc(lo)} (häufig) bis ${esc(hi)} (sehr selten). Ein neues Bier bringt keine Extrapunkte.</li>
+          <li><b>Punkte:</b> Je nach Kategorie bringt ein Bier ${esc(lo)} (häufig) bis ${esc(hi)} (sehr selten). Ein Bier, das du noch nicht hast, bringt einmalig ${esc(fmtPoints(G.NEW_CARD_BONUS))} extra.</li>
           <li><b>Level:</b> Schon ${G.LEVEL_POINTS / 10} Punkte ergeben ein Level. Der Ring oben rechts zeigt deinen Fortschritt.</li>
           <li><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst.</li>
           <li><b>Verantwortung:</b> Trink nie, um Punkte zu sammeln, und nie, wenn du noch fahren musst.</li>

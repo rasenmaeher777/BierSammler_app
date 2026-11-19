@@ -8,7 +8,7 @@ rules_version = '2';
 //   users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <Millisekunden, Ganzzahl>, lat?, lng? }
 //                                 (lat/lng: Ort des Eintrags für die Standort-Karte, nur wenn die Person es eingeschaltet hat)
 //   usernames/<usernameKey>      { uid }
-//   leaderboard/<uid>            { username, sum, count }   (Rangliste: Punkte in Zehnteln, Anzahl Biere)
+//   leaderboard/<uid>            { username, sum, count, cards }   (Rangliste: Punkte in Zehnteln, Anzahl Biere, verschiedene Karten)
 //
 // Grundsatz: Jede Person liest und schreibt nur users/<eigene uid>/**. Ausnahmen sind einzelne Einträge
 // in usernames (lesen für alle Angemeldeten), damit Namen eindeutig bleiben, und die Rangliste leaderboard
@@ -105,23 +105,28 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
-    // Rangliste. Die App veröffentlicht hier Punkte und Anzahl Biere (beides berechnet sie selbst aus dem Protokoll;
+    // Rangliste. Die App veröffentlicht hier Punkte, Anzahl Biere und Zahl der verschiedenen Karten (alles berechnet sie selbst aus dem Protokoll;
     // die Regeln können nicht nachzählen und prüfen deshalb nur, ob die Werte möglich sind). Es ist ein Spiel unter
     // Freunden, kein Wettbewerb mit Preisen. Lesen (get, list und Zählabfragen) dürfen alle Angemeldeten.
     // Schreiben nur für das eigene Dokument und nur mit Benutzernamen, der zum Profil passt.
-    // sum steht in Zehnteln: je Bier 10 bis 35 (Stufe 1 bis 5 = 1,0 bis 2,5 Punkte, Spezialkarten bis 1,0 Extrapunkt; siehe js/game.js POINTS, MAX_BEER_POINTS).
+    // sum steht in Zehnteln: je Bier 10 bis 35 (Stufe 1 bis 5 = 1,0 bis 2,5 Punkte, Spezialkarten bis 1,0 Extrapunkt; siehe js/game.js POINTS, MAX_BEER_POINTS),
+    // dazu je Karte einmal 35 (3,5 Punkte für ein neues Bier; js/game.js NEW_CARD_BONUS). cards: 0 bis count, und mindestens 1, sobald es Biere gibt.
     match /leaderboard/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['username', 'sum', 'count'])
-        && request.resource.data.keys().hasAll(['username', 'sum', 'count'])
+        && request.resource.data.keys().hasOnly(['username', 'sum', 'count', 'cards'])
+        && request.resource.data.keys().hasAll(['username', 'sum', 'count', 'cards'])
         && request.resource.data.username is string
         && request.resource.data.count is int
         && request.resource.data.sum is int
+        && request.resource.data.cards is int
         && request.resource.data.count >= 0
         && request.resource.data.count <= 1000000
-        && request.resource.data.sum >= request.resource.data.count * 10
-        && request.resource.data.sum <= request.resource.data.count * 35
+        && request.resource.data.cards >= 0
+        && request.resource.data.cards <= request.resource.data.count
+        && (request.resource.data.cards > 0 || request.resource.data.count == 0)
+        && request.resource.data.sum >= request.resource.data.count * 10 + request.resource.data.cards * 35
+        && request.resource.data.sum <= request.resource.data.count * 35 + request.resource.data.cards * 35
         && exists(userDoc(uid))
         && getAfter(userDoc(uid)).data.get('username', null) == request.resource.data.username;
       allow delete: if isOwner(uid);

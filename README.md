@@ -196,8 +196,10 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).
 - Die Kategorie richtet sich danach, wie leicht ein Bier zu bekommen ist (Einordnung siehe „Kategorien nach Erhältlichkeit“).
 - Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,2 · Spezialität 1,3 · Zaubertrank 1,5 · Heiligtum 2,5.
-  Biere auf einer Zufalls-Spezialkarte (Sanchi, Raddelfuß usw.) bringen 1 Punkt mehr als ihre Kategorie. Keine Extrapunkte für neue Biere.
-- In der Kartenansicht steht neben den gesammelten Punkten, was ein einzelnes Trinken dieses Biers bringt (z. B. „+1,5“).
+  Biere auf einer Zufalls-Spezialkarte (Sanchi, Raddelfuß usw.) bringen 1 Punkt mehr als ihre Kategorie.
+- **Neue Karte:** Das erste Trinken eines Biers, das man noch nicht hat, bringt einmalig 3,5 Punkte extra (neue Biere auszuprobieren
+  lohnt sich). Der Bonus gehört zur Karte: Er verschwindet erst, wenn der letzte Eintrag dieses Biers gelöscht wird.
+- In der Kartenansicht steht neben den gesammelten Punkten (samt Bonus), was ein einzelnes Trinken dieses Biers bringt (z. B. „+1,5“).
 - 10 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
@@ -213,9 +215,10 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - **Willkommensfenster:** Nach der ersten Anmeldung (einmal je Konto und Gerät) erscheinen die wichtigsten Regeln samt Hinweis, dass man
   für die Platzierung einen Benutzernamen erstellen muss (Hinweis und Knopf entfallen, wenn das Konto schon einen Namen hat).
 - **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die
-  besten 15 Spieler (Rang, Name, Level, Anzahl Biere) und, falls man nicht darunter ist, den eigenen Rang. Es zählen die
-  Punkte; gleiche Punkte teilen sich den Platz (Reihenfolge dann nach Anzahl Biere). Spieler ohne Benutzernamen erscheinen
-  nicht. Die App veröffentlicht dazu Name, Punkte und Anzahl in `leaderboard/<Konto>`; die Werte stammen vom eigenen Gerät
+  besten 15 Spieler (Rang, Name, Level, Anzahl Biere, verschiedene Karten wie „16/6.372“) und, falls man nicht darunter ist, den eigenen Rang.
+  Sortiert wird nach Level, bei gleichem Level nach Punkten (das Level folgt aus den Punkten); gleiche Punkte teilen sich den Platz
+  (Reihenfolge dann nach Anzahl Biere). Spieler ohne Benutzernamen erscheinen nicht. Die App veröffentlicht dazu Name, Punkte, Anzahl
+  und Zahl der verschiedenen Karten in `leaderboard/<Konto>`; die Werte stammen vom eigenen Gerät
   und lassen sich von technisch versierten Spielern fälschen (die Regeln prüfen nur, ob sie möglich sind). Eine Wochen-
   Rangliste gibt es bewusst nicht.
 - **Nach dem Update:** Zuerst die neue `firestore.rules` in der Firebase-Konsole veröffentlichen, dann die App. Ohne die

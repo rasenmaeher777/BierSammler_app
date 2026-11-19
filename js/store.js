@@ -12,7 +12,7 @@
                                  lat/lng (STANDORT-KARTE): nur wenn die Person den Standort-Schalter eingeschaltet hat; auf 3 Nachkommastellen
                                  gerundet (rund 100 m); beide oder keiner
      usernames/<usernameKey>     { uid }                         (sorgt für eindeutige Namen)
-     leaderboard/<uid>           { username, sum, count }        (Rangliste; nur mit Benutzernamen, siehe publishScore)
+     leaderboard/<uid>           { username, sum, count, cards } (Rangliste; nur mit Benutzernamen, siehe publishScore)
 
    Schreibvorgänge werden NICHT abgewartet: Ihre Promises erfüllen sich erst nach Bestätigung durch den Server und
    hängen ohne Netz. Die Anzeige kommt sofort aus dem lokalen Snapshot; ohne Netz landen die Schreibvorgänge in der
@@ -34,7 +34,7 @@
      pending()          true, solange Änderungen noch nicht beim Server angekommen sind
      profile()          { username?, usernameKey?, email? }
      profileReady()     true, sobald das Profil (Benutzername) sicher geladen ist; lokal immer true
-     publishScore(sum, count)        Punkte (Zehntel) und Anzahl Biere für die Rangliste veröffentlichen (gebündelt, im Hintergrund)
+     publishScore(sum, count, cards) Punkte (Zehntel), Anzahl Biere und Zahl der verschiedenen Karten für die Rangliste veröffentlichen (gebündelt, im Hintergrund)
      watchRanking(onData, onError)   die besten Plätze live lesen; gibt eine Funktion zum Beenden zurück
      countAbove(sum)    Promise<Anzahl Spieler mit mehr Punkten> (nur mit Server), für den eigenen Rang
      uid()              Kennung des angemeldeten Kontos oder null */
@@ -199,10 +199,10 @@ window.STORE = (() => {
     }, (err) => console.error('Profil konnte nicht geladen werden', err)));
   }
 
-  /* Rangliste veröffentlichen: leaderboard/<uid> = { username, sum, count }. Nur mit Benutzernamen und erst nach der
+  /* Rangliste veröffentlichen: leaderboard/<uid> = { username, sum, count, cards }. Nur mit Benutzernamen und erst nach der
      Bestätigung durch den Server (s.synced). Änderungen werden gebündelt und nur gesendet, wenn sich etwas geändert hat.
      Beim Auslösen wird der Zustand neu geprüft, damit nach einem Zurücksetzen nichts mehr geschrieben wird. */
-  const scoreKey = () => (s.score && s.profile.username ? `${s.profile.username}|${s.score.sum}|${s.score.count}` : '');
+  const scoreKey = () => (s.score && s.profile.username ? `${s.profile.username}|${s.score.sum}|${s.score.count}|${s.score.cards}` : '');
   function scheduleScore() {
     const key = scoreKey();
     // Läuft für genau diesen Stand schon ein Timer, nicht neu starten (sonst würde häufiges Neuzeichnen ihn ewig verschieben)
@@ -216,7 +216,7 @@ window.STORE = (() => {
     const key = scoreKey();
     if (!user || deleting || !s.synced || !key || key === lastScore) return;
     lastScore = key;
-    background(fb.setDoc(fb.doc(db, 'leaderboard', user.uid), { username: s.profile.username, sum: s.score.sum, count: s.score.count }), 'Rangliste veröffentlichen');
+    background(fb.setDoc(fb.doc(db, 'leaderboard', user.uid), { username: s.profile.username, sum: s.score.sum, count: s.score.count, cards: s.score.cards }), 'Rangliste veröffentlichen');
   }
 
   // Löschvorgänge in Batches mit höchstens 500 Vorgängen; extra = zusätzliche Vorgänge für den ersten Batch
@@ -308,17 +308,17 @@ window.STORE = (() => {
       });
     },
 
-    publishScore(sum, count) {
-      s.score = { sum, count };
+    publishScore(sum, count, cards) {
+      s.score = { sum, count, cards };
       scheduleScore();
     },
 
-    // Beste Plätze live lesen. Jede Zeile: { uid, username, sum, count } (ungeprüft; GAME.rankBoard prüft und sortiert).
+    // Beste Plätze live lesen. Jede Zeile: { uid, username, sum, count, cards } (ungeprüft; GAME.rankBoard prüft und sortiert).
     watchRanking(onData, onError) {
       if (!user) { onError(fail('error', 'nicht angemeldet')); return () => {}; }
       const q = fb.query(fb.collection(db, 'leaderboard'), fb.orderBy('sum', 'desc'), fb.limit(window.GAME.BOARD_SIZE));
       return fb.onSnapshot(q, (snap) => {
-        const rows = snap.docs.map((d) => { const v = d.data() || {}; return { uid: d.id, username: v.username, sum: v.sum, count: v.count }; });
+        const rows = snap.docs.map((d) => { const v = d.data() || {}; return { uid: d.id, username: v.username, sum: v.sum, count: v.count, cards: v.cards }; });
         onData(rows, { fromCache: snap.metadata.fromCache });
       }, (err) => { console.error('Rangliste konnte nicht geladen werden', err); onError(err); });
     },
@@ -429,7 +429,7 @@ window.STORE = (() => {
     pending: () => s.pending,
     profile: () => s.profile,
     profileReady: () => MODE === 'local' || s.profileReady,
-    publishScore: (sum, count) => impl.publishScore(sum, count),
+    publishScore: (sum, count, cards) => impl.publishScore(sum, count, cards),
     watchRanking: (onData, onError) => impl.watchRanking(onData, onError),
     countAbove: (sum) => impl.countAbove(sum),
     uid: () => impl.uid(),

@@ -924,6 +924,16 @@ button.bcard:active { transform: scale(0.98); }
 .rank .nm { overflow-wrap: anywhere; font-weight: 650; }
 .rank .num { width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
 .rank th.num { text-align: right; }
+/* Karten „16/6.372“: eigene Breite, Gesamtzahl kleiner und blasser */
+.rank .num.cards { width: auto; white-space: nowrap; }
+.rank .of { color: var(--muted); font-size: 12px; }
+/* Schmale Bildschirme: fünf Spalten, deshalb engere Zahlenspalten, damit der Name Platz behält */
+@media (max-width: 420px) {
+  .rank th, .rank td { padding-left: 4px; padding-right: 4px; }
+  .rank .pos { width: 38px; }
+  .rank .num { width: 40px; }
+  .rank .of { font-size: 11px; }
+}
 .rank .you { color: var(--muted); font-weight: 500; }
 .rank tr.me td { background: var(--surface-2); border-top-color: var(--accent); }
 .rank tr.me td:first-child { border-radius: 10px 0 0 10px; }

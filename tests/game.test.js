@@ -40,6 +40,7 @@ test('Fünf Stufen nach Erhältlichkeit: 1,0 / 1,2 / 1,3 / 1,5 / 2,5 Punkte, Spe
   assert.strictEqual(G.MAX_STUFE, 5);
   assert.deepStrictEqual(G.STUFEN.map(G.pointsFor), [10, 12, 13, 15, 25]);
   assert.strictEqual(G.MAX_BONUS, 10); assert.strictEqual(G.MAX_BEER_POINTS, 35);
+  assert.strictEqual(G.NEW_CARD_BONUS, 35); // 3,5 Punkte einmal je neuer Karte
   assert.strictEqual(G.pointsFor(6), 0); assert.strictEqual(G.pointsFor(0), 0);
   // beerPoints: Stufe + Bonus; feste Punkte gehen vor (dann kein Bonus)
   assert.strictEqual(G.beerPoints({ stufe: 5, punkte: null, bonus: 10 }), 35);
@@ -217,18 +218,39 @@ test('Sammlung aus dem Protokoll und Sortierung', () => {
     { id: '5', beerId: 'BS-000011', at: 50 }, { id: '6', beerId: 'BS-000013', at: 500 },
   ], map);
   const s = G.summarize(d, map);
-  assert.strictEqual(s.sum, 5 * 10 + 12);
+  assert.strictEqual(s.sum, 5 * 10 + 12 + 4 * 35); // 6 Einträge + 4 neue Karten zu je 3,5
   assert.strictEqual(s.count, 6);
+  assert.strictEqual(s.cards.length, 4);
   const order = s.cards.slice().sort(G.compareCards).map((c) => c.beer.id);
   // Stufe 2 zuerst; dann je 2× (10 und 12): 12 zuletzt getrunken (400) vor 10 (300); dann 13 (1×)
   assert.deepStrictEqual(order, ['BS-000011', 'BS-000012', 'BS-000010', 'BS-000013']);
   const c10 = s.cards.find((c) => c.beer.id === 'BS-000010');
-  assert.deepStrictEqual([c10.count, c10.first, c10.last, c10.points], [2, 100, 300, 20]);
+  assert.deepStrictEqual([c10.count, c10.first, c10.last, c10.points], [2, 100, 300, 20 + 35]);
+});
+test('Neue Karte: einmal 3,5 Punkte extra, unabhängig von Reihenfolge und Anzahl', () => {
+  const one = [{ id: 'a', beerId: 'BS-000011', at: 100 }];
+  assert.strictEqual(G.summarize(one, map).sum, 12 + 35);
+  assert.strictEqual(G.summarize(one, map).cards[0].points, 12 + 35);
+  const three = G.normalizeDrinks([
+    { id: 'b', beerId: 'BS-000011', at: 300 }, { id: 'a', beerId: 'BS-000011', at: 100 }, { id: 'c', beerId: 'BS-000011', at: 200 },
+  ], map);
+  assert.strictEqual(G.summarize(three, map).sum, 3 * 12 + 35);
+  // Ein unbekanntes Bier bringt weder Punkte noch Bonus
+  assert.strictEqual(G.summarize([{ id: 'x', beerId: 'BS-999999', at: 1 }], map).sum, 0);
+  assert.strictEqual(G.summarize([], map).sum, 0);
+  // Gleich viele Einträge: zwei verschiedene Biere bringen mehr als zweimal dasselbe
+  const same = G.summarize([{ id: 'a', beerId: 'BS-000010', at: 1 }, { id: 'b', beerId: 'BS-000010', at: 2 }], map).sum;
+  const diff = G.summarize([{ id: 'a', beerId: 'BS-000010', at: 1 }, { id: 'b', beerId: 'BS-000012', at: 2 }], map).sum;
+  assert.deepStrictEqual([same, diff], [2 * 10 + 35, 2 * 10 + 2 * 35]);
 });
 test('Eintrag löschen senkt Punkte und Level', () => {
-  const many = Array.from({ length: 10 }, (_, i) => ({ id: 'x' + i, beerId: 'BS-000010', at: 1000 + i }));
+  // 7 × 1,0 + 3,5 Bonus = 10,5 → Level 2; ein Eintrag weniger: 9,5 → Level 1
+  const many = Array.from({ length: 7 }, (_, i) => ({ id: 'x' + i, beerId: 'BS-000010', at: 1000 + i }));
   assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many, map), map).sum), 2);
   assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many.slice(1), map), map).sum), 1);
+  // Letzter Eintrag weg: Karte und Bonus verschwinden
+  assert.strictEqual(G.summarize(G.normalizeDrinks(many.slice(6), map), map).sum, 10 + 35);
+  assert.strictEqual(G.summarize([], map).cards.length, 0);
 });
 
 /* ---------- Standort-Karte (STANDORT-KARTE) ---------- */
@@ -256,7 +278,7 @@ test('Einträge mit Ort: gültiger Ort bleibt, ungültiger entfällt, der Eintra
   assert.deepStrictEqual(d.map((x) => [x.id, x.lat, x.lng]), [['a', 52.52, 13.405], ['b', undefined, undefined], ['c', undefined, undefined], ['d', undefined, undefined], ['e', undefined, undefined]]);
   assert.ok(!('lat' in d[1]) && !('lng' in d[4]));
   // Punkte und Sammlung ändern sich durch Orte nicht
-  assert.strictEqual(G.summarize(d, map).sum, 5 * 10);
+  assert.strictEqual(G.summarize(d, map).sum, 5 * 10 + 35);
 });
 test('Orte zusammenfassen: gleicher gerundeter Ort = ein Punkt mit Anzahl', () => {
   const d = G.normalizeDrinks([
@@ -388,36 +410,44 @@ test('Benutzername', () => {
 
 /* ---------- Rangliste ---------- */
 
-test('Rangliste: sortiert nach Punkten, dann Bieren, dann Name; gleiche Punkte teilen den Platz', () => {
+test('Rangliste: sortiert nach Punkten (= Level), dann Bieren, dann Name; gleiche Punkte teilen den Platz', () => {
   const rows = [
-    { uid: 'u1', username: 'Anna', sum: 200, count: 20 },       // Level 3
-    { uid: 'u2', username: 'bernd', sum: 266, count: 19 },      // Level 3
-    { uid: 'u3', username: 'Carl', sum: 200, count: 18 },       // gleiche Punkte wie Anna, weniger Biere
-    { uid: 'u4', username: 'dora_1', sum: 0, count: 0 },
-    { uid: 'u5', username: 'Emil', sum: 200, count: 18 },       // gleich wie Carl → nach Name
+    { uid: 'u1', username: 'Anna', sum: 270, count: 20, cards: 2 },   // Level 3
+    { uid: 'u2', username: 'bernd', sum: 266, count: 12, cards: 3 },  // Level 3, weniger Punkte als Anna
+    { uid: 'u3', username: 'Carl', sum: 270, count: 18, cards: 2 },   // gleiche Punkte wie Anna, weniger Biere
+    { uid: 'u4', username: 'dora_1', sum: 0, count: 0, cards: 0 },
+    { uid: 'u5', username: 'Emil', sum: 270, count: 18, cards: 1 },   // gleich wie Carl → nach Name
+    { uid: 'u6', username: 'Fritz', sum: 400, count: 10, cards: 8 },  // Level 5 mit halb so vielen Bieren wie Anna: steht trotzdem vorn
   ];
   const b = G.rankBoard(rows);
-  assert.deepStrictEqual(b.map((r) => r.username), ['bernd', 'Anna', 'Carl', 'Emil', 'dora_1']);
-  assert.deepStrictEqual(b.map((r) => r.rank), [1, 2, 2, 2, 5]);
-  assert.deepStrictEqual(b.map((r) => r.level), [3, 3, 3, 3, 1]);
-  assert.strictEqual(b[0].count, 19); assert.strictEqual(b[0].uid, 'u2');
+  assert.deepStrictEqual(b.map((r) => r.username), ['Fritz', 'Anna', 'Carl', 'Emil', 'bernd', 'dora_1']);
+  assert.deepStrictEqual(b.map((r) => r.rank), [1, 2, 2, 2, 5, 6]);
+  assert.deepStrictEqual(b.map((r) => r.level), [5, 3, 3, 3, 3, 1]);
+  assert.deepStrictEqual(b.map((r) => r.cards), [8, 2, 2, 1, 3, 0]);
+  assert.strictEqual(b[4].count, 12); assert.strictEqual(b[4].uid, 'u2');
 });
 
 test('Rangliste: ungültige Zeilen fallen weg', () => {
   const bad = [
     null, 'x', {},
-    { uid: 'a', username: 'ab', sum: 10, count: 1 },            // Name zu kurz
-    { uid: 'b', username: '<b>hacker</b>', sum: 10, count: 1 }, // Name ungültig
-    { uid: 'c', username: 'Hans', sum: 10.5, count: 1 },        // keine Ganzzahl
-    { uid: 'd', username: 'Hans', sum: 9, count: 1 },           // weniger als 1,0 Punkte je Bier
-    { uid: 'e', username: 'Hans', sum: 36, count: 1 },          // mehr als 3,5 Punkte je Bier (Heiligtum + Spezialkarte)
-    { uid: 'f', username: 'Hans', sum: 10, count: -1 },
-    { uid: 'g', username: 'Hans', sum: '10', count: 1 },
-    { username: 'Hans', sum: 10, count: 1 },                    // ohne uid
+    { uid: 'a', username: 'ab', sum: 45, count: 1, cards: 1 },            // Name zu kurz
+    { uid: 'b', username: '<b>hacker</b>', sum: 45, count: 1, cards: 1 }, // Name ungültig
+    { uid: 'c', username: 'Hans', sum: 45.5, count: 1, cards: 1 },        // keine Ganzzahl
+    { uid: 'd', username: 'Hans', sum: 44, count: 1, cards: 1 },          // weniger als 1,0 je Bier + 3,5 je Karte
+    { uid: 'e', username: 'Hans', sum: 71, count: 1, cards: 1 },          // mehr als 3,5 je Bier + 3,5 je Karte
+    { uid: 'f', username: 'Hans', sum: 10, count: -1, cards: 0 },
+    { uid: 'g', username: 'Hans', sum: '45', count: 1, cards: 1 },
+    { username: 'Hans', sum: 45, count: 1, cards: 1 },                    // ohne uid
+    { uid: 'h', username: 'Hans', sum: 35, count: 1 },                    // ohne cards (alte App-Version)
+    { uid: 'i', username: 'Hans', sum: 80, count: 1, cards: 2 },          // mehr Karten als Biere
+    { uid: 'j', username: 'Hans', sum: 20, count: 2, cards: 0 },          // Biere, aber keine Karte
+    { uid: 'k', username: 'Hans', sum: 45, count: 1, cards: '1' },
   ];
   assert.deepStrictEqual(G.rankBoard(bad), []);
   assert.deepStrictEqual(G.rankBoard(undefined), []);
-  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 35, count: 1 }]).length, 1);
+  // Grenzen genau: 1 × 1,0 + 3,5 und 1 × 3,5 + 3,5
+  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 45, count: 1, cards: 1 }]).length, 1);
+  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 70, count: 1, cards: 1 }]).length, 1);
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
@@ -529,7 +559,7 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(b4.kategorie, 'Heiligtum'); assert.strictEqual(b4.bonus, 10); assert.strictEqual(G.beerPoints(b4), 35);
   // Summe richtet sich nach den Bierpunkten (3 × 1,0 statt 3 × 1,2)
   const s = G.summarize([{ id: 'd1', beerId: 'BS-000002', at: 1 }, { id: 'd2', beerId: 'BS-000002', at: 2 }, { id: 'd3', beerId: 'BS-000002', at: 3 }], r.map);
-  assert.strictEqual(s.sum, 30); assert.strictEqual(s.cards[0].points, 30);
+  assert.strictEqual(s.sum, 30 + 35); assert.strictEqual(s.cards[0].points, 30 + 35);
   // Fehlt die Datei oder ist sie fehlerhaft, bleibt alles beim Alten
   const plain = G.mergeBeers([raw('BS-000002', 'A - Zwei', 2)], [], KAT, () => {}, {}, 'kaputt');
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
