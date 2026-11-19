@@ -263,6 +263,13 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .sp-hopfen { --k: #7BC96F; --on-k: #072A12; }       /* Spezialkarte „Heiliger Hopfen“ (feste Farben) */
 .sp-koenig { --k: #D9AE3C; --on-k: #3A0610; }       /* Spezialkarte „Bierkönig“ (feste Farben) */
 .sp-weltall { --k: #6B5BFF; --on-k: #FFFFFF; }      /* Spezialkarte „Außenseiter“ (feste Farben) */
+/* Spezialkarten „Spezial Rot / Türkis / Orange / Rosa“ (Design sp-mono): --c = Kartenfarbe, --ink = Schrift und Zeichnung darauf (feste Farben, in hell und dunkel gleich).
+   Schrift auf der Fläche mindestens 4,5 : 1 (Rot und Weiß 5,3 : 1, Türkis/Orange/Rosa mit sehr dunklem Ton der gleichen Farbe über 6 : 1). */
+.sp-rot { --c: #BD3B44; --ink: #FFFFFF; }
+.sp-tuerkis { --c: #46B3AC; --ink: #062F2D; }
+.sp-orange { --c: #F0883A; --ink: #3A1A04; }
+.sp-rosa { --c: #F0A3BC; --ink: #4A1429; }
+.sp-mono { --k: var(--c); --on-k: var(--ink); }
 /* Raster: Smartphone 2 Spalten (beste Karten: 2 × 3), breiter mehr Spalten.
    Die besten 6 Karten stehen ab 641px in 3, ab 1000px in 6 Spalten, damit keine Lücke in der letzten Reihe bleibt. */
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -800,6 +807,53 @@ button.bcard:active { transform: scale(0.98); }
 .sp-weltall .bottle .label { fill: #0B0B2E; opacity: 0.85; }
 .sp-weltall .chips span { border: 1px solid rgb(180 200 255 / 0.5); }
 .sp-weltall .origin::before, .sp-weltall .origin::after { background: linear-gradient(90deg, transparent, rgb(180 200 255 / 0.7)); }
+
+/* mono (Spezial Rot, Türkis, Orange, Rosa): bewusst das Gegenteil der übrigen Karten. Eine einzige flache Farbfläche, sonst nichts:
+   kein Rahmen, kein Muster, keine Körnung, kein Verlauf, kein Zierrand, keine Holo-Folie. Alles links ausgerichtet, das Band ist kein Balken,
+   sondern nur kleine Großbuchstaben mit einem kurzen Strich darunter. Die Flasche ist ein einfarbiges Zeichen in der Schriftfarbe, die Herkunft
+   ein feiner Umriss statt einer bunten Box. Die Kartenstufen (Lvl) zeigen sich nur als helle Aufhellung hinter der Flasche und die Zusätze der
+   Flasche (Glanz, Schaum, Sterne); die Flasche wird auf der höchsten Stufe nicht golden, damit die Karte einfarbig bleibt. Alle Farben fest. */
+.bcard.sp-mono {
+  --surface: var(--c); --surface-2: transparent; --text: var(--ink); --muted: var(--ink); --kt: var(--ink); --bk: var(--c); --glow: transparent;
+  border: 0; border-radius: 6px; background: var(--c); color: var(--ink);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.sp-mono .mat, .sp-mono .mat::before, .sp-mono .mat::after { display: none; }
+.bcard.sp-mono::before { display: none; }
+.sp-mono .band { box-shadow: none; }
+.sp-mono .band .kat {
+  height: 40px; padding: 0 16px; background: linear-gradient(var(--ink), var(--ink)) 16px calc(100% - 8px) / 22px 2px no-repeat;
+  color: var(--ink); font-size: 11px; font-weight: 700; letter-spacing: 0.18em; line-height: 40px; text-align: left; text-transform: uppercase;
+}
+.sp-mono .bcard-body { align-items: flex-start; gap: 3px; padding: 12px 16px 6px; text-align: left; }
+.sp-mono .count { top: 9px; right: 12px; background: var(--ink); color: var(--c); }
+.bcard.sp-mono .title, .bcard.sp-mono .brand, .bcard.sp-mono .sorte { text-shadow: none; }
+.bcard.sp-mono .title { font-family: -apple-system, "Helvetica Neue", system-ui, sans-serif; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; }
+.bcard.sp-mono .brand, .bcard.sp-mono .sorte { color: var(--ink); }
+.bcard.sp-mono .brand { font-weight: 500; }
+.sp-mono .chips { justify-content: flex-start; }
+.sp-mono .chips span { background: transparent; border: 1px solid color-mix(in srgb, var(--ink) 55%, transparent); border-radius: 3px; }
+.sp-mono .origin { justify-content: flex-start; padding: 0 16px 14px; }
+.sp-mono .origin::before, .sp-mono .origin::after, .sp-mono .origin:has(.o)::before, .sp-mono .origin:has(.o)::after { display: none; }
+.sp-mono .origin:has(.o) { justify-content: flex-start; }
+.sp-mono .origin .o { background: transparent; border: 1px solid color-mix(in srgb, var(--ink) 55%, transparent); border-radius: 3px; color: var(--ink); box-shadow: none; }
+/* Flasche: ein einfarbiges Zeichen in der Schriftfarbe; Etikett und Kronkorken in der Kartenfarbe */
+.sp-mono .bottle .body, .sp-mono .bottle.t5 .body { fill: var(--ink); stroke: none; }
+.sp-mono .bottle .shade { display: none; }
+.sp-mono .bottle .cap { fill: var(--c); }
+.sp-mono .bottle .label { fill: var(--c); opacity: 1; }
+.sp-mono .bottle .hop { fill: var(--ink); }
+.sp-mono .bottle .hop-scales { stroke: var(--c); }
+.sp-mono .bottle .shine { fill: var(--c); opacity: 0.4; }
+.sp-mono .bottle .foam circle { fill: var(--ink); stroke: var(--c); stroke-width: 1.2; }
+.sp-mono .bottle .stars path { fill: var(--ink); }
+.sp-mono .bottle.t5 { filter: none; }
+.sp-mono .bcard-body.t1 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.12), transparent); }
+.sp-mono .bcard-body.t2 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.17), transparent); }
+.sp-mono .bcard-body.t3 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.22), transparent); }
+.sp-mono .bcard-body.t4 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.27), transparent); }
+.sp-mono .bcard-body.t5 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.33), transparent); }
+.sp-mono .bcard-body.t3::before, .sp-mono .bcard-body.t4::before, .sp-mono .bcard-body.t5::before { display: none; }
 
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */

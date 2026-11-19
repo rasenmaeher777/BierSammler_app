@@ -112,13 +112,15 @@
        hopfen   eigenständiges Design: ganz in Grün mit großen abstrakten Blättern (Heiliger Hopfen)
        koenig   eigenständiges Design: gesteppter roter Samt, Edelsteine und Gold (Bierkönig)
        weltall  eigenständiges Design: Weltall mit glitzernden Sternen (Außenseiter)
+       spezial-rot | spezial-tuerkis | spezial-orange | spezial-rosa  eigenständiges, ganz schlichtes Einfarb-Design (Klasse sp-mono + Farbe), linksbündig, ohne Rahmen und Muster
        Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
        kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
        leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
        nebra (Sachsen-Anhalt), strandkorb (SH), bratwurst (Thüringen)
      Optional "punkte" (z. B. 1.0): ersetzt die Punkte der Stufe für diese Biere. Kategorie (Stufe) und Sammlung bleiben unberührt. */
   const LEGEND_ICONS = ['kuckucksuhr', 'brezel', 'gurke', 'schluessel', 'anker', 'bembel', 'leuchtturm', 'schaf', 'dom', 'traube', 'hammer', 'schwibbogen', 'nebra', 'strandkorb', 'bratwurst'];
-  const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi', noir: 'sp-noir', regenbogen: 'sp-regenbogen', hopfen: 'sp-hopfen', koenig: 'sp-koenig', weltall: 'sp-weltall' };
+  const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi', noir: 'sp-noir', regenbogen: 'sp-regenbogen', hopfen: 'sp-hopfen', koenig: 'sp-koenig', weltall: 'sp-weltall',
+    'spezial-rot': 'sp-mono sp-rot', 'spezial-tuerkis': 'sp-mono sp-tuerkis', 'spezial-orange': 'sp-mono sp-orange', 'spezial-rosa': 'sp-mono sp-rosa' };
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 

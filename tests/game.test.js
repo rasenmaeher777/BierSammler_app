@@ -534,10 +534,14 @@ test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi, die 40er- und
   const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
   assert.strictEqual(legenden.length, 16);
   for (const k of legenden) assert.ok(by[k].length >= (k === 'legende' ? 4 : 5) && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['aussenseiter', 35], ['bierball', 2], ['bierkoenig', 35], ['heiliger-hopfen', 35], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40]]);
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['aussenseiter', 35], ['bierball', 2], ['bierkoenig', 35], ['heiliger-hopfen', 35], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40], ['spezial-orange', 40], ['spezial-rosa', 40], ['spezial-rot', 40], ['spezial-tuerkis', 40]]);
   // Heiliger Hopfen, Bierkönig und Außenseiter: je 35 Standardgebräu-Biere, Standardpunkte
   for (const [k, titel, look] of [['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['aussenseiter', 'Außenseiter', 'sp-weltall']]) {
     assert.ok(by[k].every((b) => b.stufe === 1 && b.label === titel && b.look === look && G.beerPoints(b) === 10), `${titel}: nur Standardgebräu, Standardpunkte`);
+  }
+  // Spezial Rot / Türkis / Orange / Rosa: je 40 Standardgebräu-Biere, Standardpunkte, schlichtes Einfarb-Design, keine Biere doppelt
+  for (const [k, titel, farbe] of [['spezial-rot', 'Spezial Rot', 'sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-tuerkis'], ['spezial-orange', 'Spezial Orange', 'sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-rosa']]) {
+    assert.ok(by[k].every((b) => b.stufe === 1 && b.id.startsWith('BS-') && b.label === titel && b.look === `sp-mono ${farbe}` && G.beerPoints(b) === 10), `${titel}: nur Standardgebräu, Standardpunkte`);
   }
   assert.ok(by.schwarzweiss.every((b) => b.stufe === 1 && b.label === 'Schwarze Nachtigal' && b.look === 'sp-noir' && G.beerPoints(b) === 10), 'Schwarze Nachtigal nur Standardgebräu');
   assert.ok(by.regenbogen.every((b) => b.stufe === 1 && b.label === 'Spezial-Edition 04' && b.look === 'sp-regenbogen' && G.beerPoints(b) === 10), 'Spezial-Edition 04 nur Standardgebräu');

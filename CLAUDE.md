@@ -128,6 +128,13 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Außenseiter: Nachthimmel mit Nebeln, Ringplanet, zwei Sternschichten (`twinkle-sky`), Band ohne `text-transform` (sonst würde „Außenseiter“ zu „AUSSENSEITER“). Bei „weniger Bewegung“ stehen die Animationen.
   Getestet: Node-Tests, eingebauter Browser (430 px, hell/dunkel, Lvl 1–40, große Ansicht, lange Titel);
   NICHT getestet: iPhone/Safari (SVG-Hintergründe mit `cover`/Mehrfachhintergründen, `outline-offset` negativ), Glimmen/Funkeln.
+- **Spezial Rot / Türkis / Orange / Rosa (19.11.2026, später am Tag):** vier weitere Karten mit je 40 Standardgebräu-Bieren (ids `spezial-rot|tuerkis|orange|rosa`, Designs gleichen Namens → Klassen `sp-mono sp-rot|tuerkis|orange|rosa`,
+  Titel „Spezial Rot“ usw., keine `punkte`). Gezogen mit `random.Random("<id>-2026-11-19").sample` (in der Reihenfolge Rot, Türkis, Orange, Rosa) aus den dann noch freien `BS`-Standardgebräu-Bieren (2.898 frei, danach 2.738); nicht neu würfeln.
+  Design bewusst das Gegenteil aller anderen Karten: eine flache Einfarbfläche (`--c`, Schrift/Zeichnung `--ink`, Farben fest in hell und dunkel: Rot `#BD3B44`/Weiß, Türkis `#46B3AC`/`#062F2D`, Orange `#F0883A`/`#3A1A04`, Rosa `#F0A3BC`/`#4A1429`),
+  kein Rahmen, Muster, Körnung, Verlauf, Zierrand, keine Folie, kein Balken; alles linksbündig, Band = kleine Großbuchstaben mit kurzem Strich, Titel in System-Sans statt Rounded, Chips und Herkunft nur als Umriss in der Schriftfarbe,
+  Flasche einfarbig in der Schriftfarbe (auch auf der höchsten Stufe nicht golden), Karten-Level nur als heller Schimmer hinter der Flasche (`.sp-mono .bcard-body.t1…t5`) plus Glanz/Schaum/Sterne der Flasche. Kein JS nötig (Flasche bleibt das Symbol), nur `SPECIAL_DESIGNS` in `js/game.js`.
+  `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` = `v7` (CSS und Spiellogik geändert; sonst bekäme der Service Worker einmal das alte CSS).
+  Getestet: Node-Tests (48, die Spezialkarten-Prüfung der echten Datei um die vier Karten erweitert), eingebauter Browser mit Kopie ohne Schlüssel (430 px, hell und dunkel, Lvl 1/5/8/16/24/40, große Ansicht). NICHT getestet: iPhone/Safari, Desktop-Breite, Sammlungsliste (Streifenfarbe).
 - Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
 - `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
   `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.
@@ -157,7 +164,7 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
 - **Kartendaten:** `Datensammlung/karte/*.json`, erzeugt von `bauen.py` (nur Standardbibliothek, Douglas-Peucker je Ring, Koordinaten als Ganzzahl-Differenzen; Format im Kopf des Skripts). Quellen: Natural Earth 1:50 Mio. (gemeinfrei),
   BKG VG250 `vg250_lan`/`vg250_krs`, nur Landflächen GF = 4 (dl-de/by-2-0, Quellenvermerk „© BKG (2025)“), Geoportal Berlin ALKIS Ortsteile (dl-de/zero-2-0). Die Rohdaten liegen NICHT im Projekt (Download-Adressen im Kopf von `bauen.py`).
   Größe: 169 + 394 + 41 KB, übertragen rund 220 KB. Die Quellenangabe steht unten in der Karte (`ATTRIBUTION` in `js/karte.js`) und muss dort bleiben. Nachbargrenzen werden einzeln vereinfacht: Linien über einer Grundfläche, keine sichtbaren Lücken.
-  Der Service Worker legt die Kartendateien erst beim ersten Öffnen der Karte im Cache ab (`isData` in `sw.js`); `js/karte.js` steht in `APP_FILES`, `CACHE_VERSION` wurde dafür auf `v6` erhöht.
+  Der Service Worker legt die Kartendateien erst beim ersten Öffnen der Karte im Cache ab (`isData` in `sw.js`); `js/karte.js` steht in `APP_FILES`, `CACHE_VERSION` wurde dafür auf `v6` erhöht (inzwischen `v7`, siehe Spezialkarten).
 - **Weitere Städte nachrüsten:** Rohdaten der Stadtteile laden, in `bauen.py` eine weitere Ebene erzeugen (eigene Datei), in `FILES`/`loadGeo`/`draw` von `js/karte.js` ergänzen (Zoomschwelle, Name in `placeName`).
 - **Datenschutz:** Standort ist sensibel. Standardmäßig aus, nur auf ca. 100 m gerundet, nur für den Besitzer lesbar (Rangliste ohne Orte). `datenschutz.html`: nur in der „Technischen Arbeitshilfe“ ein Punkt ergänzt; der eigentliche Datenschutztext
   stammt vom Nutzer und wurde NICHT angefasst, er muss um Standortdaten ergänzt werden.
