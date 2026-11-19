@@ -226,6 +226,68 @@ test('Eintrag löschen senkt Punkte und Level', () => {
   assert.strictEqual(G.level(G.summarize(G.normalizeDrinks(many.slice(1), map), map).sum), 1);
 });
 
+/* ---------- Standort-Karte (STANDORT-KARTE) ---------- */
+
+test('Ort wird geprüft und auf drei Nachkommastellen gerundet', () => {
+  assert.deepStrictEqual(G.cleanPlace(52.520008, 13.404954), { lat: 52.52, lng: 13.405 });
+  assert.deepStrictEqual(G.cleanPlace(-33.8688, 151.2093), { lat: -33.869, lng: 151.209 });
+  assert.deepStrictEqual(G.cleanPlace(-0.0001, 0.0004), { lat: 0, lng: 0 }); // kein -0
+  assert.strictEqual(G.cleanPlace(91, 10), null);
+  assert.strictEqual(G.cleanPlace(10, 181), null);
+  assert.strictEqual(G.cleanPlace(NaN, 10), null);
+  assert.strictEqual(G.cleanPlace(Infinity, 10), null);
+  assert.strictEqual(G.cleanPlace('52.5', '13.4'), null);
+  assert.strictEqual(G.cleanPlace(52.5, undefined), null);
+  assert.strictEqual(G.cleanPlace(null, null), null);
+});
+test('Einträge mit Ort: gültiger Ort bleibt, ungültiger entfällt, der Eintrag zählt immer', () => {
+  const d = G.normalizeDrinks([
+    { id: 'a', beerId: 'BS-000010', at: 1000, lat: 52.5201, lng: 13.4049 },
+    { id: 'b', beerId: 'BS-000010', at: 2000, lat: 52.52 },            // nur ein Wert
+    { id: 'c', beerId: 'BS-000010', at: 3000, lat: 500, lng: 13 },     // außerhalb
+    { id: 'd', beerId: 'BS-000010', at: 4000, lat: '52', lng: '13' },  // Text
+    { id: 'e', beerId: 'BS-000010', at: 5000 },
+  ], map);
+  assert.deepStrictEqual(d.map((x) => [x.id, x.lat, x.lng]), [['a', 52.52, 13.405], ['b', undefined, undefined], ['c', undefined, undefined], ['d', undefined, undefined], ['e', undefined, undefined]]);
+  assert.ok(!('lat' in d[1]) && !('lng' in d[4]));
+  // Punkte und Sammlung ändern sich durch Orte nicht
+  assert.strictEqual(G.summarize(d, map).sum, 5 * 10);
+});
+test('Orte zusammenfassen: gleicher gerundeter Ort = ein Punkt mit Anzahl', () => {
+  const d = G.normalizeDrinks([
+    { id: 'a', beerId: 'BS-000010', at: 1000, lat: 52.5201, lng: 13.4049 },
+    { id: 'b', beerId: 'BS-000011', at: 3000, lat: 52.5199, lng: 13.4051 },  // rundet auf denselben Ort
+    { id: 'c', beerId: 'BS-000012', at: 2000, lat: 52.4, lng: 13.1 },
+    { id: 'x', beerId: 'BS-000010', at: 4000 },                              // ohne Ort
+  ], map);
+  const g = G.placeGroups(d);
+  assert.strictEqual(g.length, 2);
+  assert.deepStrictEqual([g[0].lat, g[0].lng, g[0].count, g[0].last], [52.52, 13.405, 2, 3000]);
+  assert.deepStrictEqual(g[0].drinks.map((x) => x.id), ['b', 'a']); // neueste zuerst
+  assert.deepStrictEqual([g[1].count, g[1].last], [1, 2000]);
+  assert.deepStrictEqual(G.placeGroups([]), []);
+  assert.deepStrictEqual(G.placeGroups('x'), []);
+});
+test('Kartendateien (Datensammlung/karte): Format, Anzahl, Lage', () => {
+  const dir = path.join(__dirname, '..', 'Datensammlung', 'karte');
+  const load = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+  // Ring entschlüsseln: [x0, y0, dx, dy, …] / Skalierung → [lng, lat]
+  const decode = (flat, sc) => { const out = []; let x = 0, y = 0; for (let i = 0; i < flat.length; i += 2) { x = i === 0 ? flat[0] : x + flat[i]; y = i === 0 ? flat[1] : y + flat[i + 1]; out.push([x / sc, y / sc]); } return out; };
+  const inBox = (layer, box) => layer.f.every((f) => f.p.every((poly) => poly.every((ring) => decode(ring, layer.s).every(([lng, lat]) => lng >= box[0] && lng <= box[2] && lat >= box[1] && lat <= box[3]))));
+  const berlin = load('berlin.json').ebenen.ortsteile;
+  const de = load('deutschland.json').ebenen;
+  const welt = load('welt.json').ebenen.laender;
+  assert.ok(berlin.f.length >= 96 && berlin.f.length <= 100);
+  assert.ok(berlin.f.some((f) => f.n === 'Kreuzberg') && berlin.f.some((f) => f.n === 'Neukölln') && berlin.f.some((f) => f.n === 'Prenzlauer Berg'));
+  assert.ok(inBox(berlin, [13.0, 52.3, 13.8, 52.7]), 'Ortsteile liegen in Berlin');
+  assert.strictEqual(de.bundeslaender.f.length, 16);
+  assert.ok(de.kreise.f.length >= 395 && de.kreise.f.length <= 405);
+  assert.ok(inBox(de.bundeslaender, [5.5, 47, 15.5, 55.2]), 'Bundesländer liegen in Deutschland');
+  assert.ok(welt.f.length > 150 && !welt.f.some((f) => f.n === 'Deutschland'), 'Staaten ohne Deutschland');
+  // Beschriftungspunkt liegt im Kartenausschnitt des Objekts
+  for (const f of berlin.f) { const [lng, lat] = [f.c[0] / berlin.s, f.c[1] / berlin.s]; assert.ok(lng > 13 && lng < 13.8 && lat > 52.3 && lat < 52.7, f.n); }
+});
+
 /* ---------- Wochen ---------- */
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();

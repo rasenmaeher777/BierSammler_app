@@ -3,7 +3,7 @@
    1. Grundlagen (Hilfsfunktionen, Darstellung hell/dunkel)
    2. Zustand (Bierdatenbank laden, Protokoll, daraus berechnete Sammlung)
    3. Darstellung (Karte, Kopfleiste mit Level-Ring, Startseite)
-   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Platzierung, Einstellungen, Bestätigung, Altershinweis, Willkommen)
+   4. Dialoge (Hinzufügen mit Aufdecken, Kartenansicht, Statistiken, Standort-Karte, Platzierung, Einstellungen, Bestätigung, Altershinweis, Willkommen)
    5. Bedienung (Klicks)
    6. Anmeldesperre (gesteuert über den Status aus js/store.js)
    7. Service Worker registrieren
@@ -14,6 +14,7 @@
 
   const G = window.GAME;
   const STORE = window.STORE;
+  const KARTE = window.KARTE; // STANDORT-KARTE (js/karte.js)
   const LS_THEME = 'biersammler-theme-v1'; // 'light' | 'dark' | fehlt = System (auch im Inline-Skript in index.html)
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
   const LS_WELCOME = 'biersammler-welcome-v1'; // Kontokennungen (Komma-getrennt), die das Willkommensfenster schon gesehen haben; „local“ = lokaler Modus
@@ -297,7 +298,10 @@
     // Die Rangliste gibt es nur mit Anmeldung und nur für Spieler mit Benutzernamen
     const showRank = STORE.mode === 'firebase' && !!p.username;
     $('[data-act="ranking"]').hidden = !showRank;
-    $('.tools').classList.toggle('has-rank', showRank);
+    // STANDORT-KARTE: Der Knopf erscheint, sobald der Standort-Schalter an ist oder schon Einträge mit Ort da sind
+    const showMap = KARTE.enabled() || drinks.some((d) => d.lat !== undefined);
+    $('[data-act="map"]').hidden = !showMap;
+    $('.tools').classList.toggle('has-rank', showRank || showMap);
     paintSync();
     renderLevel();
   }
@@ -320,7 +324,7 @@
       main.innerHTML = `<div class="empty">${EMPTY_ART}
           <h2>Noch keine Karten</h2>
           <p>Tippe nach jedem Bier auf <b>+</b> und trage es ein. Jedes Bier wird zur Sammelkarte – manche sind seltene Funde.</p>
-          <p class="note">${G.fmtInt(db.list.length)} Biere warten darauf, entdeckt zu werden.</p>
+          <p class="note">${G.fmtInt(db.list.length)} Biere warten auf dich, entdeckt zu werden.</p>
         </div>`;
       return;
     }
@@ -360,6 +364,7 @@
     }
     if (cardDlg.open) paintCard();
     if (statsDlg.open) paintStats();
+    if (mapCtl) mapCtl.update(G.placeGroups(drinks)); // STANDORT-KARTE
     if (rankDlg.open) paintRanking();
     if (setDlg.open) paintSettings();
   }
@@ -396,6 +401,7 @@
     result: null,    // { gain, levelUp, level, isNew, count, fortune }
 
     open() {
+      KARTE.prepare(); // STANDORT-KARTE: Standort im Hintergrund holen (nur bei eingeschaltetem Schalter), bis das Bier bestätigt wird
       this.step = 'search'; this.q = ''; this.beerId = null; this.saved = false; this.result = null;
       this.dlg.innerHTML = `<div class="sheet-head"><h2>Bier hinzufügen</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
         <div class="sheet-body add-body"></div>`;
@@ -491,7 +497,7 @@
       const old = cardOf(beer.id);
       const gain = G.beerPoints(beer);
       // Zeitpunkt = Geräteuhr beim Bestätigen. Nicht auf den Server warten: Die Anzeige kommt aus dem lokalen Stand.
-      STORE.add(beer.id, Date.now());
+      STORE.add(beer.id, Date.now(), KARTE.place()); // STANDORT-KARTE: place() ist null, wenn aus oder kein Standort da
       this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune() };
       this.step = 'done';
       this.paint();
@@ -765,6 +771,31 @@
   }
   statsDlg.addEventListener('close', () => { if (!statsDlg.open) statsDlg.innerHTML = ''; });
 
+  /* STANDORT-KARTE: Karte aller Orte, an denen Biere eingetragen wurden (Zeichnen und Bedienung in js/karte.js).
+     Die Punkte kommen aus GAME.placeGroups; beim Antippen eines Punktes zeigt describeDrink je Eintrag Bier und Zeit. */
+  const mapDlg = $('#karte');
+  let mapCtl = null;
+  const fmtDay = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const describeDrink = (d) => {
+    const b = db.map.get(d.beerId);
+    return `${b ? b.name : 'Unbekanntes Bier'} · ${fmtDay.format(d.at)}`;
+  };
+  function openMap() {
+    if (mapCtl) return;
+    mapDlg.innerHTML = '<div class="sheet-head"><h2>Karte</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div><div class="sheet-body map-body"></div>';
+    const emptyText = KARTE.enabled()
+      ? 'Noch keine Orte. Ab dem nächsten Eintrag erscheint hier ein Punkt.'
+      : 'Noch keine Orte. Schalte unter Einstellungen → Standort ein, dann erscheinen Punkte für neue Einträge.';
+    mapCtl = KARTE.mount($('.map-body', mapDlg), { groups: G.placeGroups(drinks), describe: describeDrink, emptyText });
+    mapDlg.showModal();
+  }
+  mapDlg.addEventListener('close', () => {
+    if (mapDlg.open) return;
+    if (mapCtl) mapCtl.destroy();
+    mapCtl = null;
+    mapDlg.innerHTML = '';
+  });
+
   /* Platzierung. Die besten GAME.BOARD_SIZE Spieler live aus leaderboard/ (STORE.watchRanking), dazu der eigene Rang,
      falls man nicht darunter ist. Zeilen prüft und sortiert GAME.rankBoard; alle Namen gehen durch esc().
      Den eigenen Rang außerhalb der Besten liefert eine Zählabfrage beim Server (STORE.countAbove); ohne Netz
@@ -905,6 +936,14 @@
     const account = STORE.mode === 'firebase'
       ? `<section class="set-sec"><h3>Konto</h3><div id="set-account"></div></section>`
       : '';
+    // STANDORT-KARTE: Schalter „Standort beim Eintragen speichern“ (standardmäßig aus); ohne Standort-Unterstützung entfällt der Abschnitt
+    const standort = KARTE.supported() ? `<section class="set-sec"><h3>Standort</h3>
+          <label class="check-row"><input type="checkbox" id="set-geo"${KARTE.enabled() ? ' checked' : ''}><span>Standort beim Eintragen speichern</span></label>
+          <p class="note" id="set-geo-msg" role="status" aria-live="polite"></p>
+          <p class="note">Ist der Schalter an, merkt sich die App bei jedem neuen Eintrag, wo du gerade bist (auf etwa 100 m gerundet), und zeigt die Orte
+            als Punkte auf der Karte. Nur du siehst sie; die Rangliste bekommt keine Orte. Ohne Erlaubnis oder ohne Signal wird der Eintrag ohne Ort
+            gespeichert. Ältere Einträge haben keinen Ort. Löschst du einen Eintrag oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
+        </section>` : '';
     setDlg.innerHTML = `<div class="sheet-head"><h2>Einstellungen</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
       <div class="sheet-body">
         <section class="set-sec"><h3>Benutzername</h3><div id="set-name"></div></section>
@@ -921,6 +960,7 @@
         <section class="set-sec"><h3>Darstellung</h3>
           <div class="seg" role="radiogroup" aria-label="Darstellung">${radio('system', 'System')}${radio('light', 'Hell')}${radio('dark', 'Dunkel')}</div>
         </section>
+        ${standort}
         ${account}
         <section class="set-sec"><h3>Profil zurücksetzen</h3>
           <p class="note">Löscht alle Einträge${STORE.mode === 'firebase' ? ' und gibt deinen Benutzernamen frei' : ''}. Punkte, Level und Sammlung beginnen wieder bei null.</p>
@@ -1108,7 +1148,29 @@
   setDlg.addEventListener('input', (e) => {
     if (e.target.id === 'set-filter') { set.filter = e.target.value; paintCollection(); }
   });
+  // STANDORT-KARTE: Einschalten fragt sofort nach dem Standort (der Klick ist die Geste, die iOS dafür verlangt)
+  async function toggleGeo(box) {
+    const msg = $('#set-geo-msg', setDlg);
+    const say = (text) => { if (msg) msg.textContent = text; };
+    const on = box.checked;
+    box.disabled = true;
+    say(on ? 'Standort wird abgefragt …' : '');
+    const r = await KARTE.setEnabled(on);
+    box.disabled = false;
+    if (!r.ok) {
+      box.checked = false;
+      say(r.reason === 'unsupported' ? 'Dieses Gerät oder dieser Browser kann keinen Standort bestimmen.'
+        : 'Der Zugriff auf den Standort ist verweigert. Erlaube ihn in den Einstellungen deines Geräts und schalte dann wieder ein.');
+    } else if (on) {
+      say(r.note ? 'Eingeschaltet. Der Standort ließ sich gerade nicht bestimmen; die App versucht es beim nächsten Eintrag noch einmal.'
+        : 'Eingeschaltet. Ab dem nächsten Eintrag wird der Ort gespeichert.');
+    } else {
+      say('Ausgeschaltet. Es wird nichts mehr gespeichert. Schon gespeicherte Orte bleiben bei ihren Einträgen.');
+    }
+    renderHeader(); // zeigt oder verbirgt den Knopf „Karte“
+  }
   setDlg.addEventListener('change', (e) => {
+    if (e.target.id === 'set-geo') { toggleGeo(e.target); return; }
     if (e.target.name === 'theme') {
       lsSet(LS_THEME, e.target.value === 'system' ? null : e.target.value);
       applyTheme(e.target.value);
@@ -1266,6 +1328,7 @@
     }
     else if (act === 'reload') location.reload();
     else if (act === 'stats') openStats();
+    else if (act === 'map') openMap(); // STANDORT-KARTE
     else if (act === 'ranking') openRanking();
     else if (act === 'settings') openSettings();
   });

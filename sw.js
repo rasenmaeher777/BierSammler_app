@@ -14,7 +14,7 @@
    js/app.js (STUFEN_MARKE) hochsetzen, sonst läuft neuer Code einmal mit alten Bierdaten. */
 'use strict';
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -27,6 +27,7 @@ const APP_FILES = [
   'js/firebase-config.js',
   'js/game.js',
   'js/store.js',
+  'js/karte.js', // STANDORT-KARTE (die Kartendaten Datensammlung/karte/*.json kommen erst beim ersten Öffnen der Karte in den Cache)
   'js/app.js',
   'manifest.webmanifest',
   'icons/favicon-32.png',

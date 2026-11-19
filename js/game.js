@@ -280,8 +280,21 @@
 
   const MAX_AT = 8.64e15; // größte gültige Date-Zeit
 
-  /* Einträge aus localStorage oder Firestore bereinigen: [{ id, beerId, at }].
+  /* STANDORT-KARTE: Ort eines Eintrags. Gespeichert wird auf drei Nachkommastellen gerundet (rund 100 m), nie genauer.
+     Gültig sind nur endliche Zahlen im Bereich -90…90 / -180…180; sonst null (der Eintrag zählt trotzdem, nur ohne Ort).
+     Beide Werte müssen da sein. */
+  const PLACE_DECIMALS = 3;
+  function cleanPlace(lat, lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    const k = 10 ** PLACE_DECIMALS;
+    // + 0 macht aus -0 eine 0
+    return { lat: Math.round(lat * k) / k + 0, lng: Math.round(lng * k) / k + 0 };
+  }
+
+  /* Einträge aus localStorage oder Firestore bereinigen: [{ id, beerId, at, lat?, lng? }].
      Verworfen wird alles ohne gültige ID, mit unbekannter beerId (falls known übergeben) oder ungültigem Zeitpunkt.
+     lat/lng (STANDORT-KARTE) bleiben nur erhalten, wenn beide gültig sind; ein ungültiger Ort verwirft den Eintrag nicht.
      Ergebnis aufsteigend nach Zeitpunkt sortiert. */
   function normalizeDrinks(list, known) {
     if (!Array.isArray(list)) return [];
@@ -295,9 +308,29 @@
       if (!id || !beerId || at === null || seen.has(id)) continue;
       if (known && !known.has(beerId)) continue;
       seen.add(id);
-      out.push({ id, beerId, at });
+      const place = cleanPlace(d.lat, d.lng);
+      out.push(place ? { id, beerId, at, lat: place.lat, lng: place.lng } : { id, beerId, at });
     }
     return out.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+  }
+
+  /* STANDORT-KARTE: Einträge mit Ort nach genau gleichem (gerundetem) Ort zusammenfassen, für die Punkte auf der Karte.
+     Ergebnis: [{ lat, lng, count, last, drinks: [Eintrag, …] }], die Einträge jeweils neueste zuerst. Reihenfolge der Orte:
+     erster Eintrag zuerst (stabil). */
+  function placeGroups(list) {
+    const groups = new Map();
+    for (const d of Array.isArray(list) ? list : []) {
+      if (!d || typeof d.lat !== 'number' || typeof d.lng !== 'number') continue;
+      const key = `${d.lat},${d.lng}`;
+      let g = groups.get(key);
+      if (!g) { g = { lat: d.lat, lng: d.lng, count: 0, last: 0, drinks: [] }; groups.set(key, g); }
+      g.count++;
+      if (d.at > g.last) g.last = d.at;
+      g.drinks.push(d);
+    }
+    const out = [...groups.values()];
+    for (const g of out) g.drinks.sort((a, b) => b.at - a.at || (a.id < b.id ? -1 : 1));
+    return out;
   }
 
   /* Sammlung und Punkte aus dem Protokoll berechnen (nie gespeichert).
@@ -539,6 +572,7 @@
     splitName, cleanBeer, mergeBeers,
     fold, unumlaut, searchEntry, buildIndex, search,
     normalizeDrinks, summarize, compareCards, CARD_TIER_AT, cardTier,
+    cleanPlace, placeGroups, PLACE_DECIMALS, // STANDORT-KARTE
     cleanMessages, pickMessage,
     weekStart, weekKey, weeksInclusive, dayNumber, isoWeek,
     WEEKDAYS, stats,

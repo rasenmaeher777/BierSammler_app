@@ -34,14 +34,16 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `js/game.js` | Reine Funktionen (`window.GAME`, in Node per `require`): Punkte, Level, Formatierung, Bierdaten prüfen/zusammenführen, Suche, Protokoll, Sortierung, Wochen, Statistiken, Benutzername, Rangliste (`rankBoard`) |
 | `js/store.js` | `window.STORE`: lokaler Modus (localStorage) oder Firebase (Auth, Firestore, Warteschlange, Namen) |
 | `js/app.js` | Oberfläche (eine IIFE, sieben nummerierte Abschnitte) |
+| `js/karte.js` | `window.KARTE` (STANDORT-KARTE): Standort beim Eintragen und die Vektorkarte der Orte, siehe „Standort-Karte“ |
 | `js/firebase-config.js` | Konfiguration; leerer `apiKey` = lokaler Modus. Werte nicht ausgeben |
 | `sw.js` | Service Worker |
 | `firestore.rules` | Regeln (Nutzer fügt sie in der Konsole ein) |
 | `tests/game.test.js` | Node-Tests der Spiellogik |
 | `impressum.html`, `datenschutz.html` | Nur Platzhalter, KEINE Rechtstexte erfinden |
+| `Datensammlung/karte/` | Kartendaten (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py` (erzeugt sie aus den Grenzdaten) |
 | `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `spezialkarten.json`, `scraper/` |
 
-Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
+Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.js`.
 
 ## Bierdaten
 
@@ -121,6 +123,48 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 - Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (hell/dunkel, 390 px und Desktop, große Kartenansicht, Karten-Level 1/4/8/24/40).
   NICHT getestet: iPhone/Safari (Masken, `clip-path`, Verlaufsrahmen mit `border-box`), Service Worker mit der neuen Datei, echtes Firebase.
 
+## Standort-Karte (19.11.2026)
+
+Alles trägt die Markierung `STANDORT-KARTE` (Kommentare in `js/app.js`, `js/store.js`, `js/game.js`, `index.html`, `sw.js`, `css/style.css`, `firestore.rules`).
+Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt (z. B. wenn die Standortabfrage nervt); deshalb liegt das Meiste in eigenen Dateien.
+
+- **Standort (js/karte.js, Teil 1):** Schalter in Einstellungen → „Standort“ (localStorage `biersammler-standort-v1`, **standardmäßig aus**). `KARTE.prepare()` holt beim Öffnen von
+  „Bier hinzufügen“ im Hintergrund den Standort (`getCurrentPosition`, ohne hohe Genauigkeit, Zeitlimit 10 s, `maximumAge` 2 min; vorher Permissions-API: bei „denied“
+  wird nicht noch einmal gefragt; ein frischer Wert < 3 min wird nicht neu geholt), `KARTE.place()` gibt beim Bestätigen { lat, lng } (gerundet, nicht älter als 10 min) oder `null`.
+  Es wird NIE auf den Standort gewartet und nie beim Öffnen der App gefragt. Einschalten fragt sofort (Klick = Geste für iOS); verweigert → Schalter bleibt aus, Hinweistext;
+  Zeitüberschreitung/kein Signal → bleibt an, Hinweis. Ausschalten vergisst die zwischengespeicherte Position.
+- **Speichern:** `STORE.add(beerId, at, place)` hängt `lat`/`lng` an den Eintrag (`GAME.cleanPlace`: nur endliche Zahlen im gültigen Bereich, auf 3 Nachkommastellen = ca. 100 m gerundet;
+  ungültig → Eintrag ohne Ort). `GAME.normalizeDrinks` reicht gültige Orte durch (ein ungültiger Ort verwirft den Eintrag NICHT). `GAME.placeGroups` fasst Einträge am selben gerundeten Ort zusammen.
+  `firestore.rules`: `hasOnly(['beerId','at','lat','lng'])`, Funktion `validPlace` (beide oder keiner, Zahlen im Bereich). Es gibt KEINEN Update-Weg: Orte verschwinden nur mit dem Eintrag
+  (Eintrag löschen, Zurücksetzen, Konto löschen). Ein Knopf „Standortdaten löschen“ wurde vom Nutzer abgelehnt (bräuchte eine Update-Regel).
+- **Karte (js/karte.js, Teil 2):** Knopf `[data-act="map"]` „Karte“ (sichtbar, wenn der Schalter an ist oder Einträge mit Ort existieren; `has-rank` auf `.tools` auch dafür, damit der Sync-Hinweis wie gehabt in eine eigene
+  Zeile rutscht), Dialog `#karte` (feste Höhe 92 dvh bzw. 86 vh, die Karte füllt ihn). Eigene Vektorkarte auf einem `<canvas>` (Web-Mercator, Zoom 0,8…15, stufenlos), keine Kacheln, kein Dienst von außen.
+  Ebenen nach Zoom: Staaten (ohne Deutschland), Bundesländer, Landkreise ab Zoom ≈ 6,2, Berliner Ortsteile ab ≈ 9 (Namen ab 10,2; Landkreisnamen 8,2–10,2; Bundesländer 4,6–8,6; Staaten bis 6,8).
+  Namen weichen Punkten, Knöpfen, Quellenangabe und einander aus (11 Ausweichstellen); Gebiete mit Punkt werden zuerst beschriftet. Ab Zoom 10 entfällt die gröbere Berlin-Linie von BKG (sonst doppelte Grenze).
+  Punkte: Radius `2,6 + 1,9·√(n−1)`, höchstens 13 px; je mehr Einträge am selben gerundeten Ort, desto größer. Tipp auf einen Punkt: Ort (Berliner Ortsteil, sonst Landkreis + Bundesland, sonst Staat), Anzahl und bis zu 4 Biere mit Datum
+  (Texte per `textContent`, nie `innerHTML`). Bedienung: Ziehen, Zwei-Finger-Zoom (Pointer Events, `touch-action: none`), Mausrad, Doppeltippen, Knöpfe +/−/◎ („Alle Punkte“), Pfeiltasten und +/−.
+  Startansicht: alle Punkte (höchstens Zoom 12), ohne Punkte Deutschland. Ohne Kartendaten (offline beim ersten Mal) werden die Punkte trotzdem auf leerem Grund gezeigt.
+- **Kartendaten:** `Datensammlung/karte/*.json`, erzeugt von `bauen.py` (nur Standardbibliothek, Douglas-Peucker je Ring, Koordinaten als Ganzzahl-Differenzen; Format im Kopf des Skripts). Quellen: Natural Earth 1:50 Mio. (gemeinfrei),
+  BKG VG250 `vg250_lan`/`vg250_krs`, nur Landflächen GF = 4 (dl-de/by-2-0, Quellenvermerk „© BKG (2025)“), Geoportal Berlin ALKIS Ortsteile (dl-de/zero-2-0). Die Rohdaten liegen NICHT im Projekt (Download-Adressen im Kopf von `bauen.py`).
+  Größe: 169 + 394 + 41 KB, übertragen rund 220 KB. Die Quellenangabe steht unten in der Karte (`ATTRIBUTION` in `js/karte.js`) und muss dort bleiben. Nachbargrenzen werden einzeln vereinfacht: Linien über einer Grundfläche, keine sichtbaren Lücken.
+  Der Service Worker legt die Kartendateien erst beim ersten Öffnen der Karte im Cache ab (`isData` in `sw.js`); `js/karte.js` steht in `APP_FILES`, `CACHE_VERSION` wurde dafür auf `v6` erhöht.
+- **Weitere Städte nachrüsten:** Rohdaten der Stadtteile laden, in `bauen.py` eine weitere Ebene erzeugen (eigene Datei), in `FILES`/`loadGeo`/`draw` von `js/karte.js` ergänzen (Zoomschwelle, Name in `placeName`).
+- **Datenschutz:** Standort ist sensibel. Standardmäßig aus, nur auf ca. 100 m gerundet, nur für den Besitzer lesbar (Rangliste ohne Orte). `datenschutz.html`: nur in der „Technischen Arbeitshilfe“ ein Punkt ergänzt; der eigentliche Datenschutztext
+  stammt vom Nutzer und wurde NICHT angefasst, er muss um Standortdaten ergänzt werden.
+- **Entfernen der Funktion (Anleitung):**
+  1. Neue Dateien löschen: `js/karte.js`, `Datensammlung/karte/` (Ordner), den Abschnitt „Standort und Karte“ in README/CLAUDE.md und den Punkt „Standort …“ in `datenschutz.html`.
+  2. `index.html`: Knopf `data-act="map"`, Dialog `#karte`, `<script src="js/karte.js">` (alle mit `STANDORT-KARTE` markiert).
+  3. `js/app.js` (alle Stellen mit `STANDORT-KARTE`): `const KARTE`, in `renderHeader` die Zeilen zu `showMap` (und `has-rank` wieder nur mit `showRank`), in `render` die Zeile `mapCtl.update`, in `add.open` `KARTE.prepare()`, in `add.confirm` `KARTE.place()`
+     (zurück zu `STORE.add(beer.id, Date.now())`), Block „Karte“ mit `mapDlg`/`openMap`, in `openSettings` die Variable `standort` samt `${standort}`, die Funktion `toggleGeo` samt Zeile im `change`-Handler, `act === 'map'`.
+  4. `css/style.css`: Abschnitt „Standort-Karte“ am Ende und die drei `--map-…`-Zeilen in den Farbblöcken.
+  5. `sw.js`: `'js/karte.js'` aus `APP_FILES`, `CACHE_VERSION` erhöhen.
+  6. Optional (die Regeln dürfen ruhig bleiben, sie sind nur großzügiger): `firestore.rules` (`validPlace` und `lat`/`lng` in `hasOnly`), `js/store.js` (`placeFields`, `place`-Parameter, `lat`/`lng` im Snapshot), `js/game.js` (`cleanPlace`, `placeGroups`, Orte in `normalizeDrinks`), die Tests „Standort-Karte“.
+  Schon gespeicherte Orte bleiben in Firestore an den Einträgen; ohne die App-Funktion werden `lat`/`lng` einfach ignoriert (`normalizeDrinks` wäre ohne Schritt 6 weiter harmlos). Wer sie ganz loswerden will, löscht die Einträge oder das Profil.
+- **Getestet:** Node-Tests (48, davon 4 zu Standort/Karte inkl. Kartendateien), eingebauter Browser (390 px hell/dunkel, Desktop): Karte öffnen, Zoom per Mausrad auf Berlin, Namen mit Ausweichstellen, Tipp auf Punkt, Wischen,
+  simulierter Zwei-Finger-Zoom, Schalter an/aus/verweigert/Zeitüberschreitung (nachgebildetes `navigator.geolocation`), Eintrag mit und ohne Ort, Knopf „Karte“ je nach Zustand, leere Karte.
+  NICHT getestet: echtes iPhone/Safari (Standortfrage in der installierten Web-App, wie oft sie kommt; echter Pinch; Canvas), echte Firestore-Regeln (kein Emulator), Service Worker mit den Kartendateien, > 100 Orte (Leistung der Namenssuche je Bild),
+  Offline-Start mit noch nie geöffneter Karte (dann nur Punkte auf leerem Grund).
+
 ## Glückskeks-Sprüche (18.11.2026)
 
 - `Datensammlung/nachrichten.json`: Liste `{ id, nachricht }` (id = Ganzzahl > 0 oder Text, eindeutig; Nutzer trägt die Sprüche selbst ein,
@@ -170,7 +214,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 
 ```
 users/<uid>                  { username?, usernameKey? }      optionale Felder fehlen, nie undefined/null
-users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <ms, Ganzzahl> }   nur create/delete
+users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <ms, Ganzzahl>, lat?, lng? }   nur create/delete; lat/lng nur mit Standort-Schalter (siehe „Standort-Karte“)
 usernames/<usernameKey>      { uid }
 leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zehnteln, Anzahl Biere (nur mit Benutzername)
 ```
@@ -187,7 +231,7 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
 - Abmelden: `signOut` → `terminate` + `clearIndexedDbPersistence` → neu laden. Ein anderes Konto als zuletzt
   (`biersammler-uid-v1`) löscht ebenfalls den Zwischenspeicher, das neue Konto beginnt leer.
 - Firebase-SDK-Version `10.12.2` steht in `js/store.js`, `sw.js` und den drei `modulepreload`-Links in `index.html`.
-- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`, `-welcome-v1`; sessionStorage `-deleted-v1`.
+- localStorage-Schlüssel: `biersammler-drinks-v1` (nur lokaler Modus), `-theme-v1`, `-age-v1`, `-more-v1`, `-uid-v1`, `-motion-v1`, `-welcome-v1`, `-standort-v1` (Standort-Schalter, „1“ = an); sessionStorage `-deleted-v1`.
 
 ## Rangliste („Platzierung“, 18.11.2026)
 

@@ -5,7 +5,8 @@ rules_version = '2';
 //
 // Datenmodell:
 //   users/<uid>                  { username?, usernameKey? }
-//   users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
+//   users/<uid>/drinks/<autoId>  { beerId: "BS-000001", at: <Millisekunden, Ganzzahl>, lat?, lng? }
+//                                 (lat/lng: Ort des Eintrags für die Standort-Karte, nur wenn die Person es eingeschaltet hat)
 //   usernames/<usernameKey>      { uid }
 //   leaderboard/<uid>            { username, sum, count }   (Rangliste: Punkte in Zehnteln, Anzahl Biere)
 //
@@ -59,14 +60,23 @@ service cloud.firestore {
       allow create, update: if isOwner(uid) && validProfile(request.resource.data);
       allow delete: if isOwner(uid) && oldNameReleased(uid, null);
 
-      // Trink-Protokoll: nur anlegen und löschen, nie ändern. Genau die Felder beerId und at.
+      // STANDORT-KARTE: Ort ist optional, aber beide Werte zusammen und im gültigen Bereich.
+      // (Zum Entfernen der Funktion: lat/lng aus hasOnly und diese Funktion samt Aufruf unten streichen; neue Einträge mit Ort würden dann abgelehnt.)
+      function validPlace(d) {
+        return (!('lat' in d) && !('lng' in d))
+          || (d.lat is number && d.lng is number
+            && d.lat >= -90 && d.lat <= 90 && d.lng >= -180 && d.lng <= 180);
+      }
+
+      // Trink-Protokoll: nur anlegen und löschen, nie ändern. Die Felder beerId und at, dazu optional lat und lng.
       // at darf nicht in der Zukunft liegen (5 Minuten Toleranz für ungenaue Geräteuhren). Eine Untergrenze gibt es
       // bewusst nicht: Einträge aus der Offline-Warteschlange kommen später mit ihrem ursprünglichen Zeitpunkt an.
       match /drinks/{drinkId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)
-          && request.resource.data.keys().hasOnly(['beerId', 'at'])
+          && request.resource.data.keys().hasOnly(['beerId', 'at', 'lat', 'lng'])
           && request.resource.data.keys().hasAll(['beerId', 'at'])
+          && validPlace(request.resource.data)
           && request.resource.data.beerId is string
           && request.resource.data.beerId.matches('^B[SM]-[0-9]{6}$')
           && request.resource.data.at is int

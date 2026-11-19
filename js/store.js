@@ -3,12 +3,14 @@
    - lokal:    leerer apiKey in js/firebase-config.js → Einträge nur in localStorage dieses Browsers
    - firebase: Google-Anmeldung, Cloud Firestore mit dauerhaftem Zwischenspeicher (IndexedDB)
 
-   Gespeichert wird nur das Protokoll: ein Eintrag je getrunkenem Bier { id, beerId, at }.
+   Gespeichert wird nur das Protokoll: ein Eintrag je getrunkenem Bier { id, beerId, at } (optional mit Ort: lat, lng, siehe unten).
    Punkte, Level, Sammlung und Statistiken berechnet js/app.js daraus (js/game.js), nichts davon wird gespeichert.
 
    Firestore (Regeln: firestore.rules):
      users/<uid>                 { username?, usernameKey? }   (optionale Felder fehlen, nie undefined/null)
-     users/<uid>/drinks/<autoId> { beerId: "BS-000001", at: <Millisekunden, Ganzzahl> }
+     users/<uid>/drinks/<autoId> { beerId: "BS-000001", at: <Millisekunden, Ganzzahl>, lat?, lng? }
+                                 lat/lng (STANDORT-KARTE): nur wenn die Person den Standort-Schalter eingeschaltet hat; auf 3 Nachkommastellen
+                                 gerundet (rund 100 m); beide oder keiner
      usernames/<usernameKey>     { uid }                         (sorgt für eindeutige Namen)
      leaderboard/<uid>           { username, sum, count }        (Rangliste; nur mit Benutzernamen, siehe publishScore)
 
@@ -19,7 +21,7 @@
    Schnittstelle:
      start(onChange)    Laden beginnen; onChange() wird nach jeder Änderung aufgerufen
      drinks()           Rohdaten des Protokolls (js/app.js bereinigt sie mit GAME.normalizeDrinks)
-     add(beerId, at)    einen Eintrag anlegen (sofort sichtbar, ohne auf den Server zu warten)
+     add(beerId, at, place)  einen Eintrag anlegen (sofort sichtbar, ohne auf den Server zu warten); place = { lat, lng } oder fehlt
      remove(ids)        Einträge löschen
      reset()            alle Einträge löschen und den Benutzernamen freigeben
      setUsername(name)  Promise; Fehler mit err.code: 'local' | 'invalid' | 'taken' | 'offline' | 'error'
@@ -56,6 +58,11 @@ window.STORE = (() => {
   const fail = (code, message) => Object.assign(new Error(message || code), { code });
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Speicher nicht verfügbar */ } };
+  // STANDORT-KARTE: Ortsfelder eines neuen Eintrags. Nochmals geprüft und gerundet (GAME.cleanPlace); ohne gültigen Ort kommt nichts dazu.
+  const placeFields = (place) => {
+    const c = place && window.GAME.cleanPlace(place.lat, place.lng);
+    return c ? { lat: c.lat, lng: c.lng } : {};
+  };
 
   /* ---------- Lokaler Modus ---------- */
 
@@ -73,8 +80,8 @@ window.STORE = (() => {
       window.addEventListener('storage', (e) => { if (e.key === LS_DRINKS) { s.drinks = loadLocal(); emit(); } });
       emit();
     },
-    add(beerId, at) {
-      const d = { id: newId(), beerId, at };
+    add(beerId, at, place) {
+      const d = { id: newId(), beerId, at, ...placeFields(place) };
       s.drinks = s.drinks.concat(d);
       if (!saveLocal()) console.error('Speichern im Browser fehlgeschlagen');
       emit();
@@ -168,8 +175,8 @@ window.STORE = (() => {
     s.status = 'loading'; // bis der erste Snapshot da ist (sonst blitzt kurz die leere Sammlung auf)
     emit();
     unsubs.push(fb.onSnapshot(drinksCol(), { includeMetadataChanges: true }, (snap) => {
-      // Nur beerId und at übernehmen; die eigentliche Prüfung macht GAME.normalizeDrinks
-      s.drinks = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, beerId: v.beerId, at: v.at }; });
+      // Nur beerId, at (und lat/lng) übernehmen; die eigentliche Prüfung macht GAME.normalizeDrinks
+      s.drinks = snap.docs.map((d) => { const v = d.data() || {}; return { id: d.id, beerId: v.beerId, at: v.at, lat: v.lat, lng: v.lng }; });
       s.pending = snap.metadata.hasPendingWrites;
       // Erst veröffentlichen, wenn der Server die Einträge bestätigt hat; ein unvollständiger Zwischenspeicher
       // (z. B. neues Gerät) würde sonst kurz zu niedrige Werte in die Rangliste schreiben
@@ -242,11 +249,12 @@ window.STORE = (() => {
       }
     },
 
-    add(beerId, at) {
+    add(beerId, at, place) {
       if (!user) return null;
       const ref = fb.doc(drinksCol()); // neue automatische ID, schon vor dem Senden bekannt
-      background(fb.setDoc(ref, { beerId, at }), 'Speichern');
-      return { id: ref.id, beerId, at };
+      const data = { beerId, at, ...placeFields(place) };
+      background(fb.setDoc(ref, data), 'Speichern');
+      return { id: ref.id, ...data };
     },
 
     remove(ids) {
@@ -405,7 +413,7 @@ window.STORE = (() => {
     sdk: FIREBASE_SDK,
     start(fn) { onChange = typeof fn === 'function' ? fn : () => {}; impl.start(); },
     drinks: () => s.drinks,
-    add: (beerId, at) => impl.add(beerId, at),
+    add: (beerId, at, place) => impl.add(beerId, at, place),
     remove: (ids) => impl.remove(ids),
     reset: () => impl.reset(),
     setUsername: (name) => impl.setUsername(name),

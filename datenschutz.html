@@ -79,6 +79,12 @@
         Eintrag gelöscht.</li>
       <li>Auf dem Gerät: Einstellungen und Hinweise in localStorage; Firestore hält eine Kopie der eigenen Daten im
         Browser-Speicher (IndexedDB), damit die App ohne Netz funktioniert. Beim Abmelden wird diese Kopie gelöscht.</li>
+      <li>Standort (nur wenn die Person in den Einstellungen „Standort beim Eintragen speichern“ einschaltet, standardmäßig aus):
+        Beim Eintragen eines Biers fragt die App den Standort des Geräts ab (Standortfreigabe des Browsers) und speichert ihn auf
+        etwa 100 m gerundet (Breiten- und Längengrad) am jeweiligen Eintrag in Cloud Firestore. Er ist nur für das eigene Konto
+        lesbar, in der Rangliste steht kein Ort. Die Orte werden zusammen mit dem Eintrag gelöscht (Eintrag löschen, Profil
+        zurücksetzen, Konto löschen). Die Karte wird auf dem Gerät aus Dateien der App gezeichnet; es werden keine Kartenkacheln
+        von Drittanbietern geladen.</li>
       <li>Ein Service Worker speichert die Dateien der App und die Bierdatenbank im Browser zwischen.</li>
       <li>Programmbibliotheken von Firebase werden von www.gstatic.com (Google) geladen.</li>
       <li>Keine Werbung, keine Analyse- oder Tracking-Werkzeuge, keine Schriften von Drittanbietern.</li>

@@ -15,8 +15,9 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 5. [Biere nachtragen](#biere-nachtragen)
 6. [Service Worker und Cache-Version](#service-worker-und-cache-version)
 7. [Spielregeln](#spielregeln)
-8. [Rechtliches](#rechtliches)
-9. [Bekannte Grenzen](#bekannte-grenzen)
+8. [Standort und Karte](#standort-und-karte)
+9. [Rechtliches](#rechtliches)
+10. [Bekannte Grenzen](#bekannte-grenzen)
 
 ## Dateien
 
@@ -27,6 +28,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `js/game.js` | Spiellogik als reine Funktionen (Punkte, Level, Suche, Statistiken, Rangliste) – in Node testbar |
 | `js/store.js` | Speichern: lokal (localStorage) oder Firebase (Anmeldung, Firestore, Warteschlange ohne Netz) |
 | `js/app.js` | Oberfläche und Bedienung |
+| `js/karte.js` | Standort beim Eintragen und die Karte der Orte (eigene Vektorkarte auf einem Canvas, ohne Kartenkacheln von Dritten) |
 | `js/firebase-config.js` | Firebase-Konfiguration; leerer `apiKey` = lokaler Modus |
 | `sw.js` | Service Worker (Start ohne Netz) |
 | `manifest.webmanifest`, `icons/` | Web-App-Manifest und Symbole |
@@ -38,6 +40,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/kategorien.json` | Die sechs Kategorien |
 | `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
 | `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
+| `Datensammlung/karte/` | Kartendaten für die Standort-Karte (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py`, das sie aus den Grenzdaten erzeugt (Quellen und Lizenzen im Kopf des Skripts) |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
 
@@ -211,6 +214,23 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
   neuen Regeln werden die Ranglisten-Einträge abgelehnt (nur eine Meldung in der Konsole, das Spiel läuft weiter) und die
   Platzierung bleibt leer.
 
+## Standort und Karte
+
+- **Standort speichern:** Einstellungen → Standort → „Standort beim Eintragen speichern“ (standardmäßig **aus**). Ist der Schalter an, holt die App den
+  Standort, sobald „Bier hinzufügen“ aufgeht, und speichert ihn beim Bestätigen am Eintrag (auf etwa 100 m gerundet). Die App fragt nie beim Öffnen,
+  wartet nie auf den Standort und speichert ohne Erlaubnis oder Signal den Eintrag einfach ohne Ort. Nur du siehst deine Orte; die Rangliste bekommt keine.
+  Orte verschwinden zusammen mit dem Eintrag (Eintrag löschen, Profil zurücksetzen, Konto löschen). Es gibt keinen eigenen Knopf nur zum Löschen der Orte.
+- **Karte:** Der Knopf „Karte“ neben „Statistiken“ erscheint, sobald der Schalter an ist oder schon Einträge mit Ort da sind. Die Karte ist
+  selbst gezeichnet (Staaten, Bundesländer, Landkreise, in Berlin die Ortsteile mit Namen), ohne Dienst von außen. Ziehen, Zwei-Finger-Zoom, Mausrad,
+  Doppeltippen, Knöpfe +/−/„Alle Punkte“. Ein Tipp auf einen Punkt zeigt Ort und Biere; je mehr Einträge am selben (gerundeten) Ort, desto größer der Punkt.
+  Die Kartendateien laden erst beim ersten Öffnen der Karte (rund 220 KB übertragen) und stehen danach auch offline zur Verfügung.
+- **Kartendaten neu erzeugen** (z. B. für weitere Städte): Rohdaten laden, dann `python3 Datensammlung/karte/bauen.py <Ordner mit den Rohdaten>`. Quellen,
+  Lizenzen und Format stehen im Kopf von `bauen.py`. Die Quellenangaben (© BKG, Natural Earth, Geoportal Berlin) stehen unten in der Karte und müssen
+  dort bleiben.
+- **Nach dem Update:** Zuerst die neue `firestore.rules` in der Firebase-Konsole veröffentlichen, dann die App. Ohne die neuen Regeln lehnt Firestore Einträge
+  mit Ort ab (der Eintrag verschwindet nach kurzem Aufblitzen wieder, siehe „Bekannte Grenzen“).
+- **Entfernen:** siehe `CLAUDE.md`, Abschnitt „Standort-Karte“.
+
 ## Rechtliches
 
 - `impressum.html` und `datenschutz.html` enthalten nur **Platzhalter**. Sie müssen vor dem Veröffentlichen selbst
@@ -222,6 +242,8 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 ## Bekannte Grenzen
 
 - Ohne echtes Firebase-Projekt wurde Firebase nur mit einer Nachbildung getestet (siehe `CLAUDE.md`).
+- Standort und Karte wurden nur im eingebauten Browser mit nachgebildetem Standort getestet, nicht auf einem echten iPhone (Standortfrage der installierten Web-App,
+  Zwei-Finger-Zoom, Canvas auf Safari) und nicht gegen echte Firestore-Regeln.
 - Die Anmeldung erfolgt per Popup (wie in orga_app). In der installierten Web-App auf dem iPhone ist sie ungetestet;
   die installierte App hat dort einen eigenen, von Safari getrennten Speicher, eine Anmeldung in Safari gilt also nicht
   automatisch auch für sie.
