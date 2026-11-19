@@ -117,6 +117,17 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   `filter: grayscale(1)` (macht auch die Herkunfts-Box grau). Regenbogen: Pastell mit Regenbogenbögen, funkelnde Glitzer-Sterne (`@keyframes glitter`, bei „weniger Bewegung“ ruhig),
   Regenbogenrahmen, Flasche mit Verlauf `#rb-grad` (SVG-Defs ganz oben in `index.html`; `fill: url(#rb-grad)`). Beide Farbsätze fest in hell und dunkel.
   Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (390 px hell/dunkel, große Ansicht, Lvl 1/8/24/40). NICHT getestet: iPhone/Safari (Filter, Maske, `url(#…)`-Füllung), Glitzer-Animation (zeichnet der eingebaute Browser bei verdecktem Bereich nicht).
+- **Heiliger Hopfen, Bierkönig, Außenseiter (19.11.2026, später am Tag):** drei weitere Karten mit je 35 Standardgebräu-Bieren (ids `heiliger-hopfen`, `bierkoenig`, `aussenseiter`, Designs `hopfen`, `koenig`, `weltall`,
+  CSS `sp-hopfen|sp-koenig|sp-weltall`, wie Sanchi/Noir/Regenbogen eigenständig, feste Farben in hell und dunkel, Flasche bleibt das Symbol). Gezogen mit `random.Random("heiligerhopfen-2026-11-19" / "bierkoenig-2026-11-19" / "aussenseiter-2026-11-19").sample`
+  (in dieser Reihenfolge) aus den dann noch freien `BS`-Standardgebräu-Bieren (3.003 frei); nicht neu würfeln.
+  **Überarbeitet (19.11.2026, auf Wunsch: erste Fassung wirkte „KI-generiert“; Außenseiter blieb unverändert):** Grundsatz jetzt flach und konkret statt Verlauf + Glitzer + gekachelte Muster.
+  Hopfen: tiefgrüner Grund, großer „Blattschnitt“ als EIN SVG (`background: cover`, `preserveAspectRatio slice`, kein Kacheln): zweifarbige Blätter in zwei Fächern (unten links, oben rechts), unter dem Text nur dunkle Töne,
+  hellgrünes Band, flache Linie als Rahmen, helle Schrift. Bierkönig: gesteppter Samt wie ein Chesterfield-Sofa (40-px-SVG-Kachel: gewölbte Raute, Goldknöpfe an den Ecken), drei geschliffene Edelsteine
+  (`.mat::after`, Animation `gem-glint`, leichtes Glimmen), flaches Gold ohne Metallverläufe: Doppellinie mit Eckornamenten, Band mit Krönchen, Schrift Creme. Die SVGs wurden mit einem Skript erzeugt und ins CSS
+  eingebettet (Skript liegt nur im Scratchpad, nicht im Projekt; bei Änderungen die Data-URIs im CSS von Hand anpassen).
+  Außenseiter: Nachthimmel mit Nebeln, Ringplanet, zwei Sternschichten (`twinkle-sky`), Band ohne `text-transform` (sonst würde „Außenseiter“ zu „AUSSENSEITER“). Bei „weniger Bewegung“ stehen die Animationen.
+  Getestet: Node-Tests, eingebauter Browser (430 px, hell/dunkel, Lvl 1–40, große Ansicht, lange Titel);
+  NICHT getestet: iPhone/Safari (SVG-Hintergründe mit `cover`/Mehrfachhintergründen, `outline-offset` negativ), Glimmen/Funkeln.
 - Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
 - `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
   `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.

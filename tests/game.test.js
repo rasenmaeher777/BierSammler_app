@@ -523,7 +523,7 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 11);
 });
 
-test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi und die beiden 40er-Karten', () => {
+test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi, die 40er- und die 35er-Karten', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
@@ -534,7 +534,11 @@ test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi und die beiden
   const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
   assert.strictEqual(legenden.length, 16);
   for (const k of legenden) assert.ok(by[k].length >= (k === 'legende' ? 4 : 5) && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['bierball', 2], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40]]);
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['aussenseiter', 35], ['bierball', 2], ['bierkoenig', 35], ['heiliger-hopfen', 35], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40]]);
+  // Heiliger Hopfen, Bierkönig und Außenseiter: je 35 Standardgebräu-Biere, Standardpunkte
+  for (const [k, titel, look] of [['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['aussenseiter', 'Außenseiter', 'sp-weltall']]) {
+    assert.ok(by[k].every((b) => b.stufe === 1 && b.label === titel && b.look === look && G.beerPoints(b) === 10), `${titel}: nur Standardgebräu, Standardpunkte`);
+  }
   assert.ok(by.schwarzweiss.every((b) => b.stufe === 1 && b.label === 'Schwarze Nachtigal' && b.look === 'sp-noir' && G.beerPoints(b) === 10), 'Schwarze Nachtigal nur Standardgebräu');
   assert.ok(by.regenbogen.every((b) => b.stufe === 1 && b.label === 'Spezial-Edition 04' && b.look === 'sp-regenbogen' && G.beerPoints(b) === 10), 'Spezial-Edition 04 nur Standardgebräu');
   // Länder-Legenden: Titel „… Legende“ (höchstens 40 Zeichen, kurz genug fürs Band), Standardgebräu-Look, eigenes Wahrzeichen; Punkte bleiben die der Stufe
