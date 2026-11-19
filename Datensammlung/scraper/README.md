@@ -26,7 +26,8 @@ Abbrechen mit `Ctrl + C` – beim nächsten Start geht es an derselben Stelle we
 
 - **Ordner `cache/` nicht löschen.** Dort liegt `id_zuordnung.json`, die dafür sorgt, dass jedes
   Bier dauerhaft dieselbe ID (`BS-000123`) und dieselbe Kategorie behält – auch nach Updates.
-- Die Kategorie wird zufällig, aber fest aus der ID abgeleitet
-  (50 % Standardgebräu, 15 % Klassiker, 15 % Spezialität, 10 % Raddelfuß, 7 % Zaubertrank, 3 % Heiligtum).
-  Raddelfuß ist aus dem hinteren Teil der früheren Klassiker herausgeschnitten (siehe `ZIEH_REIHENFOLGE` im Skript);
-  `FESTE_KATEGORIE` hält einzelne Biere (z. B. Sternburg - Export) unabhängig vom Zufall in ihrer Kategorie.
+- Die Kategorie (5 Stufen nach Erhältlichkeit, seit 19.11.2026) kommt aus `stufen_zuordnung.json` (Bier-ID → Stufe).
+  Neue Biere bekommen sie über `stufen_brauereien.json` (Brauerei → Stufe, Sonder- und Saisonbiere eine Stufe höher);
+  unbekannte Brauereien: ausländisch oder Gasthausbrauerei → Heiligtum, sonst Zaubertrank. Einzelne Biere umstufen:
+  Wert in `stufen_zuordnung.json` ändern, dann `python3 scraper.py --nur-export`. Mehr dazu in der Haupt-README
+  („Kategorien nach Erhältlichkeit“). `stufen_vorschlag.csv` ist nur eine Übersicht zum Durchsehen.

@@ -25,22 +25,27 @@ function check(sum, wantSum, wantLevel, wantRing) {
 }
 
 test('0 Einträge → Level 1, Ring 0', () => { check(0, 0, 1, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(0), 0); });
-test('10 × Stufe 6 = 160 → Level 2, 6,0 / 10', () => check(sumOf([10, 6]), 160, 2, '6,0 / 10 Punkte'));
+test('10 × Stufe 5 = 250 → Level 3, 5,0 / 10', () => check(sumOf([10, 5]), 250, 3, '5,0 / 10 Punkte'));
 test('10 × Stufe 1 = 100 → Level 2, 0,0 / 10', () => { check(sumOf([10, 1]), 100, 2, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(100), 0); assert.strictEqual(G.level(99), 1); });
 test('20 × Stufe 1 = 200 → Level 3, 0,0 / 10', () => { check(sumOf([20, 1]), 200, 3, '0,0 / 10 Punkte'); assert.strictEqual(G.ring(200), 0); });
-test('19 × Stufe 4 = 266 → Level 3, 6,6 / 10', () => check(sumOf([19, 4]), 266, 3, '6,6 / 10 Punkte'));
-test('13 × Stufe 1 + 5 × Stufe 6 = 210 → Level 3, 1,0 / 10', () => check(sumOf([13, 1], [5, 6]), 210, 3, '1,0 / 10 Punkte'));
-test('3 × Stufe 2 = 33 → 3,3', () => { assert.strictEqual(sumOf([3, 2]), 33); assert.strictEqual(G.fmt1(33), '3,3'); });
-test('Überschuss: 9,6 + 1,4 → Level steigt, Ring 1,0', () => {
+test('19 × Stufe 4 = 285 → Level 3, 8,5 / 10', () => check(sumOf([19, 4]), 285, 3, '8,5 / 10 Punkte'));
+test('13 × Stufe 1 + 5 × Stufe 5 = 255 → Level 3, 5,5 / 10', () => check(sumOf([13, 1], [5, 5]), 255, 3, '5,5 / 10 Punkte'));
+test('3 × Stufe 3 = 39 → 3,9', () => { assert.strictEqual(sumOf([3, 3]), 39); assert.strictEqual(G.fmt1(39), '3,9'); });
+test('Überschuss: 9,6 + 1,5 → Level steigt, Ring 1,1', () => {
   const s = 96 + G.pointsFor(4);
-  assert.strictEqual(G.level(96), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,0 / 10 Punkte');
+  assert.strictEqual(G.level(96), 1); assert.strictEqual(G.level(s), 2); assert.strictEqual(G.fmtRing(s), '1,1 / 10 Punkte');
 });
-test('Sechs Stufen: Raddelfuß (4) bringt so viel wie Zaubertrank (5), Heiligtum (6) am meisten', () => {
-  assert.deepStrictEqual(G.STUFEN, [1, 2, 3, 4, 5, 6]);
-  assert.strictEqual(G.MAX_STUFE, 6);
-  assert.deepStrictEqual(G.STUFEN.map(G.pointsFor), [10, 11, 12, 14, 14, 16]);
-  assert.strictEqual(G.pointsFor(4), G.pointsFor(5));
-  assert.strictEqual(G.pointsFor(7), 0); assert.strictEqual(G.pointsFor(0), 0);
+test('Fünf Stufen nach Erhältlichkeit: 1,0 / 1,2 / 1,3 / 1,5 / 2,5 Punkte, Spezialkarten bis 1,0 Extrapunkt', () => {
+  assert.deepStrictEqual(G.STUFEN, [1, 2, 3, 4, 5]);
+  assert.strictEqual(G.MAX_STUFE, 5);
+  assert.deepStrictEqual(G.STUFEN.map(G.pointsFor), [10, 12, 13, 15, 25]);
+  assert.strictEqual(G.MAX_BONUS, 10); assert.strictEqual(G.MAX_BEER_POINTS, 35);
+  assert.strictEqual(G.pointsFor(6), 0); assert.strictEqual(G.pointsFor(0), 0);
+  // beerPoints: Stufe + Bonus; feste Punkte gehen vor (dann kein Bonus)
+  assert.strictEqual(G.beerPoints({ stufe: 5, punkte: null, bonus: 10 }), 35);
+  assert.strictEqual(G.beerPoints({ stufe: 2, punkte: 10, bonus: 10 }), 10);
+  assert.strictEqual(G.beerPoints({ stufe: 3 }), 13);
+  assert.strictEqual(G.beerPoints(null), 0);
 });
 test('Punkte bis zum nächsten Level', () => { assert.strictEqual(G.toNext(266), 34); assert.strictEqual(G.toNext(200), 100); });
 
@@ -60,7 +65,7 @@ test('Zahlen deutsch', () => {
 
 /* ---------- Bierdaten ---------- */
 
-const KAT = [{ stufe: 1, name: 'Standardgebräu' }, { stufe: 2, name: 'Klassiker' }, { stufe: 3, name: 'Spezialität' }, { stufe: 4, name: 'Raddelfuß' }, { stufe: 5, name: 'Zaubertrank' }, { stufe: 6, name: 'Heiligtum' }];
+const KAT = [{ stufe: 1, name: 'Standardgebräu' }, { stufe: 2, name: 'Klassiker' }, { stufe: 3, name: 'Spezialität' }, { stufe: 4, name: 'Zaubertrank' }, { stufe: 5, name: 'Heiligtum' }];
 const raw = (id, name, stufe, extra = {}) => ({
   id, name, biersorte: ['Pils'], alkoholgehalt: 4.9,
   brauerei_vertrieb: { typ: 'Brauerei', name: 'Testbrauerei GmbH', adresse: 'Weg 1', region: 'Bayern', land: 'Deutschland' },
@@ -212,7 +217,7 @@ test('Sammlung aus dem Protokoll und Sortierung', () => {
     { id: '5', beerId: 'BS-000011', at: 50 }, { id: '6', beerId: 'BS-000013', at: 500 },
   ], map);
   const s = G.summarize(d, map);
-  assert.strictEqual(s.sum, 5 * 10 + 11);
+  assert.strictEqual(s.sum, 5 * 10 + 12);
   assert.strictEqual(s.count, 6);
   const order = s.cards.slice().sort(G.compareCards).map((c) => c.beer.id);
   // Stufe 2 zuerst; dann je 2× (10 und 12): 12 zuletzt getrunken (400) vor 10 (300); dann 13 (1×)
@@ -350,7 +355,7 @@ test('Statistiken: Wochen, Ø, Lieblinge, Liter, Bundesländer', () => {
   assert.deepStrictEqual(s.history.map((h) => h.count).slice(-4), [0, 2, 3, 1]);
   assert.strictEqual(s.history[11].week, 47); assert.strictEqual(s.history[0].week, 36);
   assert.strictEqual(s.distinct, 4);
-  assert.deepStrictEqual(s.foundByStufe, { 1: 2, 2: 1, 3: 1, 4: 0, 5: 0, 6: 0 });
+  assert.deepStrictEqual(s.foundByStufe, { 1: 2, 2: 1, 3: 1, 4: 0, 5: 0 });
   assert.strictEqual(s.favBeer.beer.id, 'BS-000010'); assert.strictEqual(s.favBeer.count, 3);
   // Alle Testbiere haben (u. a.) die Sorte "Pils"; "Alkoholfrei" kommt nur einmal vor
   assert.deepStrictEqual(s.favSorte, { name: 'Pils', count: 6 });
@@ -405,14 +410,14 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
     { uid: 'b', username: '<b>hacker</b>', sum: 10, count: 1 }, // Name ungültig
     { uid: 'c', username: 'Hans', sum: 10.5, count: 1 },        // keine Ganzzahl
     { uid: 'd', username: 'Hans', sum: 9, count: 1 },           // weniger als 1,0 Punkte je Bier
-    { uid: 'e', username: 'Hans', sum: 17, count: 1 },          // mehr als 1,6 Punkte je Bier
+    { uid: 'e', username: 'Hans', sum: 36, count: 1 },          // mehr als 3,5 Punkte je Bier (Heiligtum + Spezialkarte)
     { uid: 'f', username: 'Hans', sum: 10, count: -1 },
     { uid: 'g', username: 'Hans', sum: '10', count: 1 },
     { username: 'Hans', sum: 10, count: 1 },                    // ohne uid
   ];
   assert.deepStrictEqual(G.rankBoard(bad), []);
   assert.deepStrictEqual(G.rankBoard(undefined), []);
-  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 16, count: 1 }]).length, 1);
+  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 35, count: 1 }]).length, 1);
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
@@ -479,7 +484,7 @@ test('Echte nachrichten.json: gültig, mindestens eine Nachricht', () => {
 
 /* ---------- Spezialkarten ---------- */
 
-test('Spezialkarten: cleanSpecials prüft Titel, Aussehen, Punkte und doppelte IDs', () => {
+test('Spezialkarten: cleanSpecials prüft Titel, Aussehen, Punkte, Bonus und doppelte IDs', () => {
   const warns = [];
   const list = G.cleanSpecials([
     { id: 'a', titel: ' Titel A ', design: 'baer', biere: ['BS-000001', 5] },
@@ -487,77 +492,82 @@ test('Spezialkarten: cleanSpecials prüft Titel, Aussehen, Punkte und doppelte I
     { id: 'a', titel: 'doppelt', design: 'baer', biere: [] },                 // doppelte ID
     { id: 'c', titel: 'C', design: 'unbekannt', biere: [] },                  // Aussehen unbekannt
     { id: 'd', titel: '', design: 'baer', biere: [] },                        // kein Titel
-    { id: 'e', titel: 'E', design: 'sanchi', punkte: 2.5, biere: [] },        // Punkte außerhalb 1,0 … 1,6
+    { id: 'e', titel: 'E', design: 'sanchi', punkte: 2.6, biere: [] },        // Punkte außerhalb 1,0 … 2,5
     { id: 'f', titel: 'F', design: 'sanchi', punkte: 1.25, biere: [] },       // keine Zehntel
     { id: 'g', titel: 'G', design: 'sanchi', biere: 'x' },                    // biere keine Liste
+    { id: 'h', titel: 'H', design: 'raddelfuss', bonus: 1.0, biere: [] },     // Bonus 1,0 → 10 Zehntel
+    { id: 'i', titel: 'I', design: 'noir', bonus: 1.5, biere: [] },           // Bonus über 1,0 → kein Bonus
     null,
   ], (t) => warns.push(t));
-  assert.deepStrictEqual(list.map((s) => [s.id, s.titel, s.design, s.punkte, s.biere]), [
-    ['a', 'Titel A', 'baer', null, ['BS-000001']], ['b', 'B', 'sticker', 10, []], ['e', 'E', 'sanchi', null, []], ['f', 'F', 'sanchi', null, []],
+  assert.deepStrictEqual(list.map((s) => [s.id, s.titel, s.design, s.punkte, s.bonus, s.biere]), [
+    ['a', 'Titel A', 'baer', null, 0, ['BS-000001']], ['b', 'B', 'sticker', 10, 0, []], ['e', 'E', 'sanchi', null, 0, []], ['f', 'F', 'sanchi', null, 0, []],
+    ['h', 'H', 'raddelfuss', null, 10, []], ['i', 'I', 'noir', null, 0, []],
   ]);
-  assert.strictEqual(warns.length, 7, warns.join(' | ')); // doppelte ID, Aussehen, Titel, 2 × Punkte, biere, null
+  assert.strictEqual(warns.length, 8, warns.join(' | ')); // doppelte ID, Aussehen, Titel, 2 × Punkte, biere, Bonus, null
   assert.deepStrictEqual(G.cleanSpecials(undefined), []);
   assert.deepStrictEqual(G.cleanSpecials({}, () => {}), []);
 });
 
 test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (Stufe bleibt)', () => {
   const warns = [];
-  const r = G.mergeBeers([raw('BS-000001', 'A - Eins', 1), raw('BS-000002', 'A - Zwei', 2), raw('BS-000003', 'A - Drei', 1)], [], KAT, (t) => warns.push(t), {}, [
-    { id: 'x', titel: 'Erste', design: 'sticker', punkte: 1.0, biere: ['BS-000002', 'BS-000099'] },  // 099 unbekannt
+  const r = G.mergeBeers([raw('BS-000001', 'A - Eins', 1), raw('BS-000002', 'A - Zwei', 2), raw('BS-000003', 'A - Drei', 1), raw('BS-000004', 'A - Vier', 5)], [], KAT, (t) => warns.push(t), {}, [
+    { id: 'x', titel: 'Erste', design: 'sticker', punkte: 1.0, bonus: 1.0, biere: ['BS-000002', 'BS-000099'] },  // 099 unbekannt; feste Punkte gehen vor Bonus
     { id: 'y', titel: 'Zweite', design: 'sanchi', biere: ['BS-000002', 'BS-000003'] },                // 002 schon vergeben
+    { id: 'z', titel: 'Raddelfuß', design: 'raddelfuss', bonus: 1.0, biere: ['BS-000004'] },          // Heiligtum + 1 Punkt
   ]);
-  const b1 = r.map.get('BS-000001'), b2 = r.map.get('BS-000002'), b3 = r.map.get('BS-000003');
+  const b1 = r.map.get('BS-000001'), b2 = r.map.get('BS-000002'), b3 = r.map.get('BS-000003'), b4 = r.map.get('BS-000004');
   assert.strictEqual(warns.length, 2, warns.join(' | '));
   // Ohne Spezialkarte: Kategorie als Beschriftung, Klasse nach Stufe, Punkte der Stufe
   assert.strictEqual(b1.label, 'Standardgebräu'); assert.strictEqual(b1.look, 'k1'); assert.strictEqual(b1.spezial, null); assert.strictEqual(G.beerPoints(b1), 10);
-  // Spezialkarte 2 auf ein Klassiker-Bier: Titel, Standardgebräu-Aussehen, 1,0 statt 1,1 Punkte, Kategorie unverändert
+  // Spezialkarte 2 auf ein Klassiker-Bier: Titel, Standardgebräu-Aussehen, 1,0 statt 1,2 Punkte (auch mit Bonus), Kategorie unverändert
   assert.strictEqual(b2.label, 'Erste'); assert.strictEqual(b2.look, 'k1 sp-sticker'); assert.strictEqual(b2.stufe, 2);
   assert.strictEqual(b2.kategorie, 'Klassiker'); assert.strictEqual(G.beerPoints(b2), 10); assert.strictEqual(b2.spezial.design, 'sticker');
   // Ohne eigene Punkte gelten die der Stufe
   assert.strictEqual(b3.label, 'Zweite'); assert.strictEqual(b3.look, 'sp-sanchi'); assert.strictEqual(G.beerPoints(b3), 10);
-  // Summe richtet sich nach den Bierpunkten (Sternburg-Fall: 3 × 1,0 statt 3 × 1,1)
+  // Bonus: Punkte der Stufe + 1,0; Kategorie bleibt intern Heiligtum, sichtbar ist nur der Titel der Spezialkarte
+  assert.strictEqual(b4.label, 'Raddelfuß'); assert.strictEqual(b4.look, 'sp-raddel'); assert.strictEqual(b4.stufe, 5);
+  assert.strictEqual(b4.kategorie, 'Heiligtum'); assert.strictEqual(b4.bonus, 10); assert.strictEqual(G.beerPoints(b4), 35);
+  // Summe richtet sich nach den Bierpunkten (3 × 1,0 statt 3 × 1,2)
   const s = G.summarize([{ id: 'd1', beerId: 'BS-000002', at: 1 }, { id: 'd2', beerId: 'BS-000002', at: 2 }, { id: 'd3', beerId: 'BS-000002', at: 3 }], r.map);
   assert.strictEqual(s.sum, 30); assert.strictEqual(s.cards[0].points, 30);
   // Fehlt die Datei oder ist sie fehlerhaft, bleibt alles beim Alten
   const plain = G.mergeBeers([raw('BS-000002', 'A - Zwei', 2)], [], KAT, () => {}, {}, 'kaputt');
-  assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 11);
+  assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
 });
 
-test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi, die 40er- und die 35er-Karten', () => {
+test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten mit je 40 Bieren aus Stufe 2 bis 5 und 1 Punkt extra', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
   const r = G.mergeBeers(rd('biere.json'), rd('biere_manuell.json'), rd('kategorien.json'), (t) => warns.push(t), rd('biere_korrekturen.json'), rd('spezialkarten.json'));
   assert.strictEqual(warns.length, 0, warns.join(' | '));
   const by = {}; for (const b of r.list) if (b.spezial) (by[b.spezial.id] = by[b.spezial.id] || []).push(b);
-  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 4 bis 10 Biere (Berlin 4, die übrigen 5 bis 10), Schwarze Nachtigal und Spezial-Edition 04 je 40
+  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 4 bis 10 Biere (Berlin 4, die übrigen 5 bis 10)
   const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
   assert.strictEqual(legenden.length, 16);
   for (const k of legenden) assert.ok(by[k].length >= (k === 'legende' ? 4 : 5) && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['aussenseiter', 35], ['bierball', 2], ['bierkoenig', 35], ['heiliger-hopfen', 35], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40], ['spezial-orange', 40], ['spezial-rosa', 40], ['spezial-rot', 40], ['spezial-tuerkis', 40]]);
-  // Heiliger Hopfen, Bierkönig und Außenseiter: je 35 Standardgebräu-Biere, Standardpunkte
-  for (const [k, titel, look] of [['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['aussenseiter', 'Außenseiter', 'sp-weltall']]) {
-    assert.ok(by[k].every((b) => b.stufe === 1 && b.label === titel && b.look === look && G.beerPoints(b) === 10), `${titel}: nur Standardgebräu, Standardpunkte`);
+  const zufall = [['aussenseiter', 'Außenseiter', 'sp-weltall'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'],
+    ['raddelfuss', 'Raddelfuß', 'sp-raddel'], ['regenbogen', 'Spezial-Edition 04', 'sp-regenbogen'], ['sanchi', 'Sanchi', 'sp-sanchi'], ['schwarzweiss', 'Schwarze Nachtigal', 'sp-noir'],
+    ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', ...zufall.map((z) => z[0])].sort());
+  // Zufallskarten: je 40 Biere, gleichmäßig mit leichter Tendenz zu den selteneren (9 / 10 / 10 / 11), kein Standardgebräu, Punkte der Stufe + 1,0
+  for (const [k, titel, look] of zufall) {
+    const proStufe = {}; for (const b of by[k]) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
+    assert.deepStrictEqual(proStufe, { 2: 9, 3: 10, 4: 10, 5: 11 }, k);
+    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
   }
-  // Spezial Rot / Türkis / Orange / Rosa: je 40 Standardgebräu-Biere, Standardpunkte, schlichtes Einfarb-Design, keine Biere doppelt
-  for (const [k, titel, farbe] of [['spezial-rot', 'Spezial Rot', 'sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-tuerkis'], ['spezial-orange', 'Spezial Orange', 'sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-rosa']]) {
-    assert.ok(by[k].every((b) => b.stufe === 1 && b.id.startsWith('BS-') && b.label === titel && b.look === `sp-mono ${farbe}` && G.beerPoints(b) === 10), `${titel}: nur Standardgebräu, Standardpunkte`);
-  }
-  assert.ok(by.schwarzweiss.every((b) => b.stufe === 1 && b.label === 'Schwarze Nachtigal' && b.look === 'sp-noir' && G.beerPoints(b) === 10), 'Schwarze Nachtigal nur Standardgebräu');
-  assert.ok(by.regenbogen.every((b) => b.stufe === 1 && b.label === 'Spezial-Edition 04' && b.look === 'sp-regenbogen' && G.beerPoints(b) === 10), 'Spezial-Edition 04 nur Standardgebräu');
-  // Länder-Legenden: Titel „… Legende“ (höchstens 40 Zeichen, kurz genug fürs Band), Standardgebräu-Look, eigenes Wahrzeichen; Punkte bleiben die der Stufe
+  // Länder-Legenden: Titel „… Legende“ (kurz genug fürs Band), Standardgebräu-Look, eigenes Wahrzeichen; Punkte nur die der Stufe (kein Bonus)
   const titel = legenden.map((k) => by[k][0].label);
   assert.ok(titel.every((t) => /Legende$/.test(t) && t.length <= 22), titel.join(', '));
   assert.strictEqual(new Set(legenden.map((k) => by[k][0].spezial.design)).size, 16, 'jedes Land hat sein eigenes Symbol');
-  for (const k of legenden) assert.ok(by[k].every((b) => b.look === 'k1 sp-baer' || b.look === 'k1 sp-icon'));
+  for (const k of legenden) assert.ok(by[k].every((b) => (b.look === 'k1 sp-baer' || b.look === 'k1 sp-icon') && G.beerPoints(b) === G.pointsFor(b.stufe)));
   assert.ok(legenden.filter((k) => k !== 'legende').every((k) => G.LEGEND_ICONS.includes(by[k][0].spezial.design)));
   assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000882', 'BS-000885', 'BS-001490', 'BS-002764']);
+  assert.ok(by.legende.every((b) => b.label === 'Berliner Legende'));
+  // Bierball-Bier: Sternburg - Export und Oettinger - Export, beide Standardgebräu, feste 1,0 Punkte
   assert.deepStrictEqual(by.bierball.map((b) => b.id).sort(), ['BS-000057', 'BS-000887']);
-  assert.strictEqual(r.map.get('BS-000887').kategorie, 'Klassiker'); assert.strictEqual(r.map.get('BS-000887').stufe, 2);
+  assert.strictEqual(r.map.get('BS-000887').kategorie, 'Standardgebräu'); assert.strictEqual(r.map.get('BS-000887').stufe, 1);
   assert.strictEqual(G.beerPoints(r.map.get('BS-000887')), 10); assert.strictEqual(G.beerPoints(r.map.get('BS-000057')), 10);
-  assert.ok(by.sanchi.every((b) => b.stufe === 1), 'Sanchi nur aus Standardgebräu');
-  assert.ok(by.legende.every((b) => b.label === 'Berliner Legende' && G.beerPoints(b) === 10));
-  assert.ok(by.sanchi.every((b) => b.label === 'Sanchi' && b.look === 'sp-sanchi'));
 });
 
 /* ---------- Echte Datenbank ---------- */
@@ -571,13 +581,18 @@ test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
   const r = G.mergeBeers(main, [], kat, (t) => warns.push(t), fixes);
   assert.strictEqual(warns.length, 0, warns.slice(0, 3).join(' | '));
   assert.strictEqual(r.list.length, 6368);
-  // Sechs Kategorien in der Reihenfolge der Stufen; Zahl der Biere je Stufe (Raddelfuß aus den früheren Klassikern, Sternburg - Export bleibt Klassiker)
-  assert.deepStrictEqual(kat.map((k) => [k.stufe, k.name]), [[1, 'Standardgebräu'], [2, 'Klassiker'], [3, 'Spezialität'], [4, 'Raddelfuß'], [5, 'Zaubertrank'], [6, 'Heiligtum']]);
+  // Fünf Kategorien nach Erhältlichkeit; Zahl der Biere je Stufe (Einordnung vom 19.11.2026, scraper/stufen_zuordnung.json)
+  assert.deepStrictEqual(kat.map((k) => [k.stufe, k.name]), [[1, 'Standardgebräu'], [2, 'Klassiker'], [3, 'Spezialität'], [4, 'Zaubertrank'], [5, 'Heiligtum']]);
   const proStufe = {}; for (const b of r.list) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
-  assert.deepStrictEqual(proStufe, { 1: 3200, 2: 933, 3: 983, 4: 599, 5: 459, 6: 194 });
+  assert.deepStrictEqual(proStufe, { 1: 107, 2: 333, 3: 1810, 4: 2447, 5: 1671 });
+  const zuordnung = JSON.parse(fs.readFileSync(path.join(dir, 'scraper', 'stufen_zuordnung.json'), 'utf8'));
+  assert.ok(r.list.every((b) => zuordnung[b.id] === b.stufe), 'biere.json passt zu stufen_zuordnung.json');
   const sternburg = r.map.get('BS-000887');
   assert.ok(sternburg && sternburg.title === 'Export' && sternburg.brand === 'Sternburg');
-  assert.strictEqual(sternburg.kategorie, 'Klassiker'); assert.strictEqual(sternburg.stufe, 2);
+  assert.strictEqual(sternburg.kategorie, 'Standardgebräu'); assert.strictEqual(sternburg.stufe, 1);
+  // Stichproben: Supermarktbier unten, Kleinstbrauerei oben
+  assert.strictEqual(r.map.get('BS-000081').stufe, 1); // Krombacher - Pils
+  assert.strictEqual(r.map.get('BS-000023').stufe, 2); // Rothaus - Tannenzäpfle Pils (regional)
   assert.strictEqual(r.map.get('BS-000001').stufe, main.find((b) => b.id === 'BS-000001').kategorie_stufe);
   const t0 = Date.now();
   const index = G.buildIndex(r.list);

@@ -19,18 +19,18 @@
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
   const LS_WELCOME = 'biersammler-welcome-v1'; // Kontokennungen (Komma-getrennt), die das Willkommensfenster schon gesehen haben; „local“ = lokaler Modus
   const LS_MOTION = 'biersammler-motion-v1'; // „0“ = Neigungssensor abgelehnt, nicht mehr fragen
-  /* biere.json und kategorien.json tragen die Zahl der Stufen in der Adresse (?stufen=6). Der Service Worker liefert Bierdateien
+  /* biere.json, biere_manuell.json, kategorien.json und spezialkarten.json tragen die Zahl der Stufen in der Adresse (?stufen=5). Der Service Worker liefert Bierdateien
      zuerst aus dem Cache (stale-while-revalidate); ohne diese Marke bekäme neuer Code beim ersten Start nach einer Änderung der
      Stufen noch die alten Daten (falsche Punkte und Farben, falsche Werte in der Rangliste). Muss zu DATA_FILES in sw.js passen
      und bei jeder Änderung der Stufen mitgeändert werden. */
-  const STUFEN_MARKE = '?stufen=6';
+  const STUFEN_MARKE = '?stufen=5'; // seit 19.11.2026: fünf Stufen nach Erhältlichkeit (vorher ?stufen=6)
   const BEER_FILES = {
     main: 'Datensammlung/biere.json' + STUFEN_MARKE,
-    manual: 'Datensammlung/biere_manuell.json',
+    manual: 'Datensammlung/biere_manuell.json' + STUFEN_MARKE,
     kategorien: 'Datensammlung/kategorien.json' + STUFEN_MARKE,
     korrekturen: 'Datensammlung/biere_korrekturen.json',
     nachrichten: 'Datensammlung/nachrichten.json', // Glückskeks-Sprüche nach dem Bestätigen eines Biers
-    spezial: 'Datensammlung/spezialkarten.json',   // Spezialkarten: eigener Titel, Aussehen und ggf. Punkte für einzelne Biere
+    spezial: 'Datensammlung/spezialkarten.json' + STUFEN_MARKE, // Spezialkarten: eigener Titel, Aussehen und ggf. Punkte/Extrapunkte für einzelne Biere
   };
   const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
@@ -562,7 +562,7 @@
         <div class="card-view">${cardHtml(c)}</div>
         <dl class="facts mine">
           ${fact('Getrunken', `${c.count}-mal`)}
-          ${fact('Gesammelte Punkte', G.fmt1(c.points))}
+          <div><dt>Gesammelte Punkte</dt><dd>${esc(G.fmt1(c.points))} <span class="per-beer">+${esc(G.fmt1(G.beerPoints(beer)))}<span class="sr-only"> pro Bier</span></span></dd></div>
           ${fact(c.count > 1 ? 'Zuerst getrunken' : 'Getrunken am', fmtWhen.format(new Date(c.first)))}
           ${c.count > 1 ? fact('Zuletzt getrunken', fmtWhen.format(new Date(c.last))) : ''}
         </dl>
@@ -1089,7 +1089,9 @@
         erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>
       <p><b>Kategorien</b> von häufig bis sehr selten:</p>
       ${kats ? `<ul class="howto-kats">${kats}</ul>` : '<p class="note">Die Kategorien erscheinen, sobald die Bierdatenbank geladen ist.</p>'}
-      <p>Ein neues Bier bringt keine Extrapunkte – es zählt nur seine Kategorie.</p>
+      <p>Ein neues Bier bringt keine Extrapunkte – es zählt nur seine Kategorie. Manche Karten erscheinen als besondere
+        Sonderkarte mit eigenem Design; sie bringen einen Punkt mehr als ihre Kategorie. Wie viele Punkte ein Bier bringt,
+        steht in seiner Kartenansicht neben den gesammelten Punkten (z. B. „+1,5“).</p>
       <p><b>Level:</b> 10 Punkte ergeben ein Level. Du startest bei Level 1; Punkte über 10 werden ins nächste Level mitgenommen.
         Der Ring oben rechts zeigt den Fortschritt im aktuellen Level. Löschst du Einträge, sinken die Punkte und notfalls auch das Level.</p>
       <p><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst. Ein Datum lässt sich nicht auswählen.</p>`;

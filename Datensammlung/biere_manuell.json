@@ -44,7 +44,7 @@
     "beschreibung": "Naturtrübes Saison-Radler aus 60 % Zitronenlimonade und 40 % hellem Vollbier. Ein Bodensatz ist möglich. Mehrwegflasche mit 0,5 l.",
     "zutaten": ["Zitronenlimonade (naturtrüb)", "Helles Vollbier"],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   }
 ]

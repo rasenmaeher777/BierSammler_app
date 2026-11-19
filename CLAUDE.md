@@ -1,12 +1,12 @@
 # Bier Sammler – Kontext für Claude Code
 
 Diese Datei fasst zusammen, was entschieden, gebaut und gelernt wurde. Einrichtung und Bedienung stehen in `README.md`;
-dort nachlesen statt hier doppeln. Stand: 18.11.2026.
+dort nachlesen statt hier doppeln. Stand: 19.11.2026.
 
 ## Worum es geht
 
 Spielerische Web-App: Nach jedem getrunkenen Bier trägt der Spieler es ein. Jedes Bier ist eine Sammelkarte in einer von
-sechs Seltenheits-Kategorien; Punkte lassen das Level steigen. Eigenes Konto per Google-Anmeldung, Fortschritt in
+fünf Seltenheits-Kategorien (nach Erhältlichkeit); Punkte lassen das Level steigen. Eigenes Konto per Google-Anmeldung, Fortschritt in
 Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohne Netz.
 
 - Hosting: GitHub Pages aus einem öffentlichen Repository, Branch `main`, Ordner `/ (root)`.
@@ -48,11 +48,11 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
 ## Bierdaten
 
 - `biere.json`: 6.368 Biere, IDs `BS-000001` … `BS-006368`, erzeugt von `Datensammlung/scraper/scraper.py`
-  (Kategorie fest aus der ID abgeleitet, siehe „Kategorien“; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
+  (Kategorie aus `scraper/stufen_zuordnung.json`, siehe „Kategorien“; `scraper/cache/id_zuordnung.json` hält die IDs stabil). NIE von Hand oder per
   Skript verändern.
 - `biere_manuell.json`: gleiches Format, IDs `BM-000001` fortlaufend. Doppelte ID → Warnung, `biere.json` gilt.
   Stand 18.11.2026: `BM-000001`…`BM-000004` = die vier Kosmonaut-Biere (REWE-Marke, Quelle rewe-kosmonaut.de/de): Helles Flasche,
-  Helles Dose (je 5,1 %, 0,5 l, Stufe 1), Helles alkoholfrei (0 = „alkoholfrei“, Stufe 2), Naturtrübes Radler (2,2 %, Saisonartikel, Stufe 3).
+  Helles Dose (je 5,1 %, 0,5 l, Stufe 1), Helles alkoholfrei (0 = „alkoholfrei“, Stufe 2), Naturtrübes Radler (2,2 %, Saisonartikel, Stufe 2; bis 19.11.2026 Stufe 3).
   Die Stufen sind eine Annahme (Seite nennt keine Seltenheit); Vertrieb „REWE“, Brauerei auf der Seite nicht genannt, Beschreibungen selbst formuliert.
   Stufe nachträglich ändern verschiebt die Punkte aller Spieler, die das Bier schon haben.
 - `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
@@ -66,30 +66,31 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   ohne „ - “ ganzer Name als Titel, Firmenname als Marke), `sorten` (Liste, evtl. leer), `alc` (0 = „alkoholfrei“),
   `flasche`, `company { typ, name, adresse, region, land }`, `beschreibung`, `zutaten`, `stufe`, `kategorie`.
   Fehlende Werte sind `null` bzw. `[]` und werden in der Oberfläche weggelassen.
-- Die Kategorie-STUFE ist intern (Sortierung, Punkte, Farbe `.k1`…`.k6`) und wird NIE angezeigt, nur der Name.
+- Die Kategorie-STUFE ist intern (Sortierung, Punkte, Farbe `.k1`…`.k5`) und wird NIE angezeigt, nur der Name.
 - Eigenheiten: 1.092× keine Beschreibung, 252× 0,0 % Alkohol, 2.064× mehrere Sorten, 1.082× keine Region,
   18 doppelte Namen (Treffer zeigen deshalb Flaschengröße und Alkohol), 2.379× Marke ≠ Firmenname, 1.518 ausländische Biere.
 
-## Kategorien (19.11.2026)
+## Kategorien (19.11.2026, Umbau auf Erhältlichkeit am Abend)
 
-- Sechs Stufen: 1 Standardgebräu (50 %), 2 Klassiker (15 %), 3 Spezialität (15 %), 4 **Raddelfuß** (10 %), 5 Zaubertrank (7 %), 6 Heiligtum (3 %).
-  Punkte 10, 11, 12, 14, 14, 16 (Raddelfuß = Zaubertrank). Raddelfuß wurde am 19.11.2026 aus den früheren Klassikern (25 %) herausgeschnitten;
-  Zaubertrank wurde Stufe 5, Heiligtum Stufe 6. Tatsächliche Zahlen in `biere.json`: 3.200 / 933 / 983 / 599 / 459 / 194.
-- Zuordnung im Scraper (`kategorie()`): fester Zufallswert je ID, Bereiche in der Reihenfolge `ZIEH_REIHENFOLGE` (Raddelfuß liegt im Zufallsbereich
-  zwischen Klassiker und Spezialität, NICHT bei Stufe 4 in der Reihe). Nur so behielt jedes andere Bier seine Kategorie – geprüft gegen die alte
-  `biere.json`: 599 Klassiker → Raddelfuß, alle übrigen nur umnummeriert (4→5, 5→6), alle anderen Felder unverändert. `FESTE_KATEGORIE` hält einzelne
-  Biere unabhängig vom Zufall: `BS-000887` Sternburg - Export bleibt Klassiker (wäre sonst Raddelfuß geworden; Wunsch des Nutzers).
-  Neu erzeugt mit `python3 scraper.py --nur-export` (aus dem Cache, ohne Netz). `biere.json` weiter NIE von Hand ändern.
-- Auswirkung auf Spieler: Die Umnummerierung (Zaubertrank 4→5, Heiligtum 5→6) ändert keine Punkte, denn die Punkte hängen am Wert, nicht an der Nummer
-  (1,4 und 1,6 wie vorher). Geändert hat sich nur bei den 599 Bieren, die von Klassiker (1,1) auf Raddelfuß (1,4) gewechselt sind: Wer eines davon
-  getrunken hat, bekommt rückwirkend 0,3 Punkte mehr je Eintrag. Die Rangliste korrigiert sich beim Öffnen selbst. In Firestore ist nichts zu migrieren.
-- Firestore-Regeln unverändert nötig (Spanne 10…16 je Bier bleibt); nur der Kommentar in `firestore.rules` wurde angepasst.
-- Daten-Cache: `biere.json` und `kategorien.json` werden mit `?stufen=6` geladen (`STUFEN_MARKE` in `js/app.js`, `DATA_FILES` in `sw.js`), `CACHE_VERSION` = `v4`.
-  Ohne die Marke hätte der Service Worker (stale-while-revalidate) neuem Code einmal die alten Daten geliefert (falsche Punkte/Farben/Rangliste).
-  Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
-- Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); Neue Stufe = `POINTS`, `kategorien.json`/Scraper, CSS (`--kN`, `.kN`, Muster, Rahmen, Band, drei Farbblöcke), Tests.
-- Design Raddelfuß (`.k4`): Rot `--k4` (hell `#C62F2F`, dunkel `#F08A82`), rot-weißes Karo als Material (Maske aus zwei Streifenscharen), Zuckerstangen-Rahmen
-  (rot-weiße Schrägstreifen, 3 px), Band rot mit zwei weißen Zierlinien, keine Holo-Folie und kein wandernder Glanz (die bleiben Zaubertrank und Heiligtum).
+- Fünf Stufen nach Erhältlichkeit (Wunsch des Nutzers: Seltenheit soll „jagbar“ sein statt Zufall): 1 Standardgebräu (in fast jedem Supermarkt),
+  2 Klassiker (Supermarkt, aber nur regional oder nicht überall), 3 Spezialität (Getränkemarkt/Kneipe), 4 Zaubertrank (selten), 5 Heiligtum (kaum im Handel).
+  Punkte 10, 12, 13, 15, 25 (Zehntel; vom Nutzer so festgelegt). Zahlen in `biere.json`: 107 / 333 / 1.810 / 2.447 / 1.671 (+ Kosmonaut 2× Stufe 1, 2× Stufe 2).
+  Die Verteilung kippt bewusst nach oben: Die Datenbank (bier-universum.de) besteht überwiegend aus kleinen bayerischen/BW-Brauereien und Importen.
+- Raddelfuß ist KEINE Kategorie mehr, sondern eine Zufalls-Spezialkarte (Design `raddelfuss`, Klasse `sp-raddel`, siehe Spezialkarten).
+  CSS dafür umbenannt: alte `.k4`/`--k4`/`--on-k4` (Raddelfuß) → `.sp-raddel`/`--rd`/`--on-rd`; alte `k5` → `k4` (Zaubertrank), alte `k6` → `k5` (Heiligtum), ebenso `--foil-k…`.
+- Einordnung (von Claude geschätzt, Nutzer weiß, dass sie nicht exakt ist): alle Biere der bundes- und landesweiten Marken (rund 900) einzeln,
+  rund 860 Brauereien von Hand, die übrigen ~570 nach Regel (Ausland → 5, Gasthaus-/Hausbrauerei → 5, deutsche Brauerei nach Zahl der Biere: ≥ 15 → 3, 3–14 → 4, ≤ 2 → 5);
+  Sonder-/limitierte Editionen +1, Saisonbiere +1 bei Brauerei ≤ 3. Ergebnis in `Datensammlung/scraper/`: `stufen_zuordnung.json` (ID → Stufe, gilt),
+  `stufen_brauereien.json` (Brauerei → Stufe, für neue Biere), `stufen_vorschlag.csv` (Übersicht mit Begründung, wird nicht gelesen). Die Hilfsskripte lagen nur im Scratchpad.
+- Scraper (`kategorie(bier_id, name, firma)`): erst `stufen_zuordnung.json`, sonst Brauerei-Stufe + Regeln wie oben; kein Zufall mehr (`ZIEH_REIHENFOLGE`, `FESTE_KATEGORIE`, `anteil` entfernt).
+  `biere.json` neu erzeugt mit `python3 scraper.py --nur-export`; geprüft: nur `kategorie_name`/`kategorie_stufe` geändert, alle 6.368 passen zur Zuordnung.
+- Auswirkung auf Spieler: Fast jedes Bier hat die Stufe gewechselt (von 3.200 früheren Standardgebräu-Bieren sind 52 geblieben); Punkte und Level ändern sich
+  rückwirkend, die Rangliste korrigiert sich beim Öffnen. In Firestore ist nichts zu migrieren, aber `firestore.rules` erlaubt jetzt 10…35 je Bier (vorher 16):
+  NEUE REGELN VOR DER APP VERÖFFENTLICHEN, sonst lehnt Firestore die Ranglisten-Einträge von Spielern mit Heiligtum/Spezialkarten ab.
+- Daten-Cache: Marke `?stufen=5` an `biere.json`, `biere_manuell.json`, `kategorien.json` und `spezialkarten.json` (`STUFEN_MARKE` in `js/app.js`, `DATA_FILES` in `sw.js`),
+  `CACHE_VERSION` = `v10`. Vorher `?stufen=6` (nur biere/kategorien). Bei jeder weiteren Änderung der Stufen beide Stellen hochsetzen.
+- Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); `MAX_BONUS` = 10, `MAX_BEER_POINTS` = 35 (Rangliste, Regeln).
+- Sicherung des Stands vor dem Umbau: nur im Scratchpad dieser Sitzung (kein Git im Projekt).
 
 ## Spezialkarten (19.11.2026)
 
@@ -136,6 +137,18 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` = `v9` seit der Plakette (davor v8 mit der Herkunftsfarbe (vorher v7: CSS und Spiellogik geändert; sonst bekäme der Service Worker einmal das alte CSS).
   Getestet: Node-Tests (48, die Spezialkarten-Prüfung der echten Datei um die vier Karten erweitert), eingebauter Browser mit Kopie ohne Schlüssel (430 px, hell und dunkel, Lvl 1/5/8/16/24/40, große Ansicht). NICHT getestet: iPhone/Safari, Desktop-Breite, Sammlungsliste (Streifenfarbe).
 - Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
+- **Neu gezogen und Bonus (19.11.2026, abends, mit dem Umbau auf 5 Stufen):** Die elf Zufallskarten (Sanchi, Schwarze Nachtigal, Spezial-Edition 04, Heiliger Hopfen,
+  Bierkönig, Außenseiter, Spezial Rot/Türkis/Orange/Rosa und NEU Raddelfuß, id/Design `raddelfuss`, ans Ende der Datei) haben jetzt je 40 Biere und `"bonus": 1.0`
+  (Wunsch: Punkte der Hauptkategorie + 1 Punkt). Gezogen mit `random.Random("<id>-2026-11-19-stufen5").sample` in Dateireihenfolge aus den freien `BS`-Bieren der
+  Stufen 2–5 (ohne Legenden/Bierball), je Karte 9 Klassiker / 10 Spezialität / 10 Zaubertrank / 11 Heiligtum („gleichmäßig mit ganz leichter Tendenz zu selteneren“).
+  Die ÄLTEREN Angaben oben zu „je 40/35 Standardgebräu-Biere“ und den Samen `…-2026-11-19` sind damit überholt. Legenden und Bierball unverändert (Bierball: feste 1,0;
+  Sternburg und Oettinger Export sind jetzt Standardgebräu). `cleanSpecials` prüft `bonus` (0,0…1,0 in Zehnteln); `beerPoints` = `punkte` falls gesetzt, sonst Stufe + `bonus`.
+  Die echte Kategorie ist auf Spezialkarten nicht sichtbar (Band und „Kategorie“ in der Kartenansicht zeigen den Titel); die Statistik „Sammlung“ zählt weiter nach Stufe.
+- **Punkte je Bier in der Kartenansicht (19.11.2026):** neben „Gesammelte Punkte“ eine Pille `.per-beer` mit „+1,5“ (= `GAME.beerPoints`), für jede Karte;
+  Spielanleitung erwähnt, dass Sonderkarten einen Punkt mehr bringen.
+- Getestet (Umbau): Node-Tests (48), eingebauter Browser mit Kopie ohne Schlüssel (375 px hell/dunkel): Raddelfuß-, Sanchi-, Spezial-Rot-, Heiligtum-, Zaubertrank-Karten,
+  Kartenansicht mit „+3,5“/„+2,5“/„+1,5“/„+1,3“ und richtigen Summen, Kategorie verborgen, Statistik „Sammlung“ mit 5 Stufen, Spielanleitung, keine Konsolenfehler.
+  NICHT getestet: iPhone/Safari, echtes Firebase mit den neuen Regeln, Service-Worker-Wechsel von v9 auf v10.
 - `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
   `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.
 - Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (hell/dunkel, 390 px und Desktop, große Kartenansicht, Karten-Level 1/4/8/24/40).
@@ -194,13 +207,13 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
 
 ## Spielregeln und Rechnen
 
-- Punkte in Zehnteln: Stufe 1–6 = 10, 11, 12, 14, 14, 16. Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
+- Punkte in Zehnteln: Stufe 1–5 = 10, 12, 13, 15, 25; Zufalls-Spezialkarten + 10 (`bonus`). Level = floor(summe/100)+1, Ring = (summe mod 100)/100 (10 Punkte = 1 Level,
   seit 18.11.2026; vorher 20). `LEVEL_POINTS` in `js/game.js`; Text in Spielanleitung, Willkommensfenster, `aria-label` in `index.html` und README mitändern.
 - Alles (Punkte, Level, Sammlung, Statistiken) wird aus dem Protokoll berechnet, nie gespeichert.
 - Kein Nachtragen: Zeitpunkt = Geräteuhr beim Bestätigen. Keine Tages-Serien.
 - Pflicht-Beispiele, die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
-  0 → Level 1, Ring 0 · 10×Stufe 6 = 160 → Level 2, 6,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
-  19×Stufe 4 = 266 (Stufe 4 = Raddelfuß, 1,4) → Level 3, 6,6/10 · 13×Stufe 1 + 5×Stufe 6 = 210 → Level 3, 1,0/10 · 3×Stufe 2 = 33 → „3,3“.
+  0 → Level 1, Ring 0 · 10×Stufe 5 = 250 → Level 3, 5,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
+  19×Stufe 4 = 285 → Level 3, 8,5/10 · 13×Stufe 1 + 5×Stufe 5 = 255 → Level 3, 5,5/10 · 3×Stufe 3 = 39 → „3,9“ (seit 19.11.2026, vorher mit 6 Stufen).
 - Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
   24 und 40 Mal verändert sich die Optik der Karte in fünf Stufen (`GAME.cardTier`, Klassen `t1`…`t5` auf `.bcard-body`
   und `.bottle`): Farbschimmer in der Mitte, Glanz, Schaumkrone, Strahlen, Sterne, goldene Flasche mit Funkeln. Rahmen
@@ -264,7 +277,7 @@ leaderboard/<uid>            { username, sum, count }   Rangliste: Punkte in Zeh
   Serverbestätigung des Protokolls (`snap.metadata.fromCache` false), damit ein leerer Zwischenspeicher nichts Falsches
   veröffentlicht. Beim Zurücksetzen löscht derselbe Batch das Dokument; ein Namenswechsel schreibt es neu.
 - Anzeige: `STORE.watchRanking` = `orderBy('sum','desc')` + `limit(15)` (nur Einzelfeld-Index, kein zusammengesetzter nötig),
-  `GAME.rankBoard` prüft (Name, Ganzzahlen, 10…16 je Bier), sortiert (Punkte, Biere, Name) und vergibt Ränge (gleiche
+  `GAME.rankBoard` prüft (Name, Ganzzahlen, 10…35 je Bier, `MAX_BEER_POINTS`), sortiert (Punkte, Biere, Name) und vergibt Ränge (gleiche
   Punkte = gleicher Platz). Eigener Rang außerhalb der Besten: `getCountFromServer(where('sum','>',eigene Punkte)) + 1`;
   ohne Netz „–“. Entscheidung des Nutzers: Top 15 + eigener Rang, Sortierung nach Punkten, keine Wochen-Rangliste.
 - Werte kommen vom Client und sind fälschbar; das ist gewollt hingenommen („es ist ein Spiel“).

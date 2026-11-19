@@ -5,7 +5,7 @@ BierSammler – Datensammler für bier-universum.de
 Lädt alle Biere aus https://www.bier-universum.de/datenbank/biersuche und
 erzeugt daraus:
     Datensammlung/biere.json       (alle Biere)
-    Datensammlung/kategorien.json  (die 6 Seltenheits-Kategorien)
+    Datensammlung/kategorien.json  (die 5 Seltenheits-Kategorien)
     Datensammlung/biere.csv        (dieselben Daten für Excel/Numbers)
 
 Nur Python-Standardbibliothek, keine Installation nötig.
@@ -25,7 +25,6 @@ import csv
 import html
 import json
 import math
-import random
 import re
 import sys
 import time
@@ -46,24 +45,27 @@ FEHLER_DATEI = CACHE_ORDNER / "fehler.json"        # Seiten, die nicht geladen w
 ID_DATEI = CACHE_ORDNER / "id_zuordnung.json"      # interne Quell-Nr. -> BierSammler-ID (bleibt stabil!)
 
 KATEGORIEN = [  # Reihenfolge = Stufe (Punkte und Sortierung in der App hängen daran)
-    {"stufe": 1, "name": "Standardgebräu", "anteil": 0.50},
-    {"stufe": 2, "name": "Klassiker", "anteil": 0.15},
-    {"stufe": 3, "name": "Spezialität", "anteil": 0.15},
-    {"stufe": 4, "name": "Raddelfuß", "anteil": 0.10},
-    {"stufe": 5, "name": "Zaubertrank", "anteil": 0.07},
-    {"stufe": 6, "name": "Heiligtum", "anteil": 0.03},
+    {"stufe": 1, "name": "Standardgebräu"},  # in fast jedem Supermarkt
+    {"stufe": 2, "name": "Klassiker"},       # im Supermarkt, aber nur in bestimmten Gegenden oder nicht überall
+    {"stufe": 3, "name": "Spezialität"},     # Getränkemarkt, Kneipe, gut sortierter Supermarkt
+    {"stufe": 4, "name": "Zaubertrank"},     # selten, kleine Brauerei mit engem Absatzgebiet
+    {"stufe": 5, "name": "Heiligtum"},       # kaum im Handel: Gasthausbrauerei, Kleinstbrauerei, Sonderedition, seltener Import
 ]
 
-# Reihenfolge, in der der Zufallswert (0 bis 1) auf die Kategorien verteilt wird. Sie weicht von der Stufenreihenfolge ab:
-# Raddelfuß wurde aus dem hinteren Teil der früheren Klassiker (damals 25 %) herausgeschnitten und liegt deshalb im
-# Zufallsbereich zwischen Klassiker und Spezialität. Nur so behält jedes andere Bier seine bisherige Kategorie.
-# NICHT umsortieren und die Anteile nur ändern, wenn bewusst Biere die Kategorie wechseln sollen.
-ZIEH_REIHENFOLGE = ["Standardgebräu", "Klassiker", "Raddelfuß", "Spezialität", "Zaubertrank", "Heiligtum"]
-
-# Biere, die unabhängig vom Zufall in einer festen Kategorie bleiben (ID -> Name der Kategorie)
-FESTE_KATEGORIE = {
-    "BS-000887": "Klassiker",  # Sternburg - Export (läge sonst im Raddelfuß-Bereich)
-}
+# Die Stufe richtet sich danach, wie leicht ein Bier zu bekommen ist (Einordnung vom 19.11.2026, siehe README):
+#   stufen_zuordnung.json   Bier-ID -> Stufe, für alle bekannten Biere (gilt immer zuerst; hier einzelne Biere ändern)
+#   stufen_brauereien.json  Brauerei-/Vertriebsname -> Stufe; damit bekommen NEUE Biere einer bekannten Brauerei ihre Stufe
+# Unbekannte Brauereien: ausländisch -> Heiligtum, Gasthaus-/Hausbrauerei -> Heiligtum, sonst Zaubertrank.
+# Sonder- und limitierte Editionen eine Stufe höher, Saisonbiere (Bock, Fest-, Weihnachtsbier) eine Stufe höher, wenn
+# die Brauerei höchstens Spezialität ist.
+ZUORDNUNG_DATEI = SKRIPT_ORDNER / "stufen_zuordnung.json"
+BRAUEREI_DATEI = SKRIPT_ORDNER / "stufen_brauereien.json"
+GASTRO = re.compile(r"gasthaus|gasthof|hausbrauerei|wirtshaus|brauereigasthof|braugasthof|gastronomie|gaststätte"
+                    r"|caf[eé] |hotel|restaurant|bräustüberl|e\.v\.|schenke|schankwirtschaft|wirt\b", re.I)
+LIMITIERT = re.compile(r"limit|edition|jahrgang|vintage|barrel|fass ?gereift|holzfass|barrique|jubil[äa]um|reserv[ea]"
+                       r"|anniversary|collab|single batch|\bba\b", re.I)
+SAISON = re.compile(r"weihnacht|christmas|xmas|noël|festbier|fest-bier|maibock|mai-bock|winterbock|frühlingsbock"
+                    r"|oktoberfest|fastenbier|kirchweih|kerwa|starkbier|winterbier", re.I)
 
 PRO_SEITE = 20
 
@@ -340,27 +342,50 @@ def firma(roh):
     return None
 
 
-def kategorie(bier_id):
-    """Zufällige, aber feste Kategorie je Bier (gleiche ID -> immer gleiche Kategorie)."""
-    nach_name = {k["name"]: k for k in KATEGORIEN}
-    if bier_id in FESTE_KATEGORIE:
-        k = nach_name[FESTE_KATEGORIE[bier_id]]
-    else:
-        rng = random.Random(f"biersammler-{bier_id}")
-        name = rng.choices(ZIEH_REIHENFOLGE, weights=[nach_name[n]["anteil"] for n in ZIEH_REIHENFOLGE])[0]
-        k = nach_name[name]
+_STUFEN = {}
+
+
+def lade_stufen():
+    if not _STUFEN:
+        _STUFEN["biere"] = lade_json(ZUORDNUNG_DATEI, {})
+        _STUFEN["brauereien"] = lade_json(BRAUEREI_DATEI, {})
+    return _STUFEN
+
+
+def kategorie(bier_id, name, firma_daten):
+    """Kategorie nach Erhältlichkeit: feste Zuordnung je Bier, sonst aus der Brauerei abgeleitet."""
+    st = lade_stufen()
+    stufe = st["biere"].get(bier_id)
+    if stufe is None:
+        fi = firma_daten or {}
+        brauerei = fi.get("name") or ""
+        basis = st["brauereien"].get(brauerei)
+        if basis is None:
+            if fi.get("land") and fi.get("land") != "Deutschland":
+                basis = 5
+            elif GASTRO.search(brauerei):
+                basis = 5
+            else:
+                basis = 4
+        stufe = basis
+        if LIMITIERT.search(name or ""):
+            stufe = min(5, basis + 1)
+        elif SAISON.search(name or "") and basis <= 3:
+            stufe = basis + 1
+    k = KATEGORIEN[stufe - 1]
     return k["name"], k["stufe"]
 
 
 def baue_bier(bier_id, roh):
     f = roh.get("felder", {})
-    kat_name, kat_stufe = kategorie(bier_id)
+    firma_daten = firma(roh)
+    kat_name, kat_stufe = kategorie(bier_id, roh.get("titel"), firma_daten)
     return {
         "id": bier_id,
         "name": roh.get("titel"),
         "biersorte": liste(f.get("Biersorte(n)") or f.get("Biersorte")),
         "alkoholgehalt": zahl(f.get("Alkoholgehalt")),
-        "brauerei_vertrieb": firma(roh),
+        "brauerei_vertrieb": firma_daten,
         "beschreibung": roh.get("beschreibung") or None,
         "zutaten": liste(f.get("Zutaten")),
         "flaschengroesse": flaschengroesse_liter(f.get("Flaschengröße")),
@@ -396,7 +421,7 @@ def exportiere(details, test=False):
 
     speichere_json(DATEN_ORDNER / "biere.json", biere)
     speichere_json(DATEN_ORDNER / "kategorien.json",
-                   [{"stufe": k["stufe"], "name": k["name"], "anteil": k["anteil"]} for k in KATEGORIEN])
+                   [{"stufe": k["stufe"], "name": k["name"]} for k in KATEGORIEN])
 
     spalten = ["id", "name", "biersorte", "alkoholgehalt", "brauerei_typ", "brauerei_name",
                "brauerei_adresse", "brauerei_region", "brauerei_land", "beschreibung", "zutaten",

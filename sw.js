@@ -14,7 +14,7 @@
    js/app.js (STUFEN_MARKE) hochsetzen, sonst läuft neuer Code einmal mit alten Bierdaten. */
 'use strict';
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -38,14 +38,15 @@ const APP_FILES = [
   'impressum.html',
   'datenschutz.html',
 ];
-// biere.json und kategorien.json mit der Marke ?stufen=6 wie in js/app.js (STUFEN_MARKE): sechs Seltenheitsstufen seit der Aufnahme von Raddelfuß
+// Bierdateien mit der Marke ?stufen=5 wie in js/app.js (STUFEN_MARKE): fünf Stufen nach Erhältlichkeit seit 19.11.2026
+// (biere_manuell.json und spezialkarten.json tragen die Marke ebenfalls, weil sich dort Stufen und Karten mitgeändert haben)
 const DATA_FILES = [
-  'Datensammlung/biere.json?stufen=6',
-  'Datensammlung/biere_manuell.json',
-  'Datensammlung/kategorien.json?stufen=6',
+  'Datensammlung/biere.json?stufen=5',
+  'Datensammlung/biere_manuell.json?stufen=5',
+  'Datensammlung/kategorien.json?stufen=5',
   'Datensammlung/biere_korrekturen.json',
   'Datensammlung/nachrichten.json',
-  'Datensammlung/spezialkarten.json',
+  'Datensammlung/spezialkarten.json?stufen=5',
 ];
 const SDK_FILES = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map((f) => SDK_BASE + f);
 

@@ -10,16 +10,23 @@
 
   /* ---------- Punkte und Level ---------- */
 
-  // Punkte pro Trinken je Kategorie-Stufe, in Zehnteln (Stufe 4 = 1,4 Punkte).
-  // Stufen: 1 Standardgebräu, 2 Klassiker, 3 Spezialität, 4 Raddelfuß, 5 Zaubertrank, 6 Heiligtum (Raddelfuß = Zaubertrank)
-  const POINTS = { 1: 10, 2: 11, 3: 12, 4: 14, 5: 14, 6: 16 };
-  const STUFEN = Object.keys(POINTS).map(Number).sort((a, b) => a - b); // [1 … 6]
+  // Punkte pro Trinken je Kategorie-Stufe, in Zehnteln (Stufe 4 = 1,5 Punkte).
+  // Stufen nach Erhältlichkeit: 1 Standardgebräu, 2 Klassiker, 3 Spezialität, 4 Zaubertrank, 5 Heiligtum
+  const POINTS = { 1: 10, 2: 12, 3: 13, 4: 15, 5: 25 };
+  const STUFEN = Object.keys(POINTS).map(Number).sort((a, b) => a - b); // [1 … 5]
   const MAX_STUFE = STUFEN[STUFEN.length - 1];
   const LEVEL_POINTS = 100; // 10 Punkte = 1 Level
+  // Extrapunkte einer Spezialkarte ("bonus" in spezialkarten.json), höchstens 1 Punkt; ein Bier bringt also höchstens 3,5
+  const MAX_BONUS = 10;
+  const MAX_BEER_POINTS = POINTS[MAX_STUFE] + MAX_BONUS;
 
   const pointsFor = (stufe) => POINTS[stufe] || 0;
-  // Punkte eines Biers in Zehnteln: eigene Punkte der Spezialkarte, sonst die Punkte seiner Stufe
-  const beerPoints = (beer) => (beer && Number.isInteger(beer.punkte) ? beer.punkte : pointsFor(beer && beer.stufe));
+  // Punkte eines Biers in Zehnteln: feste Punkte der Spezialkarte ("punkte"), sonst Punkte der Stufe plus Extrapunkte der Spezialkarte ("bonus")
+  const beerPoints = (beer) => {
+    if (!beer) return 0;
+    if (Number.isInteger(beer.punkte)) return beer.punkte;
+    return pointsFor(beer.stufe) + (Number.isInteger(beer.bonus) ? beer.bonus : 0);
+  };
   // Man startet bei Level 1; Überschuss wird ins nächste Level mitgenommen
   const level = (sum) => Math.floor(sum / LEVEL_POINTS) + 1;
   const ringTenths = (sum) => sum % LEVEL_POINTS;          // Punkte im laufenden Level (Zehntel)
@@ -97,6 +104,7 @@
       label: (katNames && katNames[stufe]) || str(raw.kategorie_name) || '',
       look: `k${stufe}`,
       punkte: null,
+      bonus: 0,
       spezial: null,
     };
   }
@@ -113,18 +121,22 @@
        koenig   eigenständiges Design: gesteppter roter Samt, Edelsteine und Gold (Bierkönig)
        weltall  eigenständiges Design: Weltall mit glitzernden Sternen (Außenseiter)
        spezial-rot | spezial-tuerkis | spezial-orange | spezial-rosa  eigenständiges, ganz schlichtes Einfarb-Design (Klasse sp-mono + Farbe), linksbündig, ohne Rahmen und Muster
+       raddelfuss  eigenständiges Design: rot-weißes Karo mit Zuckerstangen-Rahmen (früher die Kategorie Raddelfuß)
        Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
        kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
        leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
        nebra (Sachsen-Anhalt), strandkorb (SH), bratwurst (Thüringen)
-     Optional "punkte" (z. B. 1.0): ersetzt die Punkte der Stufe für diese Biere. Kategorie (Stufe) und Sammlung bleiben unberührt. */
+     Optional "punkte" (z. B. 1.0): ersetzt die Punkte der Stufe für diese Biere.
+     Optional "bonus" (z. B. 1.0, höchstens 1,0): Extrapunkte zusätzlich zu den Punkten der Stufe (gilt nicht, wenn "punkte" gesetzt ist).
+     Kategorie (Stufe) und Sammlung bleiben in jedem Fall unberührt; sichtbar ist nur der Titel der Spezialkarte. */
   const LEGEND_ICONS = ['kuckucksuhr', 'brezel', 'gurke', 'schluessel', 'anker', 'bembel', 'leuchtturm', 'schaf', 'dom', 'traube', 'hammer', 'schwibbogen', 'nebra', 'strandkorb', 'bratwurst'];
   const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi', noir: 'sp-noir', regenbogen: 'sp-regenbogen', hopfen: 'sp-hopfen', koenig: 'sp-koenig', weltall: 'sp-weltall',
-    'spezial-rot': 'sp-mono sp-rot', 'spezial-tuerkis': 'sp-mono sp-tuerkis', 'spezial-orange': 'sp-mono sp-orange', 'spezial-rosa': 'sp-mono sp-rosa' };
+    'spezial-rot': 'sp-mono sp-rot', 'spezial-tuerkis': 'sp-mono sp-tuerkis', 'spezial-orange': 'sp-mono sp-orange', 'spezial-rosa': 'sp-mono sp-rosa',
+    raddelfuss: 'sp-raddel' };
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 
-  // Rohdaten prüfen; ungültige Karten fallen mit Warnung weg. Ergebnis: [{ id, titel, design, punkte (Zehntel oder null), biere }]
+  // Rohdaten prüfen; ungültige Karten fallen mit Warnung weg. Ergebnis: [{ id, titel, design, punkte (Zehntel oder null), bonus (Zehntel), biere }]
   function cleanSpecials(raw, warn = () => {}) {
     if (raw == null) return [];
     if (!Array.isArray(raw)) { warn('spezialkarten.json: keine Liste, wird ignoriert'); return []; }
@@ -137,13 +149,23 @@
       if (!id || !titel || titel.length > 40 || !DESIGNS.includes(r.design) || !Array.isArray(r.biere)) { warn(`${where} ungültig, wird ignoriert`); return; }
       if (seen.has(id)) { warn(`${where}: doppelte ID „${id}“, wird ignoriert`); return; }
       seen.add(id);
+      // Zahl in Zehntel umrechnen, wenn sie genau auf Zehntel endet und im erlaubten Bereich liegt, sonst null
+      const tenths = (v, lo, hi) => {
+        const t = Math.round(v * 10);
+        return typeof v === 'number' && Math.abs(v * 10 - t) < 1e-9 && t >= lo && t <= hi ? t : null;
+      };
       let punkte = null;
       if (r.punkte != null) {
-        const t = Math.round(r.punkte * 10);
-        if (typeof r.punkte === 'number' && Math.abs(r.punkte * 10 - t) < 1e-9 && t >= POINTS[1] && t <= POINTS[MAX_STUFE]) punkte = t;
-        else warn(`${where}: ungültige Punkte (erlaubt: 1,0 bis 1,6 in Zehnteln), Standardpunkte der Stufe gelten`);
+        punkte = tenths(r.punkte, POINTS[1], POINTS[MAX_STUFE]);
+        if (punkte === null) warn(`${where}: ungültige Punkte (erlaubt: ${fmt1(POINTS[1])} bis ${fmt1(POINTS[MAX_STUFE])} in Zehnteln), Standardpunkte der Stufe gelten`);
       }
-      out.push({ id, titel, design: r.design, punkte, biere: r.biere.filter((b) => typeof b === 'string') });
+      let bonus = 0;
+      if (r.bonus != null) {
+        const t = tenths(r.bonus, 0, MAX_BONUS);
+        if (t === null) warn(`${where}: ungültiger Bonus (erlaubt: 0,0 bis ${fmt1(MAX_BONUS)} in Zehnteln), kein Bonus`);
+        else bonus = t;
+      }
+      out.push({ id, titel, design: r.design, punkte, bonus, biere: r.biere.filter((b) => typeof b === 'string') });
     });
     return out;
   }
@@ -159,6 +181,7 @@
         beer.label = sp.titel;
         beer.look = SPECIAL_DESIGNS[sp.design];
         beer.punkte = sp.punkte;
+        beer.bonus = sp.bonus || 0;
       }
     }
   }
@@ -559,7 +582,7 @@
   function rankBoard(rows) {
     const ok = (r) => r && typeof r.uid === 'string' && usernameKey(r.username)
       && Number.isInteger(r.sum) && Number.isInteger(r.count) && r.count >= 0
-      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * POINTS[MAX_STUFE];
+      && r.sum >= r.count * POINTS[1] && r.sum <= r.count * MAX_BEER_POINTS;
     const list = (Array.isArray(rows) ? rows : []).filter(ok)
       .sort((a, b) => b.sum - a.sum || b.count - a.count || (usernameKey(a.username) < usernameKey(b.username) ? -1 : 1));
     let rank = 0;
@@ -570,7 +593,7 @@
   }
 
   const api = {
-    POINTS, STUFEN, MAX_STUFE, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
+    POINTS, STUFEN, MAX_STUFE, MAX_BONUS, MAX_BEER_POINTS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
     BOARD_SIZE, rankBoard,
     pointsFor, beerPoints, SPECIAL_DESIGNS, LEGEND_ICONS, cleanSpecials, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,

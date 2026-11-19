@@ -1,7 +1,8 @@
 # Bier Sammler
 
-Spielerische Web-App: Nach jedem getrunkenen Bier trägst du es ein. Jedes Bier ist eine Sammelkarte in einer von sechs
-Seltenheits-Kategorien (Standardgebräu, Klassiker, Spezialität, Raddelfuß, Zaubertrank, Heiligtum). Punkte lassen dein Level steigen.
+Spielerische Web-App: Nach jedem getrunkenen Bier trägst du es ein. Jedes Bier ist eine Sammelkarte in einer von fünf
+Seltenheits-Kategorien (Standardgebräu, Klassiker, Spezialität, Zaubertrank, Heiligtum), je nachdem, wie leicht das Bier zu bekommen ist.
+Punkte lassen dein Level steigen.
 Anmeldung mit Google, Speicherung in Cloud Firestore, nutzbar auf iPhone und Mac, auch als installierte Web-App und ohne Netz.
 
 Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine npm-Abhängigkeiten.
@@ -24,7 +25,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | Datei | Aufgabe |
 | --- | --- |
 | `index.html` | Seitengerüst, Dialoge, Vorab-Laden der Firebase-Module |
-| `css/style.css` | Gestaltung; alle Farben als Variablen ganz oben (hell/dunkel, Kategorien `--k1` … `--k6`) |
+| `css/style.css` | Gestaltung; alle Farben als Variablen ganz oben (hell/dunkel, Kategorien `--k1` … `--k5`) |
 | `js/game.js` | Spiellogik als reine Funktionen (Punkte, Level, Suche, Statistiken, Rangliste) – in Node testbar |
 | `js/store.js` | Speichern: lokal (localStorage) oder Firebase (Anmeldung, Firestore, Warteschlange ohne Netz) |
 | `js/app.js` | Oberfläche und Bedienung |
@@ -37,8 +38,8 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/biere.json` | Bierdatenbank (vom Scraper erzeugt, **nie von Hand ändern**) |
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
 | `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
-| `Datensammlung/kategorien.json` | Die sechs Kategorien |
-| `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
+| `Datensammlung/kategorien.json` | Die fünf Kategorien |
+| `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte oder Extrapunkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
 | `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
 | `Datensammlung/karte/` | Kartendaten für die Standort-Karte (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py`, das sie aus den Grenzdaten erzeugt (Quellen und Lizenzen im Kopf des Skripts) |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
@@ -117,7 +118,8 @@ Fehlt ein Bier, trägst du es in `Datensammlung/biere_manuell.json` ein. **`bier
 - Gleiches Format wie in `biere.json`. Die Datei ist eine Liste (`[ … ]`), Einträge durch Komma getrennt.
 - IDs fortlaufend `BM-000001`, `BM-000002`, … Eine vergebene ID **nie ändern oder neu vergeben**: Sie ist der Schlüssel
   für die Einträge aller Spieler. Auch ein gelöschtes Bier behält seine ID für immer.
-- `kategorie_stufe` 1 bis 6 bestimmt Seltenheit und Punkte; der angezeigte Name kommt aus `kategorien.json`.
+- `kategorie_stufe` 1 bis 5 bestimmt Seltenheit und Punkte; der angezeigte Name kommt aus `kategorien.json`
+  (1 Standardgebräu, 2 Klassiker, 3 Spezialität, 4 Zaubertrank, 5 Heiligtum).
 - Unbekannte Werte als `null` (bzw. bei `biersorte` eine leere Liste); die App lässt fehlende Angaben einfach weg.
 - Hat ein Eintrag dieselbe ID wie ein Bier aus `biere.json`, gilt das aus `biere.json` (Warnung in der Browser-Konsole).
 
@@ -192,8 +194,10 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 ## Spielregeln
 
 - Eine Karte pro Bier; jedes Trinken wird einzeln gespeichert, das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).
-- Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,1 · Spezialität 1,2 · Raddelfuß 1,4 · Zaubertrank 1,4 · Heiligtum 1,6.
-  Keine Extrapunkte für neue Biere.
+- Die Kategorie richtet sich danach, wie leicht ein Bier zu bekommen ist (Einordnung siehe „Kategorien nach Erhältlichkeit“).
+- Punkte pro Bier: Standardgebräu 1,0 · Klassiker 1,2 · Spezialität 1,3 · Zaubertrank 1,5 · Heiligtum 2,5.
+  Biere auf einer Zufalls-Spezialkarte (Sanchi, Raddelfuß usw.) bringen 1 Punkt mehr als ihre Kategorie. Keine Extrapunkte für neue Biere.
+- In der Kartenansicht steht neben den gesammelten Punkten, was ein einzelnes Trinken dieses Biers bringt (z. B. „+1,5“).
 - 10 Punkte = 1 Level; Start bei Level 1; Überschuss wird mitgenommen.
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
@@ -255,6 +259,31 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Ist die App beim Abmelden in einem zweiten Tab offen, kann die lokale Kopie erst gelöscht werden, wenn dieser Tab
   ebenfalls neu lädt.
 
+## Kategorien nach Erhältlichkeit
+
+Seit 19.11.2026 richtet sich die Kategorie danach, wie leicht ein Bier in Deutschland zu bekommen ist:
+
+| Stufe | Kategorie | Bedeutung | Punkte |
+| --- | --- | --- | --- |
+| 1 | Standardgebräu | in fast jedem Supermarkt (bundesweite Marken, Discounter-Eigenmarken) | 1,0 |
+| 2 | Klassiker | im Supermarkt, aber nur in bestimmten Bundesländern oder nicht überall | 1,2 |
+| 3 | Spezialität | Getränkemarkt, Kneipe, gut sortierter Supermarkt; bekannte Importe | 1,3 |
+| 4 | Zaubertrank | selten: kleinere Brauerei mit engem Absatzgebiet, seltene Importe | 1,5 |
+| 5 | Heiligtum | kaum im Handel: Gasthaus- und Kleinstbrauereien, Sondereditionen, sehr seltene Importe | 2,5 |
+
+Die Einordnung ist eine Schätzung (große Marken Bier für Bier, sonst je Brauerei, unbekannte Brauereien nach Regel) und liegt in
+`Datensammlung/scraper/`:
+
+- `stufen_zuordnung.json`: Bier-ID → Stufe für alle Biere aus `biere.json`. **Hier einzelne Biere umstufen**, danach
+  `python3 scraper.py --nur-export` im Ordner `scraper` (lädt nichts, erzeugt `biere.json` neu).
+- `stufen_brauereien.json`: Brauerei → Stufe. Neue Biere aus einem späteren Scraper-Lauf bekommen darüber ihre Stufe
+  (Sonder-/limitierte Editionen und Saisonbiere eine Stufe höher). Unbekannte Brauerei: ausländisch oder Gasthausbrauerei → Heiligtum, sonst Zaubertrank.
+- `stufen_vorschlag.csv`: alle Biere mit neuer und alter Stufe und Begründung, zum Durchsehen in Numbers oder Excel (wird nicht gelesen).
+
+Biere aus `biere_manuell.json` tragen ihre Stufe selbst. Jede Umstufung ändert die Punkte aller Spieler, die das Bier schon haben, rückwirkend.
+Cache: Die Marke `?stufen=…` in `js/app.js` (`STUFEN_MARKE`) und `sw.js` (`DATA_FILES`) nur dann erhöhen, wenn sich
+Anzahl oder Bedeutung der Stufen ändert; einzelne Umstufungen erscheinen wie alle Bierdaten ab dem übernächsten Start.
+
 ## Spezialkarten
 
 `Datensammlung/spezialkarten.json` ist eine Liste von Spezialkarten. Jede Karte hat:
@@ -263,18 +292,23 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 | --- | --- |
 | `id` | eindeutiger Name (Text) |
 | `titel` | steht im Band der Karte statt der Kategorie (höchstens 40 Zeichen) |
-| `design` | `baer` (wie Standardgebräu, aber der Berliner Bär statt der Flasche), `sticker` (wie Standardgebräu, mit rundem blauem „BB“-Sticker), `sanchi` (eigenständig, nachtviolett), `noir` (eigenständig, Schwarz-Weiß im Comic-Stil), `regenbogen` (eigenständig, Regenbogen mit Glitzer), `hopfen` (eigenständig, ganz in Grün mit großen abstrakten Blättern), `koenig` (eigenständig, gesteppter roter Samt mit Edelsteinen und Gold), `weltall` (eigenständig, Weltall mit glitzernden Sternen), `spezial-rot` / `spezial-tuerkis` / `spezial-orange` / `spezial-rosa` (eigenständig, ganz schlichte Einfarb-Karte in gedecktem Rot, Türkis, Orange bzw. Rosa) oder eines der Länder-Symbole: `kuckucksuhr` (BW), `brezel` (Bayern), `gurke` (Brandenburg), `schluessel` (Bremen), `anker` (Hamburg), `bembel` (Hessen), `leuchtturm` (Mecklenburg-Vorpommern), `schaf` (Niedersachsen), `dom` (NRW), `traube` (Rheinland-Pfalz), `hammer` (Saarland), `schwibbogen` (Sachsen), `nebra` (Sachsen-Anhalt), `strandkorb` (Schleswig-Holstein), `bratwurst` (Thüringen) – wie Standardgebräu, aber das Wahrzeichen statt der Flasche |
-| `punkte` | optional, z. B. `1.0`: Punkte je Trinken statt der Punkte der Stufe (1,0 bis 1,6 in Zehnteln) |
+| `design` | `baer` (wie Standardgebräu, aber der Berliner Bär statt der Flasche), `sticker` (wie Standardgebräu, mit rundem blauem „BB“-Sticker), `sanchi` (eigenständig, nachtviolett), `noir` (eigenständig, Schwarz-Weiß im Comic-Stil), `regenbogen` (eigenständig, Regenbogen mit Glitzer), `hopfen` (eigenständig, ganz in Grün mit großen abstrakten Blättern), `koenig` (eigenständig, gesteppter roter Samt mit Edelsteinen und Gold), `weltall` (eigenständig, Weltall mit glitzernden Sternen), `spezial-rot` / `spezial-tuerkis` / `spezial-orange` / `spezial-rosa` (eigenständig, ganz schlichte Einfarb-Karte in gedecktem Rot, Türkis, Orange bzw. Rosa), `raddelfuss` (eigenständig, rot-weißes Karo mit Zuckerstangen-Rahmen) oder eines der Länder-Symbole: `kuckucksuhr` (BW), `brezel` (Bayern), `gurke` (Brandenburg), `schluessel` (Bremen), `anker` (Hamburg), `bembel` (Hessen), `leuchtturm` (Mecklenburg-Vorpommern), `schaf` (Niedersachsen), `dom` (NRW), `traube` (Rheinland-Pfalz), `hammer` (Saarland), `schwibbogen` (Sachsen), `nebra` (Sachsen-Anhalt), `strandkorb` (Schleswig-Holstein), `bratwurst` (Thüringen) – wie Standardgebräu, aber das Wahrzeichen statt der Flasche |
+| `punkte` | optional, z. B. `1.0`: Punkte je Trinken statt der Punkte der Stufe (1,0 bis 2,5 in Zehnteln) |
+| `bonus` | optional, z. B. `1.0`: Extrapunkte zusätzlich zu den Punkten der Stufe (0,0 bis 1,0 in Zehnteln; gilt nicht, wenn `punkte` gesetzt ist) |
 | `biere` | Liste der Bier-IDs, für die die Karte gilt |
 
 - Die Kategorie (Stufe) des Biers, die Statistik „Sammlung“ und die Sortierung bleiben unverändert; nur Band, Aussehen und ggf. Punkte ändern sich.
+  Auf der Karte ist die echte Kategorie nicht zu sehen (auch nicht unter „Kategorie“ in der Kartenansicht), nur der Titel der Spezialkarte.
 - Ein Bier gehört höchstens zu einer Spezialkarte (die erste in der Datei gilt). Unbekannte IDs und ungültige Einträge werden mit einer Warnung in der
   Browser-Konsole ignoriert; fehlt die Datei, gibt es keine Spezialkarten.
-- Ändert man `punkte` oder die Biere einer Karte, verschieben sich die Punkte aller Spieler, die diese Biere getrunken haben, rückwirkend.
+- Ändert man `punkte`, `bonus` oder die Biere einer Karte, verschieben sich die Punkte aller Spieler, die diese Biere getrunken haben, rückwirkend.
 - Neue Datei oder neue Bier-IDs brauchen keine neue `CACHE_VERSION`; sie erscheinen wie alle Bierdaten ab dem übernächsten Start.
 
 Vorhandene Karten (Stand 19.11.2026): die **Legenden** der Bundesländer (je 5 bis 10 bekannte Biere des Landes, Berlin 4; Titel „BW Legende“, „Bayern Legende“,
 „Märkische Legende“ (Brandenburg), „Bremer Legende“, „Hamburger Legende“, „Hessen Legende“, „MV Legende“, „Nieders. Legende“, „NRW Legende“, „RLP Legende“,
 „Saarland Legende“, „Sachsen Legende“, „Anhalt Legende“ (Sachsen-Anhalt), „SH Legende“, „Thüringen Legende“, dazu „Berliner Legende“), **Bierball-Bier**,
-**Sanchi**, **Schwarze Nachtigal** (Design `noir`) und **Spezial-Edition 04** (Design `regenbogen`) (die drei letzten mit je 40 Standardgebräu-Bieren) sowie **Heiliger Hopfen** (Design `hopfen`), **Bierkönig** (Design `koenig`) und **Außenseiter** (Design `weltall`) mit je 35 Standardgebräu-Bieren. Die Legenden ändern keine Punkte.
-Dazu kommen **Spezial Rot**, **Spezial Türkis**, **Spezial Orange** und **Spezial Rosa** (ids `spezial-rot|tuerkis|orange|rosa`, gleichnamige Designs) mit je 40 Standardgebräu-Bieren und Standardpunkten.
+Bierball-Bier und die Legenden sind von Hand gewählt und ändern keine Punkte (Bierball: feste 1,0).
+Dazu kommen elf **Zufallskarten** mit je 40 Bieren und `"bonus": 1.0`: **Sanchi**, **Schwarze Nachtigal** (Design `noir`), **Spezial-Edition 04** (Design `regenbogen`),
+**Heiliger Hopfen** (`hopfen`), **Bierkönig** (`koenig`), **Außenseiter** (`weltall`), **Spezial Rot**, **Spezial Türkis**, **Spezial Orange**, **Spezial Rosa** und **Raddelfuß** (`raddelfuss`).
+Sie wurden am 19.11.2026 neu gezogen, nur aus Klassiker bis Heiligtum (kein Standardgebräu), je Karte 9 Klassiker, 10 Spezialitäten, 10 Zaubertränke und 11 Heiligtümer,
+ohne Biere der Legenden und ohne Doppelungen.
