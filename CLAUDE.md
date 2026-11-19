@@ -248,8 +248,9 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 
 ## Bekannte Grenzen und offene Punkte
 
-- Icons (18.11.2026): `icons/` aus dem Bild des Nutzers (512 × 512, gelber Grund, Flaschen mit „BIER Sammler“) erzeugt. `icon-maskable-512.png` hat
-  den Grund aufgefüllt und das Motiv auf 72 % verkleinert (Sicherheitszone). Auf dem iPhone erscheint das neue Symbol erst, wenn die
+- Icons (19.11.2026, ersetzt die vom 18.11.): `icons/` aus dem neuen Bild des Nutzers (512 × 512, cremefarbener Grund mit Höhenlinien, braune Bierflasche)
+  erzeugt, mit `sips` skaliert, Alphakanal entfernt (Umweg über JPEG; iOS zeichnet sonst Schwarz). `icon-maskable-512.png` = dasselbe Bild unverändert:
+  Der Grund füllt schon das ganze Quadrat und die Flasche liegt innerhalb der Sicherheitszone (Kreis, Radius 40 %). Auf dem iPhone erscheint das neue Symbol erst, wenn die
   Web-App vom Home-Bildschirm entfernt und neu hinzugefügt wird.
 - Rangliste: Werte vom Client, fälschbar (bewusst hingenommen). Neue Regeln müssen VOR der neuen App-Version in der
   Konsole stehen. Ein Spieler ohne Netz erscheint erst nach der ersten Serverbestätigung. Eine Wochen-Rangliste gibt es nicht.
