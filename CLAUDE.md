@@ -158,6 +158,15 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
 - Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (hell/dunkel, 390 px und Desktop, große Kartenansicht, Karten-Level 1/4/8/24/40).
   NICHT getestet: iPhone/Safari (Masken, `clip-path`, Verlaufsrahmen mit `border-box`), Service Worker mit der neuen Datei, echtes Firebase.
 
+- **Neuer Berliner Bär (19.11.2026, Wunsch des Nutzers):** Der gezeichnete Bär (Zunge, Nase, Auge, Strich-Gliedmaßen) wurde durch die Silhouette aus einer
+  Vorlage des Nutzers ersetzt (schwarzer Wappenbär, schaut nach LINKS). Wichtig für den Nutzer: Es ist ein Berliner Wahrzeichen, die Form muss exakt der
+  Vorlage entsprechen – `BEAR_PATH` in `js/app.js` NIE von Hand ändern oder „verschönern“. Erzeugt per Skript (nur im Scratchpad): Marching Squares auf der
+  Helligkeit des Bildes (509 × 360 px), ein Ring, Douglas-Peucker mit 0,35 px, auf Höhe 82 im Bildfeld 60 × 86 skaliert (x 6…54, y 2…84), 161 Punkte.
+  Geprüft: gegen das Originalbild gerastert 99,4 % deckungsgleich (146 von 24.946 Pixeln abweichend, davon 144 im Kantensaum).
+  Farbe wie die Wahrzeichen (Theme, golden bei Lvl 40; Entscheidung des Nutzers). Eigene Sternplätze `BEAR_STARS`/`BEAR_STARS_MORE` (die üblichen
+  `HERO_STARS` lagen auf den Pfoten); geprüft, dass kein Stern den Bären berührt. CSS-Regeln `.leg`, `.arm`, `.tongue`, `.nose`, `.eye` entfernt.
+  Getestet: eingebauter Browser 375 px hell/dunkel, Lvl 1/24/40, große Ansicht. NICHT getestet: iPhone/Safari.
+
 ## Standort-Karte (19.11.2026)
 
 Alles trägt die Markierung `STANDORT-KARTE` (Kommentare in `js/app.js`, `js/store.js`, `js/game.js`, `index.html`, `sw.js`, `css/style.css`, `firestore.rules`).

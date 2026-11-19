@@ -125,25 +125,22 @@
   }
   const BOTTLE = bottle();
 
-  // Sterne um Bär und Wahrzeichen (Bildfeld 60 × 86; ab Kartenstufe 4, bei 5 mehr)
-  const heroStars = (tier) => tier >= 4
-    ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
+  /* Sterne um Bär und Wahrzeichen (Bildfeld 60 × 86; ab Kartenstufe 4, bei 5 drei weitere). Je Stern [x, y, Radius, Verzögerung].
+     Der Bär hat eigene Plätze: Er streckt die Pfoten nach links, dort würden die üblichen Sterne ihn überdecken. */
+  const HERO_STARS = [[5, 30, 5, 0], [55, 52, 6, 0.7], [3, 70, 3.5, 1.4]];
+  const HERO_STARS_MORE = [[56, 14, 4, 0.35], [2, 50, 3, 1.05], [54, 76, 3.5, 1.75]];
+  const BEAR_STARS = [[12, 7, 5, 0], [56.5, 44, 4.5, 0.7], [6, 62, 3.5, 1.4]];
+  const BEAR_STARS_MORE = [[57.5, 21, 3.5, 0.35], [4.5, 32, 3, 1.05], [57, 70, 3.5, 1.75]];
+  const heroStars = (tier, base = HERO_STARS, more = HERO_STARS_MORE) => tier >= 4
+    ? `<g class="stars">${base.concat(tier >= 5 ? more : []).map((s) => star(...s)).join('')}</g>`
     : '';
 
-  /* Berliner Bär (Spezialkarte „baer“) statt der Flasche: aufrecht schreitend, Zunge rot. Gleiche Kartenstufen wie die Flasche:
-     ab 4 Sterne, bei 5 golden. Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel), siehe .bear in css/style.css. */
-  function bear(tier = 0) {
-    return `<svg class="bottle bear${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">
-      <path class="body" d="M19 58q-6 1-7 6q4-1 8-3z"/>
-      <path class="limb leg" d="M25 58Q21 70 14 80M32 58Q37 68 44 78"/>
-      <ellipse class="body" cx="11.5" cy="82" rx="7.5" ry="3.2" transform="rotate(-8 11.5 82)"/><ellipse class="body" cx="47.5" cy="80.5" rx="7.5" ry="3.2" transform="rotate(12 47.5 80.5)"/>
-      <path class="body" d="M24 28C17 34 15 48 19 60C24 66 34 66 38 58C41 48 40 36 34 28C31 26 27 26 24 28z"/>
-      <path class="limb arm" d="M34 34Q44 35 52 31M36 43Q45 49 52 46"/>
-      <circle class="body" cx="33" cy="19" r="10.5"/><circle class="body" cx="27" cy="10" r="3.8"/><circle class="body" cx="38.5" cy="9" r="3.8"/>
-      <ellipse class="body" cx="43.5" cy="22" rx="8.5" ry="5.4"/>
-      <ellipse class="nose" cx="50" cy="20.5" rx="2" ry="1.5"/><circle class="eye" cx="38" cy="16" r="1.4"/>
-      <path class="tongue" d="M41 26.4q3 7.2 6.2 0z"/>${heroStars(tier)}</svg>`;
-  }
+  /* Berliner Bär (Spezialkarte „baer“) statt der Flasche. Der Umriss ist aus der Vorlage des Nutzers (Wappenbär-Silhouette, schaut
+     nach links) Punkt für Punkt nachgefahren und darf NICHT von Hand verändert werden: Es ist ein Berliner Wahrzeichen, kein eigenes Motiv.
+     Gleiche Kartenstufen wie die Flasche: ab 4 Sterne, bei 5 golden. Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel),
+     siehe .bear in css/style.css. */
+  const BEAR_PATH = 'M42.38 2.01 45.34 2.23 48.34 2.81 52.25 2.81 53.46 3.51 53.83 4.11 53.95 4.71 53.87 5.92 53.11 8.02 52.97 8.92 53.23 13.74 53.01 16.44 51.87 20.35 51.59 22.16 51.59 27.57 51.42 29.98 50.79 32.68 48.87 38.7 48.49 41.41 48.53 42.91 48.85 44.41 51.42 52.83 52.46 57.65 52.53 58.85 52.38 60.35 51.3 62.76 51.19 63.66 51.56 69.08 52.33 73.89 52.32 75.99 52.08 76.9 51.39 78.1 50.15 79.35 48.04 80.88 45.34 82.45 43.53 83.23 42.33 83.43 41.13 83.36 40.22 82.94 39.53 82.31 38.97 81.41 38.62 80.51 38.66 79.9 39.02 79.39 39.65 79 42.93 77.93 43.62 77.2 43.55 76.6 42.63 75.35 39.8 72.99 37.53 69.38 36.32 67.87 35.11 67.18 34.21 67.18 32.7 67.73 31.2 68.65 28.49 70.79 26.09 73.1 25.06 74.49 24.2 76.29 23.87 77.5 23.47 80.51 23.08 81.96 22.63 82.91 21.88 83.68 21.27 83.94 19.47 83.89 17.97 83.32 15.26 81.94 11.35 80.91 10.15 80.34 9.36 79.6 8.86 78.7 8.73 77.5 8.85 76.6 9.55 75.57 10.75 74.96 12.25 75.01 15.56 76.11 16.16 76.1 16.76 75.81 17.18 75.39 17.77 74.19 17.99 72.99 17.78 66.07 17.9 64.87 18.52 62.76 19.67 60.65 21.58 58.54 23.68 56.97 27.29 55.09 27.71 54.64 27.8 53.74 27.61 48.32 27.29 47.55 26.69 47.3 23.08 48.43 21.58 48.72 17.97 48.83 15.26 48.42 12.85 47.53 10.45 45.99 8.28 43.81 7.6 42.61 7.01 41.11 6.71 39.9 6.67 38.4 6.94 37.8 7.44 37.36 8.34 37.32 9.55 37.67 11.65 38.84 13.76 40.87 14.36 41.24 15.56 41.45 17.06 41.16 18.57 40.59 22.78 38.32 25.18 37.31 25.66 36.89 25.89 36.29 25.49 35.85 15.26 28.8 10.72 24.86 8.59 22.46 6.54 19.44 6.06 17.95 6.18 15.84 6.81 14.64 8.34 13.7 9.85 13.43 11.05 13.62 11.95 14.13 12.71 14.94 14.9 19.15 15.62 20.05 16.76 21.06 19.17 22.27 22.48 23.47 29.09 25.2 30.6 25.25 31.76 24.56 33.91 22.41 36.71 20.05 37.38 19.15 37.68 18.25 37.6 17.65 36.91 16.91 35.71 16.27 32.4 15.02 31.5 14.46 30.52 13.44 29.87 12.23 29.26 9.83 29.17 7.12 29.62 5.62 30 5.2 30.6 4.9 34.81 4.8 39.02 2.58 40.22 2.23z';
+  const bear = (tier = 0) => `<svg class="bottle bear${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true"><path class="body" d="${BEAR_PATH}"/>${heroStars(tier, BEAR_STARS, BEAR_STARS_MORE)}</svg>`;
 
   /* Wahrzeichen der Länder-Legenden (Spezialkarten „kuckucksuhr“ … „bratwurst“) statt der Flasche, wie der Bär: gleiche Größe (60 × 86),
      gleiche Kartenstufen (ab 4 Sterne, bei 5 golden). Klassen: body (gefüllt, Farbe folgt dem Theme), limb (Strich), cut (Aussparung in

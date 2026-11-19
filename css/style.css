@@ -538,15 +538,11 @@ button.bcard:active { transform: scale(0.98); }
 }
 
 /* ---------- Spezialkarten (Datensammlung/spezialkarten.json, Aussehen je „design“) ---------- */
-/* baer (Berliner Legende): wie Standardgebräu (Klasse k1), aber statt der Flasche der Berliner Bär. Er folgt dem Theme
-   (dunkel auf hell, hell auf dunkel), Zunge rot. Kartenstufen wie bei der Flasche: ab Stufe 4 Sterne, bei 5 golden. */
+/* baer (Berliner Legende): wie Standardgebräu (Klasse k1), aber statt der Flasche der Berliner Bär (Silhouette, ein Pfad). Er folgt dem
+   Theme (dunkel auf hell, hell auf dunkel). Kartenstufen wie bei der Flasche: ab Stufe 4 Sterne, bei 5 golden. */
 .bottle.bear { width: 44px; height: 62px; --bear: var(--text); }
 .bear .body { fill: var(--bear); stroke: none; }
 .bear .limb { fill: none; stroke: var(--bear); stroke-linecap: round; }
-.bear .leg { stroke-width: 8; }
-.bear .arm { stroke-width: 7; }
-.bear .tongue { fill: #D32F2F; }
-.bear .nose, .bear .eye { fill: var(--surface); }
 .bear.t5 .limb { stroke: #F2C14E; }
 .bear .cut { fill: var(--surface); stroke: none; }
 .bear .cutline { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-linejoin: round; }
