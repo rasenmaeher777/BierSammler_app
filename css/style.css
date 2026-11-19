@@ -253,6 +253,7 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .k4 { --k: var(--k4); --on-k: var(--on-k4); }
 .k5 { --k: var(--k5); --on-k: var(--on-k5); }
 .k6 { --k: var(--k6); --on-k: var(--on-k6); }
+.sp-sanchi { --k: #FFC93C; --on-k: #1B1038; } /* Spezialkarte „Sanchi“ (feste Farben, gelten in hell und dunkel gleich) */
 /* Raster: Smartphone 2 Spalten (beste Karten: 2 × 3), breiter mehr Spalten.
    Die besten 6 Karten stehen ab 641px in 3, ab 1000px in 6 Spalten, damit keine Lücke in der letzten Reihe bleibt. */
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -530,6 +531,68 @@ button.bcard:active { transform: scale(0.98); }
               linear-gradient(135deg, #fbe9a0, #c98f14, #fff3b8, #b27408, #f2c14e) border-box;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--k6) 80%, #000), 0 0 18px color-mix(in srgb, var(--k6) 55%, transparent), 0 2px 10px var(--shadow);
 }
+
+/* ---------- Spezialkarten (Datensammlung/spezialkarten.json, Aussehen je „design“) ---------- */
+/* baer (Berliner Legende): wie Standardgebräu (Klasse k1), aber statt der Flasche der Berliner Bär. Er folgt dem Theme
+   (dunkel auf hell, hell auf dunkel), Zunge rot. Kartenstufen wie bei der Flasche: ab Stufe 4 Sterne, bei 5 golden. */
+.bottle.bear { width: 44px; height: 62px; --bear: var(--text); }
+.bear .body { fill: var(--bear); stroke: none; }
+.bear .limb { fill: none; stroke: var(--bear); stroke-linecap: round; }
+.bear .leg { stroke-width: 8; }
+.bear .arm { stroke-width: 7; }
+.bear .tongue { fill: #D32F2F; }
+.bear .nose, .bear .eye { fill: var(--surface); }
+.bear.t5 .limb { stroke: #F2C14E; }
+.bear.t5 .body { stroke: #B9820A; stroke-width: 0.8; }
+
+/* sticker (Bierball-Bier): wie Standardgebräu, dazu ein „BB“-Stempel in gedecktem Marineblau auf der linken oberen Ecke des Zierrahmens.
+   Flach, ohne Glanz und Schatten; der Kartengrund als Rand schneidet ihn aus dem Rahmen heraus, ein feiner Innenring
+   in Cremeweiß nimmt das Zierlinien-Motiv der Karte auf (Creme auf Marine 8,6 : 1). Liegt direkt in der Karte (nicht im
+   Inhalt), damit er über dem Zierrahmen (z-index 3) steht. */
+.sticker {
+  position: absolute; top: 33px; left: 3px; z-index: 5;
+  display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%;
+  border: 2px solid var(--surface); background: #2A4F85; color: #FFF6E0;
+  box-shadow: inset 0 0 0 2px #2A4F85, inset 0 0 0 3px rgb(255 246 224 / 0.75);
+  font: 800 11px/1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; letter-spacing: 0.03em;
+  transform: rotate(-8deg); pointer-events: none;
+}
+.card-view .sticker { top: 35px; left: 3px; width: 38px; height: 38px; font-size: 13px; }
+
+/* sanchi: eigenständiges Design ohne Verwandtschaft zu den Kategorie-Karten: nachtviolett mit abstrakten Kreisen und Bändern
+   in Gelb, Koralle, Türkis und Violett, Schrägband mit Verlauf statt des geraden Balkens, gestrichelter Innenrahmen,
+   stärker gerundete Ecken, bunter Verlaufsrahmen. Alle Farben fest (gleich in hell und dunkel); die Schrift ist weiß. */
+.bcard.sp-sanchi {
+  --surface: #1B1038; --surface-2: rgb(255 255 255 / 0.14); --text: #FFFFFF; --muted: #DDD3FF;
+  --kt: #FFC93C; --bk: #FFC93C; --glow: rgb(123 92 255 / 0.5);
+  border: 3px solid transparent; border-radius: 24px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+              conic-gradient(from 210deg, #FF5E5B, #FFC93C, #2EE6C8, #7B5CFF, #FF5E5B) border-box;
+  box-shadow: 0 0 0 1px rgb(27 16 56 / 0.55), 0 4px 14px rgb(123 92 255 / 0.35);
+}
+.sp-sanchi .mat {
+  background:
+    radial-gradient(circle at 90% 17%, rgb(255 94 91 / 0.9) 0 11%, transparent 11.6%),
+    radial-gradient(circle at 90% 17%, transparent 0 16%, rgb(255 201 60 / 0.85) 16.6% 18%, transparent 18.6%),
+    radial-gradient(circle at 6% 92%, rgb(46 230 200 / 0.85) 0 15%, transparent 15.6%),
+    radial-gradient(circle at 6% 92%, transparent 0 21%, rgb(123 92 255 / 0.9) 21.6% 24%, transparent 24.6%),
+    linear-gradient(118deg, transparent 0 44%, rgb(255 94 91 / 0.2) 44% 49%, rgb(255 201 60 / 0.16) 49% 56%, transparent 56%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.05) 0 5px, transparent 5px 10px),
+    linear-gradient(160deg, #3A1C7A, #1B1038 58%, #4A1A5E);
+}
+.sp-sanchi .mat::before { display: none; }
+.sp-sanchi .mat::after { opacity: 0.2; }
+.bcard.sp-sanchi::before {
+  inset: 38px 5px 5px; -webkit-mask: none; mask: none; background: none;
+  border: 1.5px dashed rgb(255 255 255 / 0.38); border-radius: 14px;
+}
+.sp-sanchi .band { box-shadow: none; }
+.sp-sanchi .band .kat {
+  background: linear-gradient(90deg, #FF5E5B, #FFC93C 55%, #2EE6C8); color: #1B1038;
+  font-weight: 850; letter-spacing: 0.22em; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 14px 100%);
+}
+.sp-sanchi .origin::before, .sp-sanchi .origin::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4)); }
 
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */

@@ -36,6 +36,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
 | `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
 | `Datensammlung/kategorien.json` | Die sechs Kategorien |
+| `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
 | `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
@@ -227,3 +228,21 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Liegt die Geräteuhr mehr als 5 Minuten vor, lehnt Firestore neue Einträge ab (Schutz gegen Einträge in der Zukunft).
 - Ist die App beim Abmelden in einem zweiten Tab offen, kann die lokale Kopie erst gelöscht werden, wenn dieser Tab
   ebenfalls neu lädt.
+
+## Spezialkarten
+
+`Datensammlung/spezialkarten.json` ist eine Liste von Spezialkarten. Jede Karte hat:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `id` | eindeutiger Name (Text) |
+| `titel` | steht im Band der Karte statt der Kategorie (höchstens 40 Zeichen) |
+| `design` | `baer` (wie Standardgebräu, aber der Berliner Bär statt der Flasche), `sticker` (wie Standardgebräu, mit rundem blauem „BB“-Sticker) oder `sanchi` (eigenständiges Design) |
+| `punkte` | optional, z. B. `1.0`: Punkte je Trinken statt der Punkte der Stufe (1,0 bis 1,6 in Zehnteln) |
+| `biere` | Liste der Bier-IDs, für die die Karte gilt |
+
+- Die Kategorie (Stufe) des Biers, die Statistik „Sammlung“ und die Sortierung bleiben unverändert; nur Band, Aussehen und ggf. Punkte ändern sich.
+- Ein Bier gehört höchstens zu einer Spezialkarte (die erste in der Datei gilt). Unbekannte IDs und ungültige Einträge werden mit einer Warnung in der
+  Browser-Konsole ignoriert; fehlt die Datei, gibt es keine Spezialkarten.
+- Ändert man `punkte` oder die Biere einer Karte, verschieben sich die Punkte aller Spieler, die diese Biere getrunken haben, rückwirkend.
+- Neue Datei oder neue Bier-IDs brauchen keine neue `CACHE_VERSION`; sie erscheinen wie alle Bierdaten ab dem übernächsten Start.

@@ -39,7 +39,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `firestore.rules` | Regeln (Nutzer fügt sie in der Konsole ein) |
 | `tests/game.test.js` | Node-Tests der Spiellogik |
 | `impressum.html`, `datenschutz.html` | Nur Platzhalter, KEINE Rechtstexte erfinden |
-| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `scraper/` |
+| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `spezialkarten.json`, `scraper/` |
 
 Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 
@@ -88,6 +88,26 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
 - Stufenlisten im Code stammen aus `GAME.STUFEN` (aus `POINTS`); Neue Stufe = `POINTS`, `kategorien.json`/Scraper, CSS (`--kN`, `.kN`, Muster, Rahmen, Band, drei Farbblöcke), Tests.
 - Design Raddelfuß (`.k4`): Rot `--k4` (hell `#C62F2F`, dunkel `#F08A82`), rot-weißes Karo als Material (Maske aus zwei Streifenscharen), Zuckerstangen-Rahmen
   (rot-weiße Schrägstreifen, 3 px), Band rot mit zwei weißen Zierlinien, keine Holo-Folie und kein wandernder Glanz (die bleiben Zaubertrank und Heiligtum).
+
+## Spezialkarten (19.11.2026)
+
+- `Datensammlung/spezialkarten.json` (Format und Regeln in der README): Liste `{ id, titel, design, punkte?, biere[] }`. Der Nutzer pflegt sie selbst.
+  Verarbeitung in `GAME.cleanSpecials` / `applySpecials` (innerhalb von `mergeBeers`, 6. Parameter). Jedes Bier bekommt `label` (Band-Text), `look`
+  (CSS-Klassen der Karte, z. B. `k1 sp-baer`), `punkte` (Zehntel oder null) und `spezial` (null oder `{ id, titel, design }`). `GAME.beerPoints(beer)` gilt
+  überall statt `pointsFor(beer.stufe)`. Kategorie/Stufe, Statistik „Sammlung“ und Sortierung bleiben unberührt (nur Band, Aussehen, ggf. Punkte).
+- Drei Karten: **Berliner Legende** (`baer`, wie Standardgebräu `k1`, statt der Flasche der Berliner Bär, `bear()` in `js/app.js`; Farbe folgt dem Theme, ab 24 Mal
+  Sterne, bei Lvl 40 golden): `BS-001490` Berliner - Pilsner, `BS-002764` Kindl Jubiläums Pilsener Premium, `BS-000885` Kindl Bock (nur „Bock“, nicht „Bock dunkel“
+  `BS-000896`; der Nutzer hat die Frage nicht beantwortet, empfohlene Lesart), `BS-000882` Schultheiss Pilsener. **Bierball-Bier** (`sticker`, wie Standardgebräu, flacher
+  „BB“-Stempel in Marineblau mit Creme-Innenring auf der linken oberen Ecke des Zierrahmens, Kartengrund als Rand, kein Glanz/Schatten; sitzt direkt in der Karte statt im
+  Inhalt, damit er über dem Rahmen liegt; `punkte` 1.0): `BS-000887` Sternburg - Export (bleibt Klassiker, bringt aber nur 1,0 statt 1,1 Punkte; rückwirkend für Spieler,
+  die es getrunken haben) und `BS-000057` Oettinger - Export. **Sanchi** (`sanchi`, eigenständig: nachtviolett mit abstrakten Kreisen und Bändern, Schrägband mit
+  Verlauf und Großbuchstaben, gestrichelter Innenrahmen, bunter Verlaufsrahmen, feste Farben in hell und dunkel): 40 zufällig gezogene Standardgebräu-Biere
+  (`random.Random("sanchi-2026-11-19").sample`, aus den 3.195 übrigen `BS`-Standardgebräu-Bieren, einmalig gezogen und fest in der Datei; nicht neu würfeln).
+- Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
+- `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
+  `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.
+- Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (hell/dunkel, 390 px und Desktop, große Kartenansicht, Karten-Level 1/4/8/24/40).
+  NICHT getestet: iPhone/Safari (Masken, `clip-path`, Verlaufsrahmen mit `border-box`), Service Worker mit der neuen Datei, echtes Firebase.
 
 ## Glückskeks-Sprüche (18.11.2026)
 

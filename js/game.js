@@ -18,6 +18,8 @@
   const LEVEL_POINTS = 100; // 10 Punkte = 1 Level
 
   const pointsFor = (stufe) => POINTS[stufe] || 0;
+  // Punkte eines Biers in Zehnteln: eigene Punkte der Spezialkarte, sonst die Punkte seiner Stufe
+  const beerPoints = (beer) => (beer && Number.isInteger(beer.punkte) ? beer.punkte : pointsFor(beer && beer.stufe));
   // Man startet bei Level 1; Überschuss wird ins nächste Level mitgenommen
   const level = (sum) => Math.floor(sum / LEVEL_POINTS) + 1;
   const ringTenths = (sum) => sum % LEVEL_POINTS;          // Punkte im laufenden Level (Zehntel)
@@ -91,7 +93,61 @@
       flasche: flasche > 0 ? flasche : null,
       stufe,
       kategorie: (katNames && katNames[stufe]) || str(raw.kategorie_name) || '',
+      // Darstellung: Beschriftung im Band, CSS-Klassen der Karte, eigene Punkte; bei Spezialkarten von applySpecials überschrieben
+      label: (katNames && katNames[stufe]) || str(raw.kategorie_name) || '',
+      look: `k${stufe}`,
+      punkte: null,
+      spezial: null,
     };
+  }
+
+  /* ---------- Spezialkarten (Datensammlung/spezialkarten.json) ---------- */
+
+  /* Jede Spezialkarte hat einen Titel (steht im Band statt der Kategorie), ein Aussehen und eine Liste von Bier-IDs:
+       baer     wie Standardgebräu, aber statt der Flasche der Berliner Bär
+       sticker  wie Standardgebräu, mit rundem blauem „BB“-Sticker
+       sanchi   eigenständiges Design
+     Optional "punkte" (z. B. 1.0): ersetzt die Punkte der Stufe für diese Biere. Kategorie (Stufe) und Sammlung bleiben unberührt. */
+  const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi' };
+  const DESIGNS = Object.keys(SPECIAL_DESIGNS);
+
+  // Rohdaten prüfen; ungültige Karten fallen mit Warnung weg. Ergebnis: [{ id, titel, design, punkte (Zehntel oder null), biere }]
+  function cleanSpecials(raw, warn = () => {}) {
+    if (raw == null) return [];
+    if (!Array.isArray(raw)) { warn('spezialkarten.json: keine Liste, wird ignoriert'); return []; }
+    const out = [];
+    const seen = new Set();
+    raw.forEach((r, i) => {
+      const where = `spezialkarten.json: Eintrag ${i + 1}`;
+      const id = r && typeof r.id === 'string' ? r.id.trim() : '';
+      const titel = r && str(r.titel);
+      if (!id || !titel || titel.length > 40 || !DESIGNS.includes(r.design) || !Array.isArray(r.biere)) { warn(`${where} ungültig, wird ignoriert`); return; }
+      if (seen.has(id)) { warn(`${where}: doppelte ID „${id}“, wird ignoriert`); return; }
+      seen.add(id);
+      let punkte = null;
+      if (r.punkte != null) {
+        const t = Math.round(r.punkte * 10);
+        if (typeof r.punkte === 'number' && Math.abs(r.punkte * 10 - t) < 1e-9 && t >= POINTS[1] && t <= POINTS[MAX_STUFE]) punkte = t;
+        else warn(`${where}: ungültige Punkte (erlaubt: 1,0 bis 1,6 in Zehnteln), Standardpunkte der Stufe gelten`);
+      }
+      out.push({ id, titel, design: r.design, punkte, biere: r.biere.filter((b) => typeof b === 'string') });
+    });
+    return out;
+  }
+
+  // Spezialkarten auf die Biere legen. Ein Bier gehört höchstens zu einer Karte (die erste gilt); unbekannte IDs werden gemeldet.
+  function applySpecials(map, specials, warn = () => {}) {
+    for (const sp of specials) {
+      for (const id of sp.biere) {
+        const beer = map.get(id);
+        if (!beer) { warn(`spezialkarten.json: „${sp.titel}“: unbekannte ID ${id}, wird ignoriert`); continue; }
+        if (beer.spezial) { warn(`spezialkarten.json: ${id} steht schon auf „${beer.spezial.titel}“, „${sp.titel}“ wird ignoriert`); continue; }
+        beer.spezial = { id: sp.id, titel: sp.titel, design: sp.design };
+        beer.label = sp.titel;
+        beer.look = SPECIAL_DESIGNS[sp.design];
+        beer.punkte = sp.punkte;
+      }
+    }
   }
 
   /* Korrekturen (biere_korrekturen.json): { "BS-000001": { feld: wert, … } } mit den Feldnamen aus biere.json.
@@ -133,9 +189,9 @@
   /* biere.json und biere_manuell.json zusammenführen, danach die Korrekturen darüberlegen.
      Ungültige Einträge werden weggelassen; bei doppelter ID gilt der erste Eintrag (biere.json kommt zuerst).
      warn(text) wird für jede Auffälligkeit aufgerufen (im Browser: console.warn).
-     fixes: Objekt aus biere_korrekturen.json oder undefined.
+     fixes: Objekt aus biere_korrekturen.json oder undefined. specials: Liste aus spezialkarten.json oder undefined.
      Ergebnis: { list, map } mit map = Map(id → Bier). */
-  function mergeBeers(main, manual, kategorien, warn = () => {}, fixes) {
+  function mergeBeers(main, manual, kategorien, warn = () => {}, fixes, specials) {
     const katNames = {};
     for (const k of Array.isArray(kategorien) ? kategorien : []) if (k && Number.isInteger(k.stufe)) katNames[k.stufe] = String(k.name || '');
     const fixMap = fixes && typeof fixes === 'object' && !Array.isArray(fixes) ? fixes : {};
@@ -155,6 +211,7 @@
     take(main, 'biere.json');
     take(manual, 'biere_manuell.json');
     for (const id of Object.keys(fixMap)) if (!map.has(id)) warn(`biere_korrekturen.json: unbekannte ID ${id}, wird ignoriert`);
+    applySpecials(map, cleanSpecials(specials, warn), warn);
     return { list: [...map.values()], map };
   }
 
@@ -245,7 +302,7 @@
     for (const d of drinks) {
       const beer = beerMap.get(d.beerId);
       if (!beer) continue;
-      const p = pointsFor(beer.stufe);
+      const p = beerPoints(beer);
       sum += p;
       count++;
       let c = cards.get(beer.id);
@@ -469,7 +526,7 @@
   const api = {
     POINTS, STUFEN, MAX_STUFE, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
     BOARD_SIZE, rankBoard,
-    pointsFor, level, ring, ringTenths, toNext,
+    pointsFor, beerPoints, SPECIAL_DESIGNS, cleanSpecials, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,
     splitName, cleanBeer, mergeBeers,
     fold, unumlaut, searchEntry, buildIndex, search,

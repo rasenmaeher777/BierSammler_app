@@ -29,6 +29,7 @@
     kategorien: 'Datensammlung/kategorien.json' + STUFEN_MARKE,
     korrekturen: 'Datensammlung/biere_korrekturen.json',
     nachrichten: 'Datensammlung/nachrichten.json', // Glückskeks-Sprüche nach dem Bestätigen eines Biers
+    spezial: 'Datensammlung/spezialkarten.json',   // Spezialkarten: eigener Titel, Aussehen und ggf. Punkte für einzelne Biere
   };
   const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
@@ -79,9 +80,9 @@
     };
     const optional = (url, empty = []) => get(url).catch((err) => { console.warn(`${url} nicht lesbar, wird ignoriert:`, err.message); return empty; });
     try {
-      const [main, manual, kategorien, korrekturen, nachrichten] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {}), optional(BEER_FILES.nachrichten)]);
+      const [main, manual, kategorien, korrekturen, nachrichten, spezial] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {}), optional(BEER_FILES.nachrichten), optional(BEER_FILES.spezial)]);
       db.messages = G.cleanMessages(nachrichten, (text) => console.warn(text));
-      const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text), korrekturen);
+      const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text), korrekturen, spezial);
       db.list = r.list;
       db.map = r.map;
       db.index = G.buildIndex(r.list);
@@ -120,6 +121,24 @@
   }
   const BOTTLE = bottle();
 
+  /* Berliner Bär (Spezialkarte „baer“) statt der Flasche: aufrecht schreitend, Zunge rot. Gleiche Kartenstufen wie die Flasche:
+     ab 4 Sterne, bei 5 golden. Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel), siehe .bear in css/style.css. */
+  function bear(tier = 0) {
+    const stars = tier >= 4
+      ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
+      : '';
+    return `<svg class="bottle bear${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">
+      <path class="body" d="M19 58q-6 1-7 6q4-1 8-3z"/>
+      <path class="limb leg" d="M25 58Q21 70 14 80M32 58Q37 68 44 78"/>
+      <ellipse class="body" cx="11.5" cy="82" rx="7.5" ry="3.2" transform="rotate(-8 11.5 82)"/><ellipse class="body" cx="47.5" cy="80.5" rx="7.5" ry="3.2" transform="rotate(12 47.5 80.5)"/>
+      <path class="body" d="M24 28C17 34 15 48 19 60C24 66 34 66 38 58C41 48 40 36 34 28C31 26 27 26 24 28z"/>
+      <path class="limb arm" d="M34 34Q44 35 52 31M36 43Q45 49 52 46"/>
+      <circle class="body" cx="33" cy="19" r="10.5"/><circle class="body" cx="27" cy="10" r="3.8"/><circle class="body" cx="38.5" cy="9" r="3.8"/>
+      <ellipse class="body" cx="43.5" cy="22" rx="8.5" ry="5.4"/>
+      <ellipse class="nose" cx="50" cy="20.5" rx="2" ry="1.5"/><circle class="eye" cx="38" cy="16" r="1.4"/>
+      <path class="tongue" d="M41 26.4q3 7.2 6.2 0z"/>${stars}</svg>`;
+  }
+
   // Herkunft für den Fuß der Karte (Box, Farbe je Bundesland per CSS über data-o): Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
   // Die beiden längsten Namen werden in der Box gekürzt, damit sie auch auf schmalen Smartphones ganz zu lesen sind
   const ORIGIN_SHORT = { 'Mecklenburg-Vorpommern': 'Meckl.-Vorpommern', 'Nordrhein-Westfalen': 'Nordrhein-Westf.' };
@@ -135,21 +154,22 @@
     const tier = G.cardTier(c.count);
     const origin = originOf(b);
     return `<span class="mat" aria-hidden="true"></span><span class="foil" aria-hidden="true"></span>
-      <span class="band"><span class="kat">${esc(b.kategorie)}</span></span>
+      <span class="band"><span class="kat">${esc(b.label)}</span></span>
       <span class="bcard-body${tier ? ` t${tier}` : ''}">
         ${c.count ? `<b class="count" title="${c.count}-mal getrunken">Lvl ${c.count}</b>` : ''}
-        ${bottle(tier)}
+        ${b.spezial && b.spezial.design === 'baer' ? bear(tier) : bottle(tier)}
         <span class="title">${esc(b.title)}</span>
         ${b.brand ? `<span class="brand">${esc(b.brand)}</span>` : ''}
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
         ${b.sorten.length ? `<span class="sorte">${esc(b.sorten.join(' · '))}</span>` : ''}
       </span>
-      <span class="origin">${origin ? `<span class="o" data-o="${esc(origin)}" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>`;
+      <span class="origin">${origin ? `<span class="o" data-o="${esc(origin)}" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>
+      ${b.spezial && b.spezial.design === 'sticker' ? '<span class="sticker" aria-hidden="true">BB</span>' : ''}`;
   }
-  const cardHtml = (c) => `<div class="bcard k${c.beer.stufe}">${cardInner(c)}</div>`;
+  const cardHtml = (c) => `<div class="bcard ${c.beer.look}">${cardInner(c)}</div>`;
   // Karte im Raster der Startseite: Knopf, der die große Kartenansicht öffnet
-  const cardButton = (c) => `<button class="bcard k${c.beer.stufe}" type="button" data-open="${esc(c.beer.id)}" data-focus="card:${esc(c.beer.id)}"
-      aria-label="${esc(`${c.beer.name}, ${c.beer.kategorie}, ${c.count}-mal getrunken`)}">${cardInner(c)}</button>`;
+  const cardButton = (c) => `<button class="bcard ${c.beer.look}" type="button" data-open="${esc(c.beer.id)}" data-focus="card:${esc(c.beer.id)}"
+      aria-label="${esc(`${c.beer.name}, ${c.beer.label}, ${c.count}-mal getrunken`)}">${cardInner(c)}</button>`;
 
   // Datum und Uhrzeit in Ortszeit: "Mi., 18.11.2026, 14:05"
   const fmtWhen = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -379,7 +399,7 @@
       // Stand VOR dem Speichern festhalten (im Firebase-Modus kommt der neue Stand erst kurz danach per Snapshot)
       const before = summary.sum;
       const old = cardOf(beer.id);
-      const gain = G.pointsFor(beer.stufe);
+      const gain = G.beerPoints(beer);
       // Zeitpunkt = Geräteuhr beim Bestätigen. Nicht auf den Server warten: Die Anzeige kommt aus dem lokalen Stand.
       STORE.add(beer.id, Date.now());
       this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune() };
@@ -456,7 +476,7 @@
         <h3>Über das Bier</h3>
         <dl class="facts">
           ${fact('Name', beer.name)}
-          ${fact('Kategorie', beer.kategorie)}
+          ${fact('Kategorie', beer.label)}
           ${fact(beer.sorten.length > 1 ? 'Sorten' : 'Sorte', beer.sorten.join(' · '))}
           ${fact('Alkohol', G.fmtAlc(beer.alc))}
           ${fact('Flaschengröße', G.fmtLiter(beer.flasche))}
@@ -882,9 +902,9 @@
       cards = summary.cards.slice().sort(byName);
     }
     if (!cards.length) { list.innerHTML = '<li class="note">Keine Karte passt zum Filter.</li>'; return; }
-    list.innerHTML = cards.map((c) => `<li class="k${c.beer.stufe}">
+    list.innerHTML = cards.map((c) => `<li class="${c.beer.look}">
         <span class="coll-name"><span class="coll-title">${esc(c.beer.name)}</span>
-          <span class="coll-sub">${esc(c.beer.kategorie)} · Lvl ${c.count}${c.beer.flasche ? ` · ${esc(G.fmtLiter(c.beer.flasche))}` : ''}</span></span>
+          <span class="coll-sub">${esc(c.beer.label)} · Lvl ${c.count}${c.beer.flasche ? ` · ${esc(G.fmtLiter(c.beer.flasche))}` : ''}</span></span>
         <span class="coll-btns">
           <button class="btn small" type="button" data-set="minus" data-id="${esc(c.beer.id)}" aria-label="${esc(`Letzten Eintrag von ${c.beer.name} löschen`)}">−1</button>
           <button class="btn small danger-ghost" type="button" data-set="delete" data-id="${esc(c.beer.id)}" aria-label="${esc(`Karte ${c.beer.name} löschen`)}">Karte löschen</button>
@@ -921,7 +941,7 @@
     const c = cardOf(id);
     if (!c) return;
     const name = `„${esc(c.beer.name)}“`;
-    const p = G.pointsFor(c.beer.stufe);
+    const p = G.beerPoints(c.beer);
     if (all) {
       const ok = await confirmBox({
         title: 'Karte löschen?',
@@ -1092,7 +1112,7 @@
   }
   function showWelcome() {
     const online = STORE.mode === 'firebase';
-    const lo = G.fmt1(G.pointsFor(1)), hi = fmtPoints(G.pointsFor(5));
+    const lo = G.fmt1(G.pointsFor(1)), hi = fmtPoints(G.pointsFor(G.MAX_STUFE));
     welcomeDlg.innerHTML = `<div class="sheet-head"><h2>Willkommen bei Bier Sammler</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
       <div class="sheet-body welcome">
         <p>Das sind die wichtigsten Regeln:</p>

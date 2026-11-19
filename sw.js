@@ -14,7 +14,7 @@
    js/app.js (STUFEN_MARKE) hochsetzen, sonst läuft neuer Code einmal mit alten Bierdaten. */
 'use strict';
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -44,6 +44,7 @@ const DATA_FILES = [
   'Datensammlung/kategorien.json?stufen=6',
   'Datensammlung/biere_korrekturen.json',
   'Datensammlung/nachrichten.json',
+  'Datensammlung/spezialkarten.json',
 ];
 const SDK_FILES = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map((f) => SDK_BASE + f);
 
