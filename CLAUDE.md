@@ -133,7 +133,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Design bewusst das Gegenteil aller anderen Karten: eine flache Einfarbfläche (`--c`, Schrift/Zeichnung `--ink`, Farben fest in hell und dunkel: Rot `#BD3B44`/Weiß, Türkis `#46B3AC`/`#062F2D`, Orange `#F0883A`/`#3A1A04`, Rosa `#F0A3BC`/`#4A1429`),
   kein Rahmen, Muster, Körnung, Verlauf, Zierrand, keine Folie, kein Balken; alles linksbündig, Band = kleine Großbuchstaben mit kurzem Strich, Titel in System-Sans statt Rounded, Chips und Herkunft nur als Umriss in der Schriftfarbe,
   Flasche einfarbig in der Schriftfarbe (auch auf der höchsten Stufe nicht golden), Karten-Level nur als heller Schimmer hinter der Flasche (`.sp-mono .bcard-body.t1…t5`) plus Glanz/Schaum/Sterne der Flasche. Kein JS nötig (Flasche bleibt das Symbol), nur `SPECIAL_DESIGNS` in `js/game.js`.
-  `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` = `v7` (CSS und Spiellogik geändert; sonst bekäme der Service Worker einmal das alte CSS).
+  `--k` = Kartenfarbe, damit der Farbstreifen in der Sammlungsliste (`border-left: var(--k)`) stimmt. `CACHE_VERSION` = `v9` seit der Plakette (davor v8 mit der Herkunftsfarbe (vorher v7: CSS und Spiellogik geändert; sonst bekäme der Service Worker einmal das alte CSS).
   Getestet: Node-Tests (48, die Spezialkarten-Prüfung der echten Datei um die vier Karten erweitert), eingebauter Browser mit Kopie ohne Schlüssel (430 px, hell und dunkel, Lvl 1/5/8/16/24/40, große Ansicht). NICHT getestet: iPhone/Safari, Desktop-Breite, Sammlungsliste (Streifenfarbe).
 - Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
 - `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
@@ -207,10 +207,12 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
   und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht). Alles wird aus dem
   Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 40 zählt die Zahl weiter.
   „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
+  Plakette `.count` (19.11.2026): sitzt INNERHALB des Zierrahmens (`top`/`right` 13 px, Schrift 12,5 px), damit sie Linie und Ecke des Rahmens nicht mehr überdeckt (vorher 8 px, schnitt die Ecke).
+  Ausnahmen mit eigenem Abstand: Bierkönig (Eckornamente, 22/20 px, 11,5 px) und Schwarze Nachtigal (Doppelrahmen, 17 px, 11,5 px); Spezial-Karten `sp-mono` haben keinen Rahmen (9/12 px). Der BB-Sticker der Bierball-Karte darf den Rahmen bewusst überdecken.
+  Getestet 430 und 375 px (Karten ca. 193 bzw. 165 px breit), Lvl 40 auf allen Designs, große Ansicht Bierkönig; NICHT auf iPhone/Safari.
 - Kartenoptik (18.11.2026, alle Karten gleicher Aufbau, nur das Material wechselt je Kategorie; Schrift unverändert):
   Ebenen `.mat` (Tönung, Muster als SVG-Maske, Körnung), `.foil` (Holo-Folie, nur Zaubertrank/Heiligtum), Zierrahmen
-  (`.bcard::before`), Schriftband (`.band`, ein glatter durchgehender Balken oben, bewusst ohne Zacken und Naht), Herkunft im Fuß (`.origin .o`: kleine Box mit weißer Schrift, Farbe je Bundesland per
-  `data-o` in `style.css` (Berlin rot, alle ≥ 4,5 : 1 zu Weiß), Ausland dunkles Blaugrau; Mecklenburg-Vorpommern und
+  (`.bcard::before`), Schriftband (`.band`, ein glatter durchgehender Balken oben, bewusst ohne Zacken und Naht), Herkunft im Fuß (`.origin .o`: kleine Box mit weißer Schrift, seit 19.11.2026 für alle Bundesländer und Länder EINE Farbe: warmes Graubraun `#5B5246`, Kontrast zu Weiß 7,7 : 1; die frühere Farbe je Bundesland per `data-o` ist entfernt; Mecklenburg-Vorpommern und
   Nordrhein-Westfalen werden in der Box gekürzt), Lichtreflex (`::after`). Materialien: Standardgebräu Karton, Klassiker Leinen, Spezialität
   Kreisgeflecht, Zaubertrank Sternenstaub, Heiligtum gebürstetes Gold. Die Stufe (1–5) darf weiterhin NIE sichtbar sein
   (keine Sterne/Ziffern zum Zählen). Holo-Deckkraft je Theme über `--foil-k4/-k5` (dunkel schwächer, sonst unleserlich;

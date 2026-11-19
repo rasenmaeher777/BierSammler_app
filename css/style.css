@@ -435,12 +435,14 @@ button.bcard:active { transform: scale(0.98); }
   animation: ribbon-sheen 4.4s ease-in-out infinite;
 }
 @keyframes ribbon-sheen { 0%, 55% { background-position: 120% 0, 0 0; } 100% { background-position: -120% 0, 0 0; } }
-/* Zähler „×n“ als Plakette oben rechts in der Karte */
+/* Zähler „Lvl n“ als Plakette oben rechts in der Karte, INNERHALB des Zierrahmens (Rahmen beginnt 7 px unter dem Band und 6 px vom Rand,
+   die Ecke ist 14 px groß): 13 px Abstand von oben und rechts lassen Linie und Ecke ganz frei. Klein gehalten, damit sie auch auf schmalen
+   Karten (ca. 170 px) nicht an die Sterne der Flasche stößt. Bierkönig hat Eckornamente und weicht aus (eigener Wert dort). */
 .count {
-  position: absolute; top: 8px; right: 8px;
-  min-width: 32px; padding: 2px 8px; border-radius: 999px;
+  position: absolute; top: 13px; right: 13px;
+  min-width: 0; padding: 1px 7px; border-radius: 999px;
   background: var(--k); color: var(--on-k);
-  font: 800 14px/1.2 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; text-align: center;
+  font: 800 12.5px/1.3 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; text-align: center;
 }
 .bcard-body { flex: 1; position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 12px 6px; text-align: center; min-width: 0; }
 /* Herkunft unten auf der Karte: Bundesland, bei Bieren aus dem Ausland das Land. Ohne Angabe bleibt nur die Zierlinie. */
@@ -452,30 +454,14 @@ button.bcard:active { transform: scale(0.98); }
 .origin::after { transform: scaleX(-1); }
 .origin:has(.o)::before, .origin:has(.o)::after { display: none; } /* die Box ist selbst der Schmuck und braucht die Breite */
 .origin:has(.o) { justify-content: center; }
-/* Herkunft als kleine Box mit weißer Schrift, je Bundesland eine eigene Farbe (alle mit mindestens 4,5 : 1 zu Weiß).
-   Bei Bieren aus dem Ausland steht das Land in dunklem Blaugrau. Die Farben gelten in hell und dunkel gleich. */
+/* Herkunft als kleine Box mit weißer Schrift, für alle Bundesländer und Länder dieselbe Farbe: ein warmes, dunkles Graubraun (Kontrast zu Weiß 7,7 : 1),
+   das zum Karton-Look der Karten passt und in hell und dunkel gleich bleibt. */
 .origin .o {
   min-width: 0; max-width: 100%; padding: 1px 6px; overflow: hidden; border-radius: 4px;
-  background: var(--bl, #263238); color: #fff;
+  background: #5B5246; color: #fff;
   font-size: 10.5px; font-weight: 750; line-height: 15px; letter-spacing: 0.02em; text-overflow: ellipsis; white-space: nowrap;
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
 }
-.origin .o[data-o="Baden-Württemberg"] { --bl: #C94A00; }
-.origin .o[data-o="Bayern"] { --bl: #1565C0; }
-.origin .o[data-o="Berlin"] { --bl: #D32F2F; }
-.origin .o[data-o="Brandenburg"] { --bl: #7B1FA2; }
-.origin .o[data-o="Bremen"] { --bl: #00838F; }
-.origin .o[data-o="Hamburg"] { --bl: #283593; }
-.origin .o[data-o="Hessen"] { --bl: #00796B; }
-.origin .o[data-o="Mecklenburg-Vorpommern"] { --bl: #5E35B1; }
-.origin .o[data-o="Niedersachsen"] { --bl: #455A64; }
-.origin .o[data-o="Nordrhein-Westfalen"] { --bl: #6D4C41; }
-.origin .o[data-o="Rheinland-Pfalz"] { --bl: #880E4F; }
-.origin .o[data-o="Saarland"] { --bl: #8A6800; }
-.origin .o[data-o="Sachsen"] { --bl: #2E7D32; }
-.origin .o[data-o="Sachsen-Anhalt"] { --bl: #4E7A1F; }
-.origin .o[data-o="Schleswig-Holstein"] { --bl: #0277BD; }
-.origin .o[data-o="Thüringen"] { --bl: #AD1457; }
 .bottle { width: 26px; height: 62px; margin-bottom: 4px; fill: var(--kt); }
 .bottle .body { stroke: color-mix(in srgb, var(--kt) 62%, #000); stroke-width: 0.9; stroke-linejoin: round; }
 .bottle .cap { fill: color-mix(in srgb, var(--kt) 38%, #2B2620); }
@@ -641,6 +627,7 @@ button.bcard:active { transform: scale(0.98); }
   inset: 38px 6px 6px; -webkit-mask: none; mask: none; background: none;
   border: 1.5px solid #111; outline: 1px solid #111; outline-offset: -4.5px;
 }
+.sp-noir .count { top: 17px; right: 17px; padding: 1px 6px; font-size: 11.5px; } /* Doppelrahmen: Abstand zur inneren Linie, dafür etwas kleiner (Sterne der Flasche) */
 .sp-noir .band { box-shadow: none; }
 .sp-noir .band .kat {
   background: repeating-linear-gradient(135deg, #111 0 7px, #2B2B2B 7px 14px); color: #FFFFFF;
@@ -745,6 +732,7 @@ button.bcard:active { transform: scale(0.98); }
               url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cg transform='translate(0 26) scale(1 -1)'%3E%3Cpath d='M1 25V10Q1 1 10 1H25' fill='none' stroke='%23E2B84A' stroke-width='1.8'/%3E%3Cpath d='M6 3.5L9.5 7L6 10.5L2.5 7Z' fill='%23E2B84A'/%3E%3Ccircle cx='15' cy='3.4' r='1.3' fill='%23E2B84A'/%3E%3Ccircle cx='3.4' cy='15' r='1.3' fill='%23E2B84A'/%3E%3C/g%3E%3C/svg%3E") 0 100% / 26px 26px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cg transform='translate(26 26) scale(-1 -1)'%3E%3Cpath d='M1 25V10Q1 1 10 1H25' fill='none' stroke='%23E2B84A' stroke-width='1.8'/%3E%3Cpath d='M6 3.5L9.5 7L6 10.5L2.5 7Z' fill='%23E2B84A'/%3E%3Ccircle cx='15' cy='3.4' r='1.3' fill='%23E2B84A'/%3E%3Ccircle cx='3.4' cy='15' r='1.3' fill='%23E2B84A'/%3E%3C/g%3E%3C/svg%3E") 100% 100% / 26px 26px no-repeat;
   border: 1.5px solid #D9AE3C; border-radius: 3px; outline: 1px solid rgb(217 174 60 / 0.6); outline-offset: -5px;
 }
+.sp-koenig .count { top: 22px; right: 20px; padding: 1px 6px; font-size: 11.5px; } /* Eckornamente des Rahmens bleiben frei */
 .sp-koenig .band { box-shadow: none; }
 .sp-koenig .band .kat {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='17' viewBox='0 0 22 17'%3E%3Cpath d='M2.5 15L1 5L6.5 9.5L11 2.5L15.5 9.5L21 5L19.5 15Z' fill='%234A0712'/%3E%3Crect x='2.5' y='13' width='17' height='2' fill='%23D9AE3C'/%3E%3Ccircle cx='1' cy='4.5' r='1.5' fill='%234A0712'/%3E%3Ccircle cx='11' cy='2' r='1.5' fill='%234A0712'/%3E%3Ccircle cx='21' cy='4.5' r='1.5' fill='%234A0712'/%3E%3C/svg%3E") 8px 50% / 20px 15px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='17' viewBox='0 0 22 17'%3E%3Cpath d='M2.5 15L1 5L6.5 9.5L11 2.5L15.5 9.5L21 5L19.5 15Z' fill='%234A0712'/%3E%3Crect x='2.5' y='13' width='17' height='2' fill='%23D9AE3C'/%3E%3Ccircle cx='1' cy='4.5' r='1.5' fill='%234A0712'/%3E%3Ccircle cx='11' cy='2' r='1.5' fill='%234A0712'/%3E%3Ccircle cx='21' cy='4.5' r='1.5' fill='%234A0712'/%3E%3C/svg%3E") calc(100% - 8px) 50% / 20px 15px no-repeat, #D9AE3C;

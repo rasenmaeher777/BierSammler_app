@@ -230,7 +230,7 @@
     return ICONS[design] ? icon(design, tier) : bottle(tier);
   };
 
-  // Herkunft für den Fuß der Karte (Box, Farbe je Bundesland per CSS über data-o): Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
+  // Herkunft für den Fuß der Karte (Box, einheitliche Farbe per CSS): Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
   // Die beiden längsten Namen werden in der Box gekürzt, damit sie auch auf schmalen Smartphones ganz zu lesen sind
   const ORIGIN_SHORT = { 'Mecklenburg-Vorpommern': 'Meckl.-Vorpommern', 'Nordrhein-Westfalen': 'Nordrhein-Westf.' };
   function originOf(b) {
@@ -254,7 +254,7 @@
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
         ${b.sorten.length ? `<span class="sorte">${esc(b.sorten.join(' · '))}</span>` : ''}
       </span>
-      <span class="origin">${origin ? `<span class="o" data-o="${esc(origin)}" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>
+      <span class="origin">${origin ? `<span class="o" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>
       ${b.spezial && b.spezial.design === 'sticker' ? '<span class="sticker" aria-hidden="true">BB</span>' : ''}`;
   }
   const cardHtml = (c) => `<div class="bcard ${c.beer.look}">${cardInner(c)}</div>`;
