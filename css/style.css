@@ -254,6 +254,8 @@ dialog.sheet::backdrop { background: var(--backdrop); }
 .k5 { --k: var(--k5); --on-k: var(--on-k5); }
 .k6 { --k: var(--k6); --on-k: var(--on-k6); }
 .sp-sanchi { --k: #FFC93C; --on-k: #1B1038; } /* Spezialkarte „Sanchi“ (feste Farben, gelten in hell und dunkel gleich) */
+.sp-noir { --k: #111111; --on-k: #FFFFFF; }       /* Spezialkarte „Schwarz-Weiß“ (feste Farben) */
+.sp-regenbogen { --k: #B79CFF; --on-k: #2A1650; } /* Spezialkarte „Regenbogen“ (feste Farben) */
 /* Raster: Smartphone 2 Spalten (beste Karten: 2 × 3), breiter mehr Spalten.
    Die besten 6 Karten stehen ab 641px in 3, ab 1000px in 6 Spalten, damit keine Lücke in der letzten Reihe bleibt. */
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -543,6 +545,11 @@ button.bcard:active { transform: scale(0.98); }
 .bear .tongue { fill: #D32F2F; }
 .bear .nose, .bear .eye { fill: var(--surface); }
 .bear.t5 .limb { stroke: #F2C14E; }
+.bear .cut { fill: var(--surface); stroke: none; }
+.bear .cutline { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-linejoin: round; }
+.bear .limb { stroke-linejoin: round; }
+/* Länder-Legenden (Wahrzeichen statt Flasche, gleiche Größe und Kartenstufen wie der Bär): das Symbol folgt dem Theme, ab Stufe 5 ist es golden */
+.bear.icon.t5 .cutline { stroke: var(--surface); }
 .bear.t5 .body { stroke: #B9820A; stroke-width: 0.8; }
 
 /* sticker (Bierball-Bier): wie Standardgebräu, dazu ein „BB“-Stempel in gedecktem Marineblau auf der linken oberen Ecke des Zierrahmens.
@@ -593,6 +600,79 @@ button.bcard:active { transform: scale(0.98); }
   clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 14px 100%);
 }
 .sp-sanchi .origin::before, .sp-sanchi .origin::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4)); }
+
+/* noir (Schwarz-Weiß): Comic-Zeitung. Papierweiß mit schwarzer Tinte, Strahlenkranz hinter der Flasche, Rasterpunkte in der unteren
+   Ecke, harter Schlagschatten, eckige Ecken, Band mit schwarzen Schrägstreifen. Alles fest (gleich in hell und dunkel); der Filter
+   grayscale macht auch die Herkunfts-Box (sonst farbig je Bundesland) grau. */
+.bcard.sp-noir {
+  --surface: #FAFAF7; --surface-2: #E4E4E0; --text: #111111; --muted: #444444;
+  --kt: #111111; --bk: #111111; --glow: rgb(0 0 0 / 0.3);
+  border: 3px solid #111; border-radius: 4px;
+  background: var(--surface);
+  box-shadow: 4px 4px 0 #111;
+  filter: grayscale(1);
+}
+.sp-noir .mat {
+  background:
+    repeating-conic-gradient(from 0deg at 50% 66px, rgb(0 0 0 / 0.09) 0 5deg, transparent 5deg 10deg),
+    linear-gradient(180deg, #FFFFFF, #ECECE8);
+}
+.sp-noir .mat::before {
+  background: radial-gradient(circle, #111 1.5px, transparent 2px) 0 0 / 8px 8px; opacity: 0.55;
+  -webkit-mask-image: linear-gradient(205deg, transparent 38%, #000 100%); mask-image: linear-gradient(205deg, transparent 38%, #000 100%);
+  -webkit-mask-size: auto; mask-size: auto;
+}
+.sp-noir .mat::after { opacity: 0.18; }
+.bcard.sp-noir::before {
+  inset: 38px 6px 6px; -webkit-mask: none; mask: none; background: none;
+  border: 1.5px solid #111; outline: 1px solid #111; outline-offset: -4.5px;
+}
+.sp-noir .band { box-shadow: none; }
+.sp-noir .band .kat {
+  background: repeating-linear-gradient(135deg, #111 0 7px, #2B2B2B 7px 14px); color: #FFFFFF;
+  box-shadow: inset 0 -3px 0 #FFFFFF, inset 0 -5px 0 #111;
+  font-size: 13px; font-weight: 850; letter-spacing: 0.06em; line-height: 27px; padding: 0 6px;
+}
+.sp-noir .bottle:not(.t5) .body { stroke: #111; }
+.sp-noir .chips span { border: 1px solid #111; background: #FFFFFF; }
+.sp-noir .origin .o { background: #111; box-shadow: none; border-radius: 0; }
+
+/* regenbogen: heller Pastellgrund mit Regenbogenbögen, Glitzer-Sterne, die langsam funkeln, Regenbogenrahmen und Pastellband.
+   Die Flasche trägt einen senkrechten Regenbogenverlauf (#rb-grad, siehe index.html). Alle Farben fest (gleich in hell und dunkel). */
+.bcard.sp-regenbogen {
+  --surface: #FFFFFF; --surface-2: rgb(255 255 255 / 0.78); --text: #2A1650; --muted: #5A4880;
+  --kt: #E04FA8; --bk: #FF8AD8; --glow: rgb(255 120 220 / 0.55);
+  border: 3px solid transparent; border-radius: 22px;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+              conic-gradient(from 0deg, #FF5FB0, #FFB02E, #FFE94D, #4FD98B, #38B6FF, #8C6BFF, #FF5FB0) border-box;
+  box-shadow: 0 0 0 1px rgb(42 22 80 / 0.22), 0 4px 16px rgb(140 107 255 / 0.4);
+}
+.sp-regenbogen .mat {
+  background:
+    repeating-radial-gradient(circle at 50% 150%, rgb(255 95 176 / 0.3) 0 11px, rgb(255 176 46 / 0.3) 11px 22px, rgb(255 233 77 / 0.3) 22px 33px,
+      rgb(79 217 139 / 0.3) 33px 44px, rgb(56 182 255 / 0.3) 44px 55px, rgb(140 107 255 / 0.3) 55px 66px),
+    linear-gradient(165deg, #FFE0F2 0%, #FFF5CC 28%, #DDF9E8 52%, #D6EEFF 76%, #EBDFFF 100%);
+}
+.sp-regenbogen .mat::before {
+  --glit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M10 2Q10 10 18 10Q10 10 10 18Q10 10 2 10Q10 10 10 2z' fill='%23fff'/%3E%3Cpath d='M46 30Q46 36 52 36Q46 36 46 42Q46 36 40 36Q46 36 46 30z' fill='%23fff'/%3E%3Cpath d='M26 46Q26 50 30 50Q26 50 26 54Q26 50 22 50Q26 50 26 46z' fill='%23FFD84A'/%3E%3Ccircle cx='54' cy='10' r='1.6' fill='%23fff'/%3E%3Ccircle cx='8' cy='40' r='1.4' fill='%23fff'/%3E%3Ccircle cx='36' cy='14' r='1.2' fill='%23FFD84A'/%3E%3C/svg%3E");
+  background: var(--glit) 0 0 / 64px 64px, var(--glit) 32px 40px / 64px 64px; opacity: 0.95;
+  -webkit-mask-image: none; mask-image: none;
+  animation: glitter 3.2s ease-in-out infinite alternate;
+}
+.sp-regenbogen .mat::after { opacity: 0.12; }
+@keyframes glitter { from { opacity: 0.35; background-position: 0 0, 32px 40px; } to { opacity: 0.95; background-position: 6px 4px, 26px 34px; } }
+.bcard.sp-regenbogen::before {
+  background: linear-gradient(135deg, #FF5FB0, #FFB02E, #4FD98B, #38B6FF, #8C6BFF); opacity: 0.85;
+}
+.sp-regenbogen .band .kat {
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.65) 50%, transparent 62%) 120% 0 / 250% 100% no-repeat,
+              linear-gradient(90deg, #FF8AD8, #FFC857 25%, #8BE8B0 50%, #7CCBFF 75%, #B79CFF);
+  color: #2A1650; font-weight: 800; letter-spacing: 0.04em; text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
+  animation: ribbon-sheen 4.4s ease-in-out infinite;
+}
+.sp-regenbogen .bottle:not(.t5) .body { fill: url(#rb-grad) #E04FA8; stroke: rgb(42 22 80 / 0.5); }
+.sp-regenbogen .bottle .cap { fill: #7A4FD0; }
+.sp-regenbogen .origin::before, .sp-regenbogen .origin::after { background: linear-gradient(90deg, transparent, #B79CFF); }
 
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */
@@ -789,6 +869,8 @@ button.bcard:active { transform: scale(0.98); }
   /* Folie und Bandglanz bleiben als ruhiger Schimmer stehen; Karte wird ohne Drehung aufgedeckt */
   .foil::before { animation: none; transform: translate(-30%, -24%); }
   .k5 .band .kat, .k6 .band .kat { animation: none; background-position: 50% 0, 0 0; }
+  .sp-regenbogen .mat::before { animation: none; opacity: 0.8; }
+  .sp-regenbogen .band .kat { animation: none; background-position: 50% 0, 0 0; }
   .flip-inner { transform: none !important; }
   .flip .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
   .flip .face.front { transform: none; opacity: 0; }

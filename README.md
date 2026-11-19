@@ -237,7 +237,7 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 | --- | --- |
 | `id` | eindeutiger Name (Text) |
 | `titel` | steht im Band der Karte statt der Kategorie (höchstens 40 Zeichen) |
-| `design` | `baer` (wie Standardgebräu, aber der Berliner Bär statt der Flasche), `sticker` (wie Standardgebräu, mit rundem blauem „BB“-Sticker) oder `sanchi` (eigenständiges Design) |
+| `design` | `baer` (wie Standardgebräu, aber der Berliner Bär statt der Flasche), `sticker` (wie Standardgebräu, mit rundem blauem „BB“-Sticker), `sanchi` (eigenständig, nachtviolett), `noir` (eigenständig, Schwarz-Weiß im Comic-Stil), `regenbogen` (eigenständig, Regenbogen mit Glitzer) oder eines der Länder-Symbole: `kuckucksuhr` (BW), `brezel` (Bayern), `gurke` (Brandenburg), `schluessel` (Bremen), `anker` (Hamburg), `bembel` (Hessen), `leuchtturm` (Mecklenburg-Vorpommern), `schaf` (Niedersachsen), `dom` (NRW), `traube` (Rheinland-Pfalz), `hammer` (Saarland), `schwibbogen` (Sachsen), `nebra` (Sachsen-Anhalt), `strandkorb` (Schleswig-Holstein), `bratwurst` (Thüringen) – wie Standardgebräu, aber das Wahrzeichen statt der Flasche |
 | `punkte` | optional, z. B. `1.0`: Punkte je Trinken statt der Punkte der Stufe (1,0 bis 1,6 in Zehnteln) |
 | `biere` | Liste der Bier-IDs, für die die Karte gilt |
 
@@ -246,3 +246,8 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
   Browser-Konsole ignoriert; fehlt die Datei, gibt es keine Spezialkarten.
 - Ändert man `punkte` oder die Biere einer Karte, verschieben sich die Punkte aller Spieler, die diese Biere getrunken haben, rückwirkend.
 - Neue Datei oder neue Bier-IDs brauchen keine neue `CACHE_VERSION`; sie erscheinen wie alle Bierdaten ab dem übernächsten Start.
+
+Vorhandene Karten (Stand 19.11.2026): die **Legenden** der Bundesländer (je 5 bis 10 bekannte Biere des Landes, Berlin 4; Titel „BW Legende“, „Bayern Legende“,
+„Märkische Legende“ (Brandenburg), „Bremer Legende“, „Hamburger Legende“, „Hessen Legende“, „MV Legende“, „Nieders. Legende“, „NRW Legende“, „RLP Legende“,
+„Saarland Legende“, „Sachsen Legende“, „Anhalt Legende“ (Sachsen-Anhalt), „SH Legende“, „Thüringen Legende“, dazu „Berliner Legende“), **Bierball-Bier**,
+**Sanchi**, **Schwarze Nachtigal** (Design `noir`) und **Spezial-Edition 04** (Design `regenbogen`) (die drei letzten mit je 40 Standardgebräu-Bieren). Die Legenden ändern keine Punkte.

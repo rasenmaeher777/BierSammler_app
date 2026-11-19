@@ -139,6 +139,96 @@
       <path class="tongue" d="M41 26.4q3 7.2 6.2 0z"/>${stars}</svg>`;
   }
 
+  /* Wahrzeichen der Länder-Legenden (Spezialkarten „kuckucksuhr“ … „bratwurst“) statt der Flasche, wie der Bär: gleiche Größe (60 × 86),
+     gleiche Kartenstufen (ab 4 Sterne, bei 5 golden). Klassen: body (gefüllt, Farbe folgt dem Theme), limb (Strich), cut (Aussparung in
+     Kartenfarbe), cutline (Aussparung als Strich). Siehe .bear in css/style.css. */
+  const ICONS = {
+    // BW: Kuckucksuhr mit Tannenzapfen-Gewichten
+    kuckucksuhr: `<path class="body" d="M30 7L53 29H7z"/><rect class="body" x="12" y="28" width="36" height="31" rx="2"/>
+      <rect class="cut" x="26" y="18" width="8" height="7" rx="3.5"/><circle class="cut" cx="30" cy="44" r="10.5"/>
+      <path class="limb" style="stroke-width:2" d="M30 44V37M30 44L35 47"/>
+      <path class="limb" style="stroke-width:1.6" d="M21 59V69M39 59V73"/>
+      <ellipse class="body" cx="21" cy="73" rx="4.2" ry="6"/><ellipse class="body" cx="39" cy="77" rx="4.2" ry="6"/>
+      <path class="cutline" style="stroke-width:1.1" d="M17.5 72.5l7 0M17.5 75.5l7 0M35.5 76.5l7 0M35.5 79.5l7 0"/>`,
+    // Bayern: Brezel
+    brezel: `<path class="limb" style="stroke-width:6.4" d="M30 30C28 8 5 10 9 33C12 47 28 52 40 63C44 67 49 67 51 63M30 30C32 8 55 10 51 33C48 47 32 52 20 63C16 67 11 67 9 63"/>
+      <circle class="cut" cx="30" cy="48" r="1.3"/><circle class="cut" cx="15" cy="22" r="1.1"/><circle class="cut" cx="45" cy="22" r="1.1"/><circle class="cut" cx="17" cy="62" r="1.1"/><circle class="cut" cx="43" cy="62" r="1.1"/>`,
+    // Brandenburg: Spreewaldgurke
+    gurke: `<g transform="rotate(16 30 46)"><ellipse class="body" cx="30" cy="46" rx="13" ry="31"/>
+      <path class="body" d="M28 16Q30 8 34 8Q33 12 33 16z"/>
+      <path class="cutline" style="stroke-width:1.6" d="M24 28V62M30 22V70M36 28V62"/>
+      <circle class="cut" cx="20" cy="36" r="1.1"/><circle class="cut" cx="40" cy="44" r="1.1"/><circle class="cut" cx="21" cy="56" r="1.1"/><circle class="cut" cx="39" cy="62" r="1.1"/><circle class="cut" cx="27" cy="22" r="1.1"/></g>`,
+    // Bremen: Bremer Schlüssel
+    schluessel: `<circle class="limb" style="stroke-width:6.5" cx="30" cy="19" r="10"/><path class="body" d="M27.4 29h5.2v43h-5.2z"/>
+      <path class="body" d="M32.6 52h12v6.5h-12zM32.6 63h9v6.5h-9z"/>`,
+    // Hamburg: Anker
+    anker: `<circle class="limb" style="stroke-width:3.2" cx="30" cy="13" r="5"/><path class="limb" style="stroke-width:5" d="M30 18V68M20 28H40"/>
+      <path class="limb" style="stroke-width:5.5" d="M10 50C12 64 22 72 30 72C38 72 48 64 50 50"/>
+      <path class="body" d="M4 52L9.5 42L19 53zM56 52L50.5 42L41 53z"/>`,
+    // Hessen: Bembel (Apfelwein-Krug)
+    bembel: `<ellipse class="body" cx="30" cy="53" rx="18" ry="22"/><path class="body" d="M23 22h14v10H23z"/><rect class="body" x="20" y="16" width="20" height="7" rx="3"/>
+      <path class="limb" style="stroke-width:4.5" d="M46 38C60 38 60 62 46 64"/>
+      <ellipse class="cut" cx="30" cy="54" rx="11" ry="14"/><path class="body" d="M30 43l3.4 8.6 8.6.8-6.6 5.6 2 8.6L30 62l-7.4 4.6 2-8.6-6.6-5.6 8.6-.8z" transform="translate(0 -1) scale(1)" style="transform-origin:30px 54px;transform:scale(.55)"/>
+      <path class="cutline" style="stroke-width:1.4" d="M13.5 40Q30 46 46.5 40M13 67Q30 73 47 67"/>`,
+    // MV: Leuchtturm
+    leuchtturm: `<path class="body" d="M30 8L41 21H19z"/><rect class="body" x="22" y="21" width="16" height="11" rx="1"/><rect class="cut" x="25.5" y="23.5" width="9" height="6" rx="1"/>
+      <path class="body" d="M18 32h24v3.5H18z"/><path class="body" d="M23 35.5h14L41 76H19z"/>
+      <path class="cutline" style="stroke-width:5" d="M22 49H38M21 63H39" transform="translate(0 0)"/>
+      <path class="body" d="M13 76h34v5H13z"/><path class="limb" style="stroke-width:1.8" d="M5 24L16 27M5 31L16 31M55 24L44 27M55 31L44 31"/>`,
+    // Niedersachsen: Heidschnucke
+    schaf: `<g class="body"><circle cx="19" cy="45" r="10"/><circle cx="30" cy="38" r="11"/><circle cx="41" cy="44" r="10"/><circle cx="25" cy="54" r="10"/><circle cx="37" cy="54" r="10"/></g>
+      <path class="limb" style="stroke-width:4" d="M22 62V77M37 62V77M43 60V76"/>
+      <g style="stroke:var(--surface);stroke-width:1.8"><ellipse class="body" cx="49" cy="43" rx="7" ry="9" transform="rotate(14 49 43)"/></g>
+      <path class="body" d="M43 36Q37 34 38 41Q41 41 45 40z"/><circle class="cut" cx="51" cy="40" r="1.4"/>`,
+    // NRW: Kölner Dom
+    dom: `<path class="body" d="M12 38L20 6L28 38zM32 38L40 6L48 38z"/><rect class="body" x="12" y="37" width="16" height="43"/><rect class="body" x="32" y="37" width="16" height="43"/><rect class="body" x="27" y="52" width="6" height="28"/>
+      <path class="cut" d="M16.5 62v-10a3.5 3.5 0 0 1 7 0v10zM36.5 62v-10a3.5 3.5 0 0 1 7 0v10z"/><path class="cut" d="M16.5 49v-4a3.5 3.5 0 0 1 7 0v4zM36.5 49v-4a3.5 3.5 0 0 1 7 0v4z"/>
+      <path class="cut" d="M26 80v-10a4 4 0 0 1 8 0v10z"/><path class="limb" style="stroke-width:1.8" d="M20 6V1M17.6 3H22.4M40 6V1M37.6 3H42.4"/>`,
+    // RLP: Weintraube
+    traube: `<g class="body" style="stroke:var(--surface);stroke-width:1.3"><circle cx="16" cy="32" r="5.6"/><circle cx="27" cy="32" r="5.6"/><circle cx="38" cy="32" r="5.6"/><circle cx="49" cy="32" r="5.6"/>
+      <circle cx="21.5" cy="43" r="5.6"/><circle cx="32.5" cy="43" r="5.6"/><circle cx="43.5" cy="43" r="5.6"/>
+      <circle cx="27" cy="54" r="5.6"/><circle cx="38" cy="54" r="5.6"/><circle cx="32.5" cy="65" r="5.6"/></g>
+      <path class="limb" style="stroke-width:2.6" d="M29 25C28 18 31 13 35 9"/><path class="body" d="M33 17C38 6 52 6 54 14C47 21 38 21 33 17z"/><path class="cutline" style="stroke-width:1" d="M35 16C41 13 46 12 51 12"/>`,
+    // Saarland: Schlägel und Eisen
+    hammer: `<path class="limb" style="stroke-width:4.4" d="M14 21L45 70M46 21L15 70"/>
+      <g transform="translate(14 21) rotate(-32.5)"><rect class="body" x="-11" y="-6" width="22" height="12" rx="1.5"/></g>
+      <g transform="translate(46 21) rotate(32.5)"><path class="body" d="M-13 3L-7 -6H7L13 3L7 6H-7z"/></g>
+      <rect class="body" x="42" y="67" width="8" height="6" rx="2" transform="rotate(-32.5 46 70)"/><rect class="body" x="10" y="67" width="8" height="6" rx="2" transform="rotate(32.5 14 70)"/>`,
+    // Sachsen: Erzgebirgischer Schwibbogen mit Kerzen
+    schwibbogen: `<path class="limb" style="stroke-width:5" d="M11 77V50A19 19 0 0 1 49 50V77"/><rect class="body" x="5" y="76" width="50" height="5" rx="1.5"/>
+      <path class="body" d="M30 50l2.6 6.4 6.4.6-4.9 4.2 1.5 6.4L30 64.4l-5.6 3.2 1.5-6.4-4.9-4.2 6.4-.6z" transform="translate(0 -4)"/>
+      <g class="body"><rect x="15.4" y="23" width="4.4" height="13"/><rect x="40.2" y="23" width="4.4" height="13"/><rect x="27.8" y="15" width="4.4" height="14"/></g>
+      <path class="body" d="M17.6 21c-2.2-3.2 0-6.4 0-8.4c2.2 2 3.2 5.2 0 8.4zM42.4 21c-2.2-3.2 0-6.4 0-8.4c2.2 2 3.2 5.2 0 8.4zM30 13c-2.2-3.2 0-6.4 0-8.4c2.2 2 3.2 5.2 0 8.4z"/>`,
+    // Sachsen-Anhalt: Himmelsscheibe von Nebra
+    nebra: `<circle class="body" cx="30" cy="44" r="27"/><circle class="cut" cx="38" cy="30" r="6.5"/><circle class="cut" cx="21" cy="46" r="6"/><circle class="body" cx="24.2" cy="44.2" r="5.4"/>
+      <g class="cut"><circle cx="24" cy="25" r="1.3"/><circle cx="30" cy="20" r="1.1"/><circle cx="19" cy="31" r="1.1"/><circle cx="44" cy="46" r="1.2"/><circle cx="36" cy="49" r="1.2"/><circle cx="40" cy="57" r="1.2"/><circle cx="33" cy="41" r="1.1"/></g>
+      <path class="cutline" style="stroke-width:2.4" d="M5.5 38A27 27 0 0 0 11 60M54.5 38A27 27 0 0 1 49 60M21 66A27 27 0 0 0 39 66"/>`,
+    // Schleswig-Holstein: Strandkorb
+    strandkorb: `<path class="body" d="M11 72V37C11 14 49 14 49 37V72z"/>
+      <path class="cutline" style="stroke-width:1.6" d="M22 20V28M30 18V27M38 20V28"/>
+      <path class="cut" d="M17 62V40C17 30 43 30 43 40V62z"/>
+      <path class="cutline" style="stroke-width:1.4" d="M18 46H42M18 52H42M18 58H42"/>
+      <rect class="body" x="6" y="58" width="48" height="14" rx="4"/><path class="cutline" style="stroke-width:1.4" d="M9 64H51"/><path class="body" d="M9 72h7v7H9zM44 72h7v7h-7z"/>
+      <path class="limb" style="stroke-width:1.6" d="M30 17V6"/><path class="body" d="M30 6L41 9.5L30 13z"/>`,
+    // Thüringen: Rostbratwurst im Brötchen
+    bratwurst: `<g transform="rotate(-38 30 44)"><rect class="body" x="7" y="36" width="46" height="26" rx="13"/>
+      <path class="cutline" style="stroke-width:1.6" d="M12 47Q30 53 48 47"/>
+      <rect class="body" x="1" y="32" width="58" height="15" rx="7.5" style="stroke:var(--surface);stroke-width:2.2"/>
+      <path class="cutline" style="stroke-width:1.5" d="M14 35l5 9M23 35l5 9M32 35l5 9M41 35l5 9"/></g>`,
+  };
+
+  // Sterne um das Symbol (ab Kartenstufe 4, bei 5 mehr), gleiche Plätze wie beim Bär
+  const heroStars = (tier) => tier >= 4
+    ? `<g class="stars">${star(5, 30, 5, 0)}${star(55, 52, 6, 0.7)}${star(3, 70, 3.5, 1.4)}${tier >= 5 ? star(56, 14, 4, 0.35) + star(2, 50, 3, 1.05) + star(54, 76, 3.5, 1.75) : ''}</g>`
+    : '';
+  const icon = (name, tier = 0) => `<svg class="bottle bear icon ico-${name}${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">${ICONS[name]}${heroStars(tier)}</svg>`;
+  // Symbol in der Mitte der Karte: Flasche, bei Spezialkarten der Bär oder das Wahrzeichen
+  const symbol = (b, tier) => {
+    const design = b.spezial && b.spezial.design;
+    if (design === 'baer') return bear(tier);
+    return ICONS[design] ? icon(design, tier) : bottle(tier);
+  };
+
   // Herkunft für den Fuß der Karte (Box, Farbe je Bundesland per CSS über data-o): Bundesland, bei Bieren aus dem Ausland das Land; sonst leer
   // Die beiden längsten Namen werden in der Box gekürzt, damit sie auch auf schmalen Smartphones ganz zu lesen sind
   const ORIGIN_SHORT = { 'Mecklenburg-Vorpommern': 'Meckl.-Vorpommern', 'Nordrhein-Westfalen': 'Nordrhein-Westf.' };
@@ -157,7 +247,7 @@
       <span class="band"><span class="kat">${esc(b.label)}</span></span>
       <span class="bcard-body${tier ? ` t${tier}` : ''}">
         ${c.count ? `<b class="count" title="${c.count}-mal getrunken">Lvl ${c.count}</b>` : ''}
-        ${b.spezial && b.spezial.design === 'baer' ? bear(tier) : bottle(tier)}
+        ${symbol(b, tier)}
         <span class="title">${esc(b.title)}</span>
         ${b.brand ? `<span class="brand">${esc(b.brand)}</span>` : ''}
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span>${esc(t)}</span>`).join('')}</span>` : ''}

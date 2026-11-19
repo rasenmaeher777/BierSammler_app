@@ -106,9 +106,17 @@
   /* Jede Spezialkarte hat einen Titel (steht im Band statt der Kategorie), ein Aussehen und eine Liste von Bier-IDs:
        baer     wie Standardgebräu, aber statt der Flasche der Berliner Bär
        sticker  wie Standardgebräu, mit rundem blauem „BB“-Sticker
-       sanchi   eigenständiges Design
+       sanchi   eigenständiges Design (nachtviolett)
+       noir     eigenständiges Design in Schwarz-Weiß (Comic-Raster)
+       regenbogen  eigenständiges Design mit Regenbogen und Glitzer
+       Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
+       kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
+       leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
+       nebra (Sachsen-Anhalt), strandkorb (SH), bratwurst (Thüringen)
      Optional "punkte" (z. B. 1.0): ersetzt die Punkte der Stufe für diese Biere. Kategorie (Stufe) und Sammlung bleiben unberührt. */
-  const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi' };
+  const LEGEND_ICONS = ['kuckucksuhr', 'brezel', 'gurke', 'schluessel', 'anker', 'bembel', 'leuchtturm', 'schaf', 'dom', 'traube', 'hammer', 'schwibbogen', 'nebra', 'strandkorb', 'bratwurst'];
+  const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi', noir: 'sp-noir', regenbogen: 'sp-regenbogen' };
+  for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 
   // Rohdaten prüfen; ungültige Karten fallen mit Warnung weg. Ergebnis: [{ id, titel, design, punkte (Zehntel oder null), biere }]
@@ -526,7 +534,7 @@
   const api = {
     POINTS, STUFEN, MAX_STUFE, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
     BOARD_SIZE, rankBoard,
-    pointsFor, beerPoints, SPECIAL_DESIGNS, cleanSpecials, level, ring, ringTenths, toNext,
+    pointsFor, beerPoints, SPECIAL_DESIGNS, LEGEND_ICONS, cleanSpecials, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,
     splitName, cleanBeer, mergeBeers,
     fold, unumlaut, searchEntry, buildIndex, search,

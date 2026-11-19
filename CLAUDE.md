@@ -95,7 +95,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   Verarbeitung in `GAME.cleanSpecials` / `applySpecials` (innerhalb von `mergeBeers`, 6. Parameter). Jedes Bier bekommt `label` (Band-Text), `look`
   (CSS-Klassen der Karte, z. B. `k1 sp-baer`), `punkte` (Zehntel oder null) und `spezial` (null oder `{ id, titel, design }`). `GAME.beerPoints(beer)` gilt
   überall statt `pointsFor(beer.stufe)`. Kategorie/Stufe, Statistik „Sammlung“ und Sortierung bleiben unberührt (nur Band, Aussehen, ggf. Punkte).
-- Drei Karten: **Berliner Legende** (`baer`, wie Standardgebräu `k1`, statt der Flasche der Berliner Bär, `bear()` in `js/app.js`; Farbe folgt dem Theme, ab 24 Mal
+- Drei Karten (ursprünglicher Stand; danach kamen die Länder-Legenden, Schwarz-Weiß und Regenbogen hinzu, siehe unten): **Berliner Legende** (`baer`, wie Standardgebräu `k1`, statt der Flasche der Berliner Bär, `bear()` in `js/app.js`; Farbe folgt dem Theme, ab 24 Mal
   Sterne, bei Lvl 40 golden): `BS-001490` Berliner - Pilsner, `BS-002764` Kindl Jubiläums Pilsener Premium, `BS-000885` Kindl Bock (nur „Bock“, nicht „Bock dunkel“
   `BS-000896`; der Nutzer hat die Frage nicht beantwortet, empfohlene Lesart), `BS-000882` Schultheiss Pilsener. **Bierball-Bier** (`sticker`, wie Standardgebräu, flacher
   „BB“-Stempel in Marineblau mit Creme-Innenring auf der linken oberen Ecke des Zierrahmens, Kartengrund als Rand, kein Glanz/Schatten; sitzt direkt in der Karte statt im
@@ -103,6 +103,18 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `app.js`.
   die es getrunken haben) und `BS-000057` Oettinger - Export. **Sanchi** (`sanchi`, eigenständig: nachtviolett mit abstrakten Kreisen und Bändern, Schrägband mit
   Verlauf und Großbuchstaben, gestrichelter Innenrahmen, bunter Verlaufsrahmen, feste Farben in hell und dunkel): 40 zufällig gezogene Standardgebräu-Biere
   (`random.Random("sanchi-2026-11-19").sample`, aus den 3.195 übrigen `BS`-Standardgebräu-Bieren, einmalig gezogen und fest in der Datei; nicht neu würfeln).
+- **Länder-Legenden und zwei Designkarten (19.11.2026, später am Tag):** 15 weitere Legenden (ids `legende-bw|by|bb|hb|hh|he|mv|ni|nw|rp|sl|sn|st|sh|th`), je 5–10 bekannte Biere des
+  Landes (Region laut `biere.json`; Astra hat dort keine Region, steht aber bei Hamburg; Sachsen-Anhalt hat nur 6 passende Biere). Look `k1 sp-icon` (wie Standardgebräu), statt der Flasche ein
+  Wahrzeichen aus `ICONS` in `js/app.js` (SVG 60 × 86 wie der Bär; `icon()`/`symbol()`/`heroStars()`; Klassen `body`/`limb`/`cut`/`cutline`, CSS `.bear` in `style.css`):
+  Kuckucksuhr BW, Brezel Bayern, Spreewaldgurke Brandenburg („Märkische Legende“), Schlüssel Bremen, Anker Hamburg, Bembel Hessen, Leuchtturm MV, Heidschnucke Niedersachsen („Nieders. Legende“),
+  Kölner Dom NRW, Weintraube RLP, Schlägel und Eisen Saarland, Schwibbogen Sachsen, Himmelsscheibe von Nebra Sachsen-Anhalt („Anhalt Legende“), Strandkorb SH, Rostbratwurst Thüringen.
+  Die Legenden haben KEIN `punkte`: Die Biere behalten die Punkte ihrer Stufe (die Biere sind bunt gemischt, nur Berlin ist reines Standardgebräu); Legende ändert also nur Band und Aussehen.
+  Wer Standardpunkte für alle will, trägt `"punkte": 1.0` ein (wirkt rückwirkend).
+  **Schwarze Nachtigal** (Design `noir`, id `schwarzweiss`; zuerst „Schwarz-Weiß“) und **Spezial-Edition 04** (Design `regenbogen`, id `regenbogen`; zuerst „Regenbogen“) – Titel am 19.11.2026 auf Wunsch umbenannt, IDs unverändert: je 40 Standardgebräu-Biere, gezogen mit `random.Random("schwarzweiss-2026-11-19" / "regenbogen-2026-11-19").sample`
+  aus den noch freien `BS`-Standardgebräu-Bieren (nach Sanchi und Legenden, in dieser Reihenfolge; nicht neu würfeln). Noir: fest Papierweiß/Tinte, Comic-Raster, Strahlenkranz, harter Schatten,
+  `filter: grayscale(1)` (macht auch die Herkunfts-Box grau). Regenbogen: Pastell mit Regenbogenbögen, funkelnde Glitzer-Sterne (`@keyframes glitter`, bei „weniger Bewegung“ ruhig),
+  Regenbogenrahmen, Flasche mit Verlauf `#rb-grad` (SVG-Defs ganz oben in `index.html`; `fill: url(#rb-grad)`). Beide Farbsätze fest in hell und dunkel.
+  Getestet: Node-Tests (44), eingebauter Browser mit Kopie ohne Schlüssel (390 px hell/dunkel, große Ansicht, Lvl 1/8/24/40). NICHT getestet: iPhone/Safari (Filter, Maske, `url(#…)`-Füllung), Glitzer-Animation (zeichnet der eingebaute Browser bei verdecktem Bereich nicht).
 - Punkte `punkte` nur bei Bierball-Bier angegeben; Legende und Sanchi gelten nur für Standardgebräu-Biere (1,0), also ohne Punktänderung.
 - `CACHE_VERSION` = `v5` (neue Datei in `DATA_FILES`). Im Zuge dessen behoben: Die Willkommenstext-Obergrenze der Punkte nutzte nach der Umnummerierung noch
   `pointsFor(5)` (1,4 statt 1,6); jetzt `G.MAX_STUFE`.

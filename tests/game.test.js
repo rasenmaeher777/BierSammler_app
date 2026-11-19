@@ -461,14 +461,26 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 11);
 });
 
-test('Spezialkarten: echte Dateien – 4 + 2 + 40 Biere, Sternburg bleibt Klassiker, Sanchi nur Standardgebräu', () => {
+test('Spezialkarten: echte Dateien – Legenden, Bierball, Sanchi und die beiden 40er-Karten', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
   const r = G.mergeBeers(rd('biere.json'), rd('biere_manuell.json'), rd('kategorien.json'), (t) => warns.push(t), rd('biere_korrekturen.json'), rd('spezialkarten.json'));
   assert.strictEqual(warns.length, 0, warns.join(' | '));
   const by = {}; for (const b of r.list) if (b.spezial) (by[b.spezial.id] = by[b.spezial.id] || []).push(b);
-  assert.deepStrictEqual(Object.keys(by).sort().map((k) => [k, by[k].length]), [['bierball', 2], ['legende', 4], ['sanchi', 40]]);
+  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 4 bis 10 Biere (Berlin 4, die übrigen 5 bis 10), Schwarze Nachtigal und Spezial-Edition 04 je 40
+  const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
+  assert.strictEqual(legenden.length, 16);
+  for (const k of legenden) assert.ok(by[k].length >= (k === 'legende' ? 4 : 5) && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort().map((k) => [k, by[k].length]), [['bierball', 2], ['regenbogen', 40], ['sanchi', 40], ['schwarzweiss', 40]]);
+  assert.ok(by.schwarzweiss.every((b) => b.stufe === 1 && b.label === 'Schwarze Nachtigal' && b.look === 'sp-noir' && G.beerPoints(b) === 10), 'Schwarze Nachtigal nur Standardgebräu');
+  assert.ok(by.regenbogen.every((b) => b.stufe === 1 && b.label === 'Spezial-Edition 04' && b.look === 'sp-regenbogen' && G.beerPoints(b) === 10), 'Spezial-Edition 04 nur Standardgebräu');
+  // Länder-Legenden: Titel „… Legende“ (höchstens 40 Zeichen, kurz genug fürs Band), Standardgebräu-Look, eigenes Wahrzeichen; Punkte bleiben die der Stufe
+  const titel = legenden.map((k) => by[k][0].label);
+  assert.ok(titel.every((t) => /Legende$/.test(t) && t.length <= 22), titel.join(', '));
+  assert.strictEqual(new Set(legenden.map((k) => by[k][0].spezial.design)).size, 16, 'jedes Land hat sein eigenes Symbol');
+  for (const k of legenden) assert.ok(by[k].every((b) => b.look === 'k1 sp-baer' || b.look === 'k1 sp-icon'));
+  assert.ok(legenden.filter((k) => k !== 'legende').every((k) => G.LEGEND_ICONS.includes(by[k][0].spezial.design)));
   assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000882', 'BS-000885', 'BS-001490', 'BS-002764']);
   assert.deepStrictEqual(by.bierball.map((b) => b.id).sort(), ['BS-000057', 'BS-000887']);
   assert.strictEqual(r.map.get('BS-000887').kategorie, 'Klassiker'); assert.strictEqual(r.map.get('BS-000887').stufe, 2);
