@@ -960,9 +960,8 @@
     const standort = KARTE.supported() ? `<section class="set-sec"><h3>Standort</h3>
           <label class="check-row"><input type="checkbox" id="set-geo"${KARTE.enabled() ? ' checked' : ''}><span>Standort beim Eintragen speichern</span></label>
           <p class="note" id="set-geo-msg" role="status" aria-live="polite"></p>
-          <p class="note">Ist der Schalter an, merkt sich die App bei jedem neuen Eintrag, wo du gerade bist (auf etwa 100 m gerundet), und zeigt die Orte
-            als Punkte auf der Karte. Nur du siehst sie; die Rangliste bekommt keine Orte. Ohne Erlaubnis oder ohne Signal wird der Eintrag ohne Ort
-            gespeichert. Ältere Einträge haben keinen Ort. Löschst du einen Eintrag oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
+          <p class="note">Ist der Schalter an, merkt sich die App bei eingetragenen Bier, wo du gerade bist und zeigt die Orte
+            als Punkte auf der Karte (nur du siehst sie). Löschst du ein getrunkenes Bier oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
         </section>` : '';
     // Neigungssensor: Knopf für die ausdrückliche Erlaubnis (iPhone fragt nur auf einen Klick hin); ohne Sensor-Unterstützung entfällt der Abschnitt
     const tiltSec = typeof DeviceOrientationEvent !== 'undefined' ? `<section class="set-sec"><h3>Neigung</h3>
@@ -973,7 +972,9 @@
         </section>` : '';
     setDlg.innerHTML = `<div class="sheet-head"><h2>Einstellungen</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
       <div class="sheet-body">
-        <section class="set-sec"><h3>Benutzername</h3><div id="set-name"></div></section>
+        <section class="set-sec">
+          <details class="set-details"><summary>Spielanleitung</summary><div class="howto">${howtoHtml()}</div></details>
+        </section>
         <section class="set-sec">
           <details class="set-details" id="set-coll-box"><summary>Sammlung verwalten <span class="h-sub" id="set-coll-count"></span></summary>
             <label class="search-field"><span class="sr-only">Sammlung filtern</span>
@@ -982,7 +983,7 @@
           </details>
         </section>
         <section class="set-sec">
-          <details class="set-details"><summary>Spielanleitung</summary><div class="howto">${howtoHtml()}</div></details>
+          <details class="set-details" id="set-name-box"><summary>Benutzername</summary><div id="set-name"></div></details>
         </section>
         <section class="set-sec"><h3>Darstellung</h3>
           <div class="seg" role="radiogroup" aria-label="Darstellung">${radio('system', 'System')}${radio('light', 'Hell')}${radio('dark', 'Dunkel')}</div>
@@ -1301,6 +1302,7 @@
   function maybeWelcome() {
     if (locked || welcomeDlg.open) return;
     if ($('#age').open) return; // der Altershinweis kommt zuerst; sein Knopf ruft maybeWelcome() erneut auf
+    if (!STORE.profileReady()) return; // erst wenn bekannt ist, ob das Konto schon einen Benutzernamen hat (kommt nach den Einträgen)
     const who = STORE.uid() || 'local';
     const seen = (lsGet(LS_WELCOME) || '').split(',');
     if (seen.includes(who)) return;
@@ -1309,6 +1311,7 @@
   }
   function showWelcome() {
     const online = STORE.mode === 'firebase';
+    const needName = online && !STORE.profile().username; // Konten mit Benutzernamen bekommen keinen Hinweis und keinen Knopf dazu
     const lo = G.fmt1(G.pointsFor(1)), hi = fmtPoints(G.pointsFor(G.MAX_STUFE));
     welcomeDlg.innerHTML = `<div class="sheet-head"><h2>Willkommen bei Bier Sammler</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
       <div class="sheet-body welcome">
@@ -1320,11 +1323,11 @@
           <li><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst.</li>
           <li><b>Verantwortung:</b> Trink nie, um Punkte zu sammeln, und nie, wenn du noch fahren musst.</li>
         </ul>
-        ${online ? `<p class="welcome-name"><b>Wichtig:</b> Um an der Platzierung (Rangliste) teilzunehmen, musst du dir einen <b>Benutzernamen</b> erstellen.
+        ${needName ? `<p class="welcome-name"><b>Wichtig:</b> Um an der Platzierung (Rangliste) teilzunehmen, musst du dir einen <b>Benutzernamen</b> erstellen.
             Das geht unter Einstellungen (Zahnrad oben rechts) → Benutzername. Ohne Namen spielst du anonym und erscheinst nicht in der Rangliste.</p>` : ''}
         <div class="actions">
-          ${online ? '<button class="btn primary" type="button" data-welcome="name">Benutzernamen erstellen</button>' : ''}
-          <button class="btn${online ? '' : ' primary'}" type="button" data-close>Verstanden</button>
+          ${needName ? '<button class="btn primary" type="button" data-welcome="name">Benutzernamen erstellen</button>' : ''}
+          <button class="btn${needName ? '' : ' primary'}" type="button" data-close>Verstanden</button>
         </div>
       </div>`;
     welcomeDlg.showModal();
@@ -1335,6 +1338,8 @@
     if (!e.target.closest('[data-welcome="name"]')) return;
     welcomeDlg.close();
     openSettings();
+    const nameBox = $('#set-name-box', setDlg);
+    if (nameBox) nameBox.open = true; // Abschnitt ist eingeklappt; sonst ließe sich das Feld nicht fokussieren
     const field = $('#set-username', setDlg);
     if (field) field.focus();
   });

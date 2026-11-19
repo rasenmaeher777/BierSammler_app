@@ -33,6 +33,7 @@
      error()            Text zum Status 'error'
      pending()          true, solange Änderungen noch nicht beim Server angekommen sind
      profile()          { username?, usernameKey?, email? }
+     profileReady()     true, sobald das Profil (Benutzername) sicher geladen ist; lokal immer true
      publishScore(sum, count)        Punkte (Zehntel) und Anzahl Biere für die Rangliste veröffentlichen (gebündelt, im Hintergrund)
      watchRanking(onData, onError)   die besten Plätze live lesen; gibt eine Funktion zum Beenden zurück
      countAbove(sum)    Promise<Anzahl Spieler mit mehr Punkten> (nur mit Server), für den eigenen Rang
@@ -52,7 +53,7 @@ window.STORE = (() => {
   const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: nach dem Neuladen „Konto gelöscht“ melden
 
   let onChange = () => {};
-  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, score: null, synced: false };
+  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, profileReady: false, score: null, synced: false };
   const emit = () => onChange();
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const fail = (code, message) => Object.assign(new Error(message || code), { code });
@@ -152,6 +153,7 @@ window.STORE = (() => {
     s.drinks = [];
     s.pending = false;
     s.profile = {};
+    s.profileReady = false;
     s.score = null;
     s.synced = false;
     clearTimeout(scoreTimer);
@@ -190,6 +192,8 @@ window.STORE = (() => {
       const key = window.GAME.usernameKey(v.username);
       // Nur einen stimmigen Namen anzeigen (Anzeigeform passt zum Schlüssel)
       s.profile = key && key === v.usernameKey ? { email: u.email || '', username: v.username, usernameKey: key } : { email: u.email || '' };
+      // Erst gesichert, wenn der Server geantwortet hat oder das Profil schon im Zwischenspeicher steht (sonst fehlt der Name kurz)
+      s.profileReady = !snap.metadata.fromCache || snap.exists();
       emit();
       scheduleScore();
     }, (err) => console.error('Profil konnte nicht geladen werden', err)));
@@ -424,6 +428,7 @@ window.STORE = (() => {
     error: () => s.error,
     pending: () => s.pending,
     profile: () => s.profile,
+    profileReady: () => MODE === 'local' || s.profileReady,
     publishScore: (sum, count) => impl.publishScore(sum, count),
     watchRanking: (onData, onError) => impl.watchRanking(onData, onError),
     countAbove: (sum) => impl.countAbove(sum),

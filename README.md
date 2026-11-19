@@ -207,7 +207,7 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
   Internet. Anders als „Profil zurücksetzen“ (behält das Konto) verschwindet hier auch das Konto selbst. Die Firestore-Regeln mussten dafür
   nicht geändert werden.
 - **Willkommensfenster:** Nach der ersten Anmeldung (einmal je Konto und Gerät) erscheinen die wichtigsten Regeln samt Hinweis, dass man
-  für die Platzierung einen Benutzernamen erstellen muss.
+  für die Platzierung einen Benutzernamen erstellen muss (Hinweis und Knopf entfallen, wenn das Konto schon einen Namen hat).
 - **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die
   besten 15 Spieler (Rang, Name, Level, Anzahl Biere) und, falls man nicht darunter ist, den eigenen Rang. Es zählen die
   Punkte; gleiche Punkte teilen sich den Platz (Reihenfolge dann nach Anzahl Biere). Spieler ohne Benutzernamen erscheinen
