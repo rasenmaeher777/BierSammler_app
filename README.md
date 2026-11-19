@@ -220,7 +220,7 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
   Standort, sobald „Bier hinzufügen“ aufgeht, und speichert ihn beim Bestätigen am Eintrag (auf etwa 100 m gerundet). Die App fragt nie beim Öffnen,
   wartet nie auf den Standort und speichert ohne Erlaubnis oder Signal den Eintrag einfach ohne Ort. Nur du siehst deine Orte; die Rangliste bekommt keine.
   Orte verschwinden zusammen mit dem Eintrag (Eintrag löschen, Profil zurücksetzen, Konto löschen). Es gibt keinen eigenen Knopf nur zum Löschen der Orte.
-- **Karte:** Der Knopf „Karte“ neben „Statistiken“ erscheint, sobald der Schalter an ist oder schon Einträge mit Ort da sind. Die Karte ist
+- **Karte:** Der Knopf „Karte der Orte öffnen“ steht ganz oben in den Statistiken (nicht auf der Startseite) und erscheint, sobald der Schalter an ist oder schon Einträge mit Ort da sind. Die Karte ist
   selbst gezeichnet (Staaten, Bundesländer, Landkreise, in Berlin die Ortsteile mit Namen), ohne Dienst von außen. Ziehen, Zwei-Finger-Zoom, Mausrad,
   Doppeltippen, Knöpfe +/−/„Alle Punkte“. Ein Tipp auf einen Punkt zeigt Ort und Biere; je mehr Einträge am selben (gerundeten) Ort, desto größer der Punkt.
   Die Kartendateien laden erst beim ersten Öffnen der Karte (rund 220 KB übertragen) und stehen danach auch offline zur Verfügung.

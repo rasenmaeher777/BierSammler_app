@@ -137,8 +137,7 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
   ungültig → Eintrag ohne Ort). `GAME.normalizeDrinks` reicht gültige Orte durch (ein ungültiger Ort verwirft den Eintrag NICHT). `GAME.placeGroups` fasst Einträge am selben gerundeten Ort zusammen.
   `firestore.rules`: `hasOnly(['beerId','at','lat','lng'])`, Funktion `validPlace` (beide oder keiner, Zahlen im Bereich). Es gibt KEINEN Update-Weg: Orte verschwinden nur mit dem Eintrag
   (Eintrag löschen, Zurücksetzen, Konto löschen). Ein Knopf „Standortdaten löschen“ wurde vom Nutzer abgelehnt (bräuchte eine Update-Regel).
-- **Karte (js/karte.js, Teil 2):** Knopf `[data-act="map"]` „Karte“ (sichtbar, wenn der Schalter an ist oder Einträge mit Ort existieren; `has-rank` auf `.tools` auch dafür, damit der Sync-Hinweis wie gehabt in eine eigene
-  Zeile rutscht), Dialog `#karte` (feste Höhe 92 dvh bzw. 86 vh, die Karte füllt ihn). Eigene Vektorkarte auf einem `<canvas>` (Web-Mercator, Zoom 0,8…15, stufenlos), keine Kacheln, kein Dienst von außen.
+- **Karte (js/karte.js, Teil 2):** Knopf `.map-open` „Karte der Orte öffnen“ mit `data-act="map"` ganz oben im Statistik-Dialog (`paintStats`; seit 19.11.2026 NICHT mehr auf der Startseite, Wunsch des Nutzers; sichtbar, wenn der Schalter an ist oder Einträge mit Ort existieren; die Karte öffnet sich über den Statistiken, Schließen führt dorthin zurück), Dialog `#karte` (feste Höhe 92 dvh bzw. 86 vh, die Karte füllt ihn). Eigene Vektorkarte auf einem `<canvas>` (Web-Mercator, Zoom 0,8…15, stufenlos), keine Kacheln, kein Dienst von außen.
   Ebenen nach Zoom: Staaten (ohne Deutschland), Bundesländer, Landkreise ab Zoom ≈ 6,2, Berliner Ortsteile ab ≈ 9 (Namen ab 10,2; Landkreisnamen 8,2–10,2; Bundesländer 4,6–8,6; Staaten bis 6,8).
   Farben (19.11.2026 überarbeitet): kühles Graugrün für Berlin (`--map-ort`), neutrales Grau für Land/Grenzen, milde graue Namen (Schriftschnitt 500), damit die orangenen Punkte (`--map-dot`) herausstechen; die Textumrandung der Namen hat je Ebene die Flächenfarbe. Namen weichen Punkten, Knöpfen, Quellenangabe und einander aus (11 Ausweichstellen); Gebiete mit Punkt werden zuerst beschriftet. Ab Zoom 10 entfällt die gröbere Berlin-Linie von BKG (sonst doppelte Grenze).
   Punkte: Radius `3,3 + 1,9·√(n−1)`, höchstens 14 px; je mehr Einträge am selben gerundeten Ort, desto größer. Tipp auf einen Punkt: Ort (Berliner Ortsteil, sonst Landkreis + Bundesland, sonst Staat), Anzahl und bis zu 4 Biere mit Datum in einem Info-Feld UNTER der Karte
@@ -153,10 +152,10 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
   stammt vom Nutzer und wurde NICHT angefasst, er muss um Standortdaten ergänzt werden.
 - **Entfernen der Funktion (Anleitung):**
   1. Neue Dateien löschen: `js/karte.js`, `Datensammlung/karte/` (Ordner), den Abschnitt „Standort und Karte“ in README/CLAUDE.md und den Punkt „Standort …“ in `datenschutz.html`.
-  2. `index.html`: Knopf `data-act="map"`, Dialog `#karte`, `<script src="js/karte.js">` (alle mit `STANDORT-KARTE` markiert).
-  3. `js/app.js` (alle Stellen mit `STANDORT-KARTE`): `const KARTE`, in `renderHeader` die Zeilen zu `showMap` (und `has-rank` wieder nur mit `showRank`), in `render` die Zeile `mapCtl.update`, in `add.open` `KARTE.prepare()`, in `add.confirm` `KARTE.place()`
+  2. `index.html`: Dialog `#karte`, `<script src="js/karte.js">` (alle mit `STANDORT-KARTE` markiert).
+  3. `js/app.js` (alle Stellen mit `STANDORT-KARTE`): `const KARTE`, in `paintStats` die Variable `mapBtn` (samt `mapBtn +` vor dem Rumpf), in `render` die Zeile `mapCtl.update`, in `add.open` `KARTE.prepare()`, in `add.confirm` `KARTE.place()`
      (zurück zu `STORE.add(beer.id, Date.now())`), Block „Karte“ mit `mapDlg`/`openMap`, in `openSettings` die Variable `standort` samt `${standort}`, die Funktion `toggleGeo` samt Zeile im `change`-Handler, `act === 'map'`.
-  4. `css/style.css`: Abschnitt „Standort-Karte“ am Ende und die drei `--map-…`-Zeilen in den Farbblöcken.
+  4. `css/style.css`: Abschnitt „Standort-Karte“ am Ende samt `.map-open` und die drei `--map-…`-Zeilen in den Farbblöcken.
   5. `sw.js`: `'js/karte.js'` aus `APP_FILES`, `CACHE_VERSION` erhöhen.
   6. Optional (die Regeln dürfen ruhig bleiben, sie sind nur großzügiger): `firestore.rules` (`validPlace` und `lat`/`lng` in `hasOnly`), `js/store.js` (`placeFields`, `place`-Parameter, `lat`/`lng` im Snapshot), `js/game.js` (`cleanPlace`, `placeGroups`, Orte in `normalizeDrinks`), die Tests „Standort-Karte“.
   Schon gespeicherte Orte bleiben in Firestore an den Einträgen; ohne die App-Funktion werden `lat`/`lng` einfach ignoriert (`normalizeDrinks` wäre ohne Schritt 6 weiter harmlos). Wer sie ganz loswerden will, löscht die Einträge oder das Profil.

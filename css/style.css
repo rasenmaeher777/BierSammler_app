@@ -915,3 +915,6 @@ button.bcard:active { transform: scale(0.98); }
 }
 .map-load[hidden] { display: none; }
 .map-attr { position: absolute; left: 8px; bottom: calc(6px + env(safe-area-inset-bottom)); margin: 0; font-size: 10.5px; color: var(--map-label); opacity: 0.85; pointer-events: none; }
+
+/* STANDORT-KARTE: Knopf in den Statistiken */
+.map-open { width: 100%; margin-bottom: 14px; }

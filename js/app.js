@@ -298,10 +298,7 @@
     // Die Rangliste gibt es nur mit Anmeldung und nur für Spieler mit Benutzernamen
     const showRank = STORE.mode === 'firebase' && !!p.username;
     $('[data-act="ranking"]').hidden = !showRank;
-    // STANDORT-KARTE: Der Knopf erscheint, sobald der Standort-Schalter an ist oder schon Einträge mit Ort da sind
-    const showMap = KARTE.enabled() || drinks.some((d) => d.lat !== undefined);
-    $('[data-act="map"]').hidden = !showMap;
-    $('.tools').classList.toggle('has-rank', showRank || showMap);
+    $('.tools').classList.toggle('has-rank', showRank);
     paintSync();
     renderLevel();
   }
@@ -742,7 +739,10 @@
 
     const states = G.BUNDESLAENDER.map((st) => `<li class="${s.states.includes(st) ? 'on' : ''}">${esc(st)}${s.states.includes(st) ? '<span class="sr-only"> (entdeckt)</span>' : ''}</li>`).join('');
 
-    const body = !s.total
+    // STANDORT-KARTE: Der Knopf „Karte“ liegt in den Statistiken; er erscheint, sobald der Standort-Schalter an ist oder schon Einträge mit Ort da sind
+    const mapBtn = KARTE.enabled() || drinks.some((d) => d.lat !== undefined)
+      ? '<button class="btn map-open" type="button" data-act="map">Karte der Orte öffnen</button>' : '';
+    const body = mapBtn + (!s.total
       ? '<p class="note center">Noch keine Einträge. Sobald du dein erstes Bier eingetragen hast, erscheinen hier deine Zahlen.</p>'
       : `<div class="tiles">${tiles}</div>
         <h3>Letzte 12 Wochen</h3>
@@ -765,7 +765,7 @@
         </dl>
         <h3>Bundesländer <span class="h-sub">${s.states.length} / 16 entdeckt</span></h3>
         <ul class="states">${states}</ul>
-        <p class="note">Gezählt werden Biere deutscher Brauereien und Vertriebe nach ihrem Sitz.</p>`;
+        <p class="note">Gezählt werden Biere deutscher Brauereien und Vertriebe nach ihrem Sitz.</p>`);
     statsDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
     $('.sheet-body', statsDlg).scrollTop = scroll;
   }
