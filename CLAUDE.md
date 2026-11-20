@@ -302,18 +302,22 @@ Alles trägt die Markierung `ALKOHOL-AUSWERTUNG` (`js/game.js`, `js/app.js`, `js
   0 → Level 1, Ring 0 · 10×Stufe 5 = 250 → Level 3, 5,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
   19×Stufe 4 = 285 → Level 3, 8,5/10 · 13×Stufe 1 + 5×Stufe 5 = 255 → Level 3, 5,5/10 · 3×Stufe 3 = 39 → „3,9“ (seit 19.11.2026, vorher mit 6 Stufen).
 - Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Seit 20.11.2026 verändert sich die Optik der Karte
-  ab Lvl 3, 7, 10, 15, 20, 25, 30 und 35 in ACHT Stufen (`GAME.cardTier`, `CARD_TIER_AT`; vorher 4, 8, 16, 24, 40 in fünf Stufen), Klassen `t1`…`t8` auf `.bcard-body` und
+  ab Lvl 3, 7, 10, 15, 20, 25, 30, 35 und 40 in NEUN Stufen (`GAME.cardTier`, `CARD_TIER_AT`; vorher 4, 8, 16, 24, 40 in fünf Stufen), Klassen `t1`…`t9` auf `.bcard-body` und
   `.bottle`, ab t6 zusätzlich `.g` (goldenes Symbol; die Spezialkarten-Regeln `:not(.g)` / `.g` ersetzen die früheren `:not(.t5)` / `.t5`). Jede Stufe soll deutlich
   anders aussehen als die vorige (Wunsch des Nutzers): t1 Glanz, Leuchten, ein funkelnder Stern · t2 Schaumkrone, stärkeres Leuchten · t3 aufsteigende Bläschen + Strahlen ·
   t4 Sterne (3), atmende Strahlen · t5 silberne Flasche, 6 Sterne, heller Kern · t6 goldene Flasche, goldener Pulsring (`::after`) · t7 kreisender Heiligenschein
   (gestrichelter Kreis im SVG), goldener Kometenring, dichte Strahlen · t8 Krone statt Schaum, Regenbogen-Ring, 9 Sterne, kräftigstes Leuchten.
+  t9 (Lvl 40, am selben Tag nachgelegt, „riesige Veränderung, alles grundsätzlich anders“): dunkles kosmisches Portal mit Sternpunkten (Hintergrund), drehende Galaxie mit vier
+  Farbarmen (`::before`), auslaufende Lichtwellen (`::after`), Glanzstreifen, Kristall-Flasche mit Facetten im Farbwechsel (`hue-rotate`, Verlauf `#lv40-grad` in `index.html` neben `#rb-grad`),
+  Saturnring (Hinterteil + Vorderbogen), zwei Umlaufbahn-Kugeln, schwebender Diamant statt Krone, Regenbogen-Plakette `.count`, Regenbogen-Schein um die Karte (`:has`). Auch Bär und Wahrzeichen
+  bekommen Kristall, Ring und Bahnen. Mittelpunkt über `--bx`/`--by` (mono und se10 haben die Flasche links). Mono bleibt einfarbig (Flasche in Schriftfarbe).
   Bär und Wahrzeichen: Sterne ab t4, silbern t5, golden ab t6, Heiligenschein ab t7, kein Schaum/Krone/Bläschen. Bewegung läuft per CSS-Animation (Bläschen, Sterne, Glanz,
   Strahlen atmen, Ringe, Heiligenschein, Krone); bei „weniger Bewegung“ stehen alle still (Block am Ende von `css/style.css`). Strahlen/Ring kreisen nicht per Verlauf,
   sondern nur Deckkraft/Drehung kleiner Elemente (Leistung auf dem iPhone bei vielen Karten). Variablen `--spark`, `--gold`, `--gold-d`, `--ring` auf `.bottle`/`.bcard-body`
   lassen Spezialkarten die Farben ändern (mono = Schriftfarbe, se10 gelb, se20 limette, se30 pink). Spezialkarten mit eigenem Hintergrund (mono, se10, se20, se50) haben ihre acht
   Stufen einzeln in `css/style.css`; mono, se10 und se60 blenden Strahlen/Ring aus. Rahmen und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht).
   Alles wird aus dem Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 35 zählt die Zahl weiter.
-  Getestet 20.11.2026: Node-Tests (58), eingebauter Browser mit Testseite (Karten aus den echten Funktionen von `js/app.js`, alle Designs, Lvl 3–35, hell und dunkel; Testseite wieder gelöscht).
+  Getestet 20.11.2026: Node-Tests (58; `cardTier` bis 40), eingebauter Browser mit Testseite (Karten aus den echten Funktionen von `js/app.js`, alle Designs, Lvl 3–35, hell und dunkel; Testseite wieder gelöscht).
   NICHT getestet: iPhone/Safari (Animationen, `mask`, Leistung bei vielen hohen Karten), „weniger Bewegung“, große Kartenansicht mit Neigung.
   „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
   Plakette `.count` (19.11.2026): sitzt INNERHALB des Zierrahmens (`top`/`right` 13 px, Schrift 12,5 px), damit sie Linie und Ecke des Rahmens nicht mehr überdeckt (vorher 8 px, schnitt die Ecke).

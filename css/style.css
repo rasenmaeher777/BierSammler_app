@@ -499,7 +499,9 @@ button.bcard:active { transform: scale(0.98); }
    Jede Stufe soll deutlich anders aussehen als die vorige:
    t1 Glanz + Leuchten · t2 Schaumkrone, stärkeres Leuchten · t3 aufsteigende Bläschen + Strahlen · t4 funkelnde Sterne, pulsierende Strahlen ·
    t5 silberne Flasche, sechs Sterne, heller Kern · t6 goldene Flasche, goldener Pulsring · t7 kreisender Heiligenschein, goldener Kometenring, dichte Strahlen ·
-   t8 Krone, Regenbogen-Ring, neun Sterne, kräftigstes Leuchten.
+   t8 Krone, Regenbogen-Ring, neun Sterne, kräftigstes Leuchten ·
+   t9 (Lvl 40) GRUNDSÄTZLICH ANDERS: dunkles kosmisches Portal mit Sternen und drehender Galaxie, Kristall-Flasche im Farbwechsel mit Facetten, Saturnring, zwei
+   Umlaufbahnen, schwebender Diamant, auslaufende Lichtwellen, Regenbogen-Leuchten um die Karte, Glanzstreifen, Regenbogen-Plakette.
    --kt ist die Tönung: die Kategorie-Farbe, bei Standardgebräu (blasses Beige) mit Bernstein gemischt.
    Bewegung (Bläschen, Sterne, Strahlen, Ringe) läuft nur ohne „weniger Bewegung“ (siehe ganz unten: dann bleibt jedes Bild stehen). */
 .bcard { --kt: var(--k); }
@@ -585,6 +587,62 @@ button.bcard:active { transform: scale(0.98); }
 .bottle .crown path { fill: var(--gold); stroke: var(--gold-d); stroke-width: 0.9; stroke-linejoin: round; }
 .bottle .crown .gem { fill: #E5335B; stroke: #7A0F2A; stroke-width: 0.5; animation: gleam 1.3s ease-in-out infinite alternate; }
 @keyframes crown-bob { from { transform: translateY(0); } to { transform: translateY(-1.6px); } }
+
+/* ---------- Karten-Level 9 (Lvl 40): ein ganz anderes Aussehen als t1 … t8 ---------- */
+/* Hintergrund: Glanzstreifen, Sternenpunkte, dunkles Portal (flache Ellipse, damit die Schrift darunter hell bleibt), violettes Leuchten */
+.bcard-body.t9 {
+  background:
+    linear-gradient(115deg, transparent 42%, rgb(255 255 255 / 0.4) 50%, transparent 58%) 0 0 / 260% 100% no-repeat,
+    radial-gradient(circle at 36% 20px, #fff 0 0.9px, transparent 1.6px), radial-gradient(circle at 68% 24px, #fff 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 26% 50px, #cfe 0 0.8px, transparent 1.5px), radial-gradient(circle at 74% 56px, #fff 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 44% 80px, #fde 0 0.8px, transparent 1.5px), radial-gradient(circle at 60% 78px, #fff 0 0.9px, transparent 1.6px),
+    radial-gradient(ellipse 78px 48px at var(--bx, 50%) var(--by, 46px), rgb(10 6 38 / 0.94) 0 48%, rgb(62 28 140 / 0.7) 74%, transparent),
+    radial-gradient(ellipse 120% 112px at var(--bx, 50%) var(--by, 46px), rgb(150 110 255 / 0.5), transparent);
+  animation: sweep 3.8s ease-in-out infinite;
+}
+@keyframes sweep { 0%, 35% { background-position: 130% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; } 100% { background-position: -130% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; } }
+/* Drehende Galaxie mit vier farbigen Armen statt der Strahlen */
+.bcard-body.t9::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%;
+  left: var(--bx, 50%); top: var(--by, 46px); width: 210px; height: 210px; margin: -105px 0 0 -105px;
+  background: conic-gradient(transparent 0deg, #ff4fc8 14deg, transparent 52deg, transparent 90deg, #1fb6ff 104deg, transparent 142deg,
+    transparent 180deg, #ffd666 194deg, transparent 232deg, transparent 270deg, #8a63ff 284deg, transparent 322deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 22%, rgb(0 0 0 / 0.75) 38%, transparent 70%);
+  mask-image: radial-gradient(circle, transparent 22%, rgb(0 0 0 / 0.75) 38%, transparent 70%);
+  filter: blur(5px); will-change: transform; opacity: 0.85; animation: spin 16s linear infinite;
+}
+/* Lichtwellen laufen vom Symbol nach außen */
+.bcard-body.t9::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%;
+  left: var(--bx, 50%); top: var(--by, 46px); width: 44px; height: 44px; margin: -22px 0 0 -22px;
+  border: 2px solid rgb(255 255 255 / 0.9); box-shadow: 0 0 8px #8fd0ff, inset 0 0 8px #c77dff;
+  animation: shockwave 2.4s ease-out infinite;
+}
+@keyframes shockwave { from { transform: scale(0.5); opacity: 1; } to { transform: scale(3.2); opacity: 0; } }
+.bcard-body.t9 .count { background: linear-gradient(120deg, #ffd666, #ff7fd8, #7fc8ff); color: #1B1030; box-shadow: 0 0 8px rgb(200 140 255 / 0.9); text-shadow: none; }
+/* Mono und Sonderedition 10 haben die Flasche links: Portal, Galaxie und Lichtwellen wandern mit */
+.sp-mono .bcard-body.t9 { --bx: 22%; --by: 52px; }
+.sp-se10 .bcard-body.t9 { --bx: 29px; --by: 43px; }
+/* Regenbogen-Leuchten um die ganze Karte (nur Schein, Rahmen und Band bleiben) */
+.bcard:has(.bcard-body.t9) { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.5), 0 0 14px rgb(160 120 255 / 0.85), 0 0 28px rgb(80 200 255 / 0.5), 0 2px 10px var(--shadow); }
+/* Symbol: Kristall im Farbwechsel */
+.bottle.t9 { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px #8fd0ff) drop-shadow(0 0 16px #c77dff); animation: prism-hue 6s linear infinite; }
+@keyframes prism-hue { to { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px #8fd0ff) drop-shadow(0 0 16px #c77dff) hue-rotate(360deg); } }
+.bcard:not(.sp-mono) .bottle.t9 .body { fill: url(#lv40-grad) #CFE9FF; stroke: #fff; stroke-width: 1; }
+.bcard .bottle.t9 .shade { opacity: 0.1; }
+.bcard:not(.sp-mono) .bottle.t9 .limb { stroke: #BFE6FF; }
+.bottle .facets { fill: none; stroke: #fff; stroke-width: 0.7; stroke-linejoin: round; opacity: 0.8; }
+.bottle .ring-back, .bottle .ring-front { fill: none; stroke: url(#lv40-grad) #fff; stroke-width: 2; transform-box: view-box; transform-origin: 20px 52px; transform: rotate(-24deg); animation: ring-tilt 5s ease-in-out infinite alternate; }
+.bottle .ring-back { opacity: 0.55; }
+.bottle.bear .ring-back, .bottle.bear .ring-front { transform-origin: 30px 48px; }
+@keyframes ring-tilt { from { transform: rotate(-30deg); } to { transform: rotate(-14deg); } }
+.bottle .orbit { transform-box: view-box; animation: spin 4.5s linear infinite; }
+.bottle .orbit.o2 { animation-duration: 7s; animation-direction: reverse; }
+.bottle .orbit circle { fill: #fff; stroke: #8fd0ff; stroke-width: 0.8; }
+/* Diamant über der Flasche (statt Schaum und Krone) */
+.bottle .diamond { animation: crown-bob 2.2s ease-in-out infinite alternate; }
+.bottle .diamond path { fill: #BFF3FF; stroke: #fff; stroke-width: 0.8; stroke-linejoin: round; }
+.bottle .diamond .facet { fill: none; stroke: #5BB7E8; stroke-width: 0.6; }
 
 /* Raddelfuß (seit 19.11.2026 eine Spezialkarte, Klasse sp-raddel statt Kategorie): Zuckerstangen-Rahmen aus rot-weißen Schrägstreifen, dünn dunkelrot eingefasst, damit das Weiß auf hellem Grund steht.
    Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: Rahmen aus gebürstetem Gold mit Leuchten.
@@ -1416,7 +1474,9 @@ button.bcard:active { transform: scale(0.98); }
   .foil::before { animation: none; transform: translate(-30%, -24%); }
   .k4 .band .kat, .k5 .band .kat { animation: none; background-position: 50% 0, 0 0; }
   /* Karten-Level: Strahlen, Ringe, Bläschen, Sterne, Heiligenschein und Krone stehen still */
-  .bcard-body::before, .bcard-body::after, .bottle .stars path, .bottle .bubbles circle, .bottle .halo, .bottle .crown, .bottle .crown .gem, .bottle.g .shine { animation: none !important; }
+  .bcard-body::before, .bcard-body::after, .bottle .stars path, .bottle .bubbles circle, .bottle .halo, .bottle .crown, .bottle .crown .gem, .bottle.g .shine, .bcard-body.t9, .bottle.t9, .bottle .orbit, .bottle .diamond, .bottle .ring-back, .bottle .ring-front { animation: none !important; }
+  .bcard-body.t9::after { opacity: 0; }
+  .bcard-body.t9 { background-position: 130% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
   .bottle .bubbles circle { opacity: 0.55; }
   .sp-regenbogen .mat::before { animation: none; opacity: 0.8; }
   .sp-regenbogen .band .kat { animation: none; background-position: 50% 0, 0 0; }

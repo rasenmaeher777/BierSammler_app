@@ -451,8 +451,8 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
-test('Kartenstufe: Veränderung ab 3, 7, 10, 15, 20, 25, 30 und 35 Mal getrunken', () => {
-  const expected = [[0, 0], [1, 0], [2, 0], [3, 1], [6, 1], [7, 2], [9, 2], [10, 3], [14, 3], [15, 4], [19, 4], [20, 5], [24, 5], [25, 6], [29, 6], [30, 7], [34, 7], [35, 8], [36, 8], [500, 8]];
+test('Kartenstufe: Veränderung ab 3, 7, 10, 15, 20, 25, 30, 35 und 40 Mal getrunken', () => {
+  const expected = [[0, 0], [1, 0], [2, 0], [3, 1], [6, 1], [7, 2], [9, 2], [10, 3], [14, 3], [15, 4], [19, 4], [20, 5], [24, 5], [25, 6], [29, 6], [30, 7], [34, 7], [35, 8], [39, 8], [40, 9], [41, 9], [500, 9]];
   for (const [count, tier] of expected) assert.strictEqual(G.cardTier(count), tier, `count ${count}`);
 });
 

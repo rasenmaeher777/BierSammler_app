@@ -641,8 +641,8 @@
   /* ---------- Kartenstufe ---------- */
 
   // Das Karten-Level ist die Anzahl, wie oft ein Bier getrunken wurde. Ab diesen Levels verändert sich die Optik
-  // der Karte (Stufe 1 … 8); dazwischen bleibt sie gleich. Die Kategorie ist davon unabhängig.
-  const CARD_TIER_AT = [3, 7, 10, 15, 20, 25, 30, 35];
+  // der Karte (Stufe 1 … 9); dazwischen bleibt sie gleich. Die Kategorie ist davon unabhängig.
+  const CARD_TIER_AT = [3, 7, 10, 15, 20, 25, 30, 35, 40];
   function cardTier(count) {
     let tier = 0;
     for (const n of CARD_TIER_AT) if (count >= n) tier++;
