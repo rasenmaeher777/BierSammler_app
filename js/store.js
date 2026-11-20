@@ -49,7 +49,8 @@ window.STORE = (() => {
   const LS_BODY = 'biersammler-koerper-v1';  // ALKOHOL-AUSWERTUNG: Körperdaten (Geschlecht, Gewicht), von js/app.js geschrieben; hier nur zum Löschen
   const BATCH_MAX = 500;                      // Höchstzahl Vorgänge je Firestore-Batch
   const NAME_TIMEOUT = 10000;                 // ms; danach gilt der Server als nicht erreichbar
-  const SCORE_DELAY = 1500;                   // ms; Änderungen der Rangliste werden so lange gebündelt
+  const WATCHDOG_MS = 12000;                  // ms; so lange darf der Start der Anmeldung dauern, bevor eine Fehlermeldung statt der leeren Seite erscheint
+  const SCORE_DELAY = 1500;                  // ms; Änderungen der Rangliste werden so lange gebündelt
   const DELETE_TIMEOUT = 30000;               // ms je Schritt beim Löschen des Kontos; danach gilt der Server als nicht erreichbar
   const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: nach dem Neuladen „Konto gelöscht“ melden
 
@@ -237,16 +238,31 @@ window.STORE = (() => {
 
   const firebase = {
     async start() {
+      // Wächter gegen die leere weiße Seite: Solange der Status 'loading' ist, zeigt die App nichts. Hängt einer der
+      // Schritte unten (z. B. Laden der Module von gstatic.com oder IndexedDB in Safari), käme nie eine Meldung.
+      // Nach WATCHDOG_MS wird der Status zum Fehler mit dem Schritt, an dem es hängt; kommt die Antwort doch noch,
+      // überschreibt der normale Ablauf den Fehler wieder (onUser/onSnapshot setzen den Status neu).
+      let step = 'Module laden';
+      setTimeout(() => {
+        if (s.status !== 'loading') return;
+        console.error('Firebase antwortet nicht, hängt bei:', step);
+        s.status = 'error';
+        s.error = `Die Verbindung kommt nicht zustande (hängt bei: ${step}). Bitte Werbe-/Inhaltsblocker, VPN oder iCloud Privat-Relay ausschalten, sonst die Website-Daten in den Safari-Einstellungen löschen.`;
+        emit();
+      }, WATCHDOG_MS);
       try {
         const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
         const [appM, authM, fsM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
         fb = { ...authM, ...fsM };
+        step = 'Anmeldung starten';
         const app = appM.initializeApp(cfg);
         auth = authM.getAuth(app);
         // Dauerhafter Zwischenspeicher, auch über mehrere Tabs. Ohne IndexedDB (z. B. manche private Fenster)
         // fällt Firestore von selbst auf einen Speicher im Arbeitsspeicher zurück.
+        step = 'Zwischenspeicher öffnen';
         db = fsM.initializeFirestore(app, { localCache: fsM.persistentLocalCache({ tabManager: fsM.persistentMultipleTabManager() }) });
-        authM.onAuthStateChanged(auth, onUser, failed('Anmeldestatus nicht lesbar'));
+        step = 'Anmeldestatus lesen';
+        authM.onAuthStateChanged(auth, (u) => { step = 'Einträge laden'; onUser(u); }, failed('Anmeldestatus nicht lesbar'));
       } catch (err) {
         console.error('Firebase konnte nicht geladen werden', err);
         s.status = 'error';

@@ -31,6 +31,12 @@
     <!-- Kristall-Verlauf für Flasche, Bär und Wahrzeichen ab Karten-Level 40 (fill/stroke: url(#lv40-grad) in css/style.css) -->
     <linearGradient id="lv40-grad" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#9DF0FF"/><stop offset="0.3" stop-color="#FFFFFF"/><stop offset="0.55" stop-color="#C9A6FF"/><stop offset="0.8" stop-color="#FF9AE0"/><stop offset="1" stop-color="#7FD4FF"/></linearGradient></defs></svg>
+  <!-- Startbild: wird von js/app.js (hideSplash) ausgeblendet, sobald die Anmeldung geklärt ist; Gestaltung in css/style.css -->
+  <div id="splash" class="splash" role="status" aria-label="Bier Sammler wird geladen">
+    <img class="gate-logo" src="icons/icon-192.png" alt="" width="96" height="96">
+    <div class="splash-title" aria-hidden="true">Bier Sammler</div>
+    <div class="splash-bar" aria-hidden="true"></div>
+  </div>
   <div id="gate" class="gate"></div>
 
   <header class="top">

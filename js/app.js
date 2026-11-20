@@ -1547,8 +1547,16 @@
       : st === 'error' ? head + `<p>${esc(STORE.error() || 'Die Anmeldung ist gerade nicht erreichbar.')}</p><button class="btn" type="button" data-auth="retry">Neu laden</button>`
       : ''; // beim Verbinden leer, damit bei angemeldeten Personen nichts aufblitzt
   }
+  // Startbild (#splash in index.html) ausblenden, sobald klar ist, was zu sehen ist (Anmeldeseite, Fehler oder die App)
+  function hideSplash() {
+    const el = document.getElementById('splash');
+    if (!el || el.classList.contains('done')) return;
+    el.classList.add('done');
+    setTimeout(() => el.remove(), 500);
+  }
   function onStoreChange() {
     const st = STORE.status();
+    if (st !== 'loading') hideSplash();
     const shouldLock = STORE.mode === 'firebase' && st !== 'in';
     if (shouldLock !== locked) setLocked(shouldLock);
     if (locked) renderGate(); else { render(); maybeWelcome(); }

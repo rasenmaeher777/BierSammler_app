@@ -160,6 +160,23 @@ button { cursor: pointer; }
 .gate-title { margin: 4px 0 0; font-size: 30px; }
 .gate-sub { margin: 0 0 8px; max-width: 320px; color: var(--muted); }
 
+/* ---------- Startbild ---------- */
+/* Steht in index.html und deckt die Seite ab, bis die Anmeldung geklärt ist (js/app.js, hideSplash). Ohne dieses Bild wäre die Seite beim Start
+   1–2 Sekunden leer. Fällt JS aus, blendet die Animation `splash-failsafe` das Bild nach 14 s von selbst aus (der Wächter in js/store.js meldet nach 12 s). */
+.splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: var(--bg); color: var(--text);
+  animation: splash-failsafe 0.01s 14s forwards;
+}
+.splash.done { opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0s 0.25s; }
+.splash-title { margin: 4px 0 0; font: 700 30px/1.2 ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.splash-bar { position: relative; width: 120px; height: 4px; margin-top: 10px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.splash-bar::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 2px; background: var(--accent); animation: splash-run 1.1s ease-in-out infinite; }
+@keyframes splash-run { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes splash-failsafe { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .splash-bar::after { animation: none; width: 100%; opacity: 0.5; } }
+
 /* ---------- Kopfleiste ---------- */
 .top { padding-top: max(14px, env(safe-area-inset-top)); }
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
