@@ -187,6 +187,11 @@ button { cursor: pointer; }
   .tools.has-rank [data-act="settings"] { order: 2; margin-left: auto; } /* der Info-Knopf bleibt direkt neben „Platzierung“ */
   .tools.has-rank .sync { order: 3; flex: 1 1 100%; max-height: none; }
 }
+/* Sehr schmal (320 px) mit „Platzierung“ und Info-Knopf: Textknöpfe etwas kleiner, damit alle vier Knöpfe in eine Zeile passen */
+@media (max-width: 359px) {
+  .tools.has-rank { gap: 5px; }
+  .tools.has-rank .btn { padding: 8px 9px; font-size: 14px; }
+}
 
 /* ---------- Inhalt ---------- */
 main { padding-top: 12px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
@@ -1381,6 +1386,7 @@ button.bcard:active { transform: scale(0.98); }
 .info-sec > .note { margin: 0 0 8px; }
 .info-group { border-bottom: 1px solid var(--line); }
 .info-group > summary { padding: 12px 0; font: 700 16px/1.3 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; cursor: pointer; }
+.info-group > summary .h-sub { display: block; margin: 2px 0 0; }
 .info-in { padding: 0 0 10px; }
 .info-in > .note { margin: 0 0 10px; }
 .info-dl { margin: 0; display: grid; gap: 0; }

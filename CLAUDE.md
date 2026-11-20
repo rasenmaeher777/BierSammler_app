@@ -239,8 +239,11 @@ Alles trägt die Markierung `INFO-FENSTER` (`index.html`, `js/app.js`, `css/styl
   Bewusst nicht aufgenommen: Hinweise zu Seltenheitsstufen (stehen in der Spielanleitung; die Stufenzahl darf nie sichtbar sein).
 - `CACHE_VERSION` = `v12` (neue Datei `js/info.js` in `APP_FILES`).
 - Entfernen: Knopf und Dialog in `index.html`, `<script src="js/info.js">`, `INFO`/`openInfo`/`act === 'info'` in `js/app.js`, Abschnitt am Ende von `css/style.css`, Zeile in `sw.js` (`CACHE_VERSION` erhöhen), `js/info.js` löschen.
-- Getestet: `node --check` aller JS-Dateien, Node-Tests (49), `INFO.html()` auf paarige Tags geprüft, Abdeckung der Werte von `biersorte`. NICHT im Browser getestet (Server-Start wurde in dieser Sitzung nicht erlaubt):
-  Aussehen des Knopfs und des Fensters, 375 px mit/ohne Platzierung, hell/dunkel, Safari/iPhone.
+- Untertitel der Gruppen (`.info-group > summary .h-sub`) stehen in eigener Zeile (sonst brachen sie mitten im Satz um). Bei < 360 px mit Platzierung sind die beiden Textknöpfe kleiner
+  (14 px, Innenabstand 9 px, Abstand 5 px), damit alle vier Knöpfe auch bei 320 px in einer Zeile stehen (ohne das rutschte der Einstellungs-Knopf in eine zweite Zeile).
+- Getestet: `node --check` aller JS-Dateien, Node-Tests (49), `INFO.html()` auf paarige Tags geprüft, Abdeckung der Werte von `biersorte`; eingebauter Browser mit Kopie ohne Schlüssel
+  (375 px hell/dunkel, 320 px, schmale Desktop-Breite): Knopf, Öffnen/Schließen, aufklappbare Gruppen, Geschmack/Wissenswertes, keine Konsolenfehler. Die Platzierung wurde nur per Skript
+  eingeblendet (`hidden` entfernt, `has-rank` gesetzt), weil dafür eine Anmeldung nötig wäre. NICHT getestet: Safari/iPhone (`<details>`-Pfeil, Dialog), Service Worker mit `js/info.js`, Tastaturbedienung.
 
 ## Glückskeks-Sprüche (18.11.2026)
 
