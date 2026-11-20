@@ -30,6 +30,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `js/store.js` | Speichern: lokal (localStorage) oder Firebase (Anmeldung, Firestore, Warteschlange ohne Netz) |
 | `js/app.js` | Oberfläche und Bedienung |
 | `js/karte.js` | Standort beim Eintragen und die Karte der Orte (eigene Vektorkarte auf einem Canvas, ohne Kartenkacheln von Dritten) |
+| `js/info.js` | Inhalt des Info-Fensters „Bierwissen“ (Biersorten, Geschmacksbegriffe, Wissenswertes) – reiner Text, hier ergänzen |
 | `js/firebase-config.js` | Firebase-Konfiguration; leerer `apiKey` = lokaler Modus |
 | `sw.js` | Service Worker (Start ohne Netz) |
 | `manifest.webmanifest`, `icons/` | Web-App-Manifest und Symbole |
@@ -214,6 +215,11 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
   nicht geändert werden.
 - **Willkommensfenster:** Nach der ersten Anmeldung (einmal je Konto und Gerät) erscheinen die wichtigsten Regeln samt Hinweis, dass man
   für die Platzierung einen Benutzernamen erstellen muss (Hinweis und Knopf entfallen, wenn das Konto schon einen Namen hat).
+- **Bierwissen (Info-Knopf „i“):** Der runde Knopf mit dem „i“ in der Werkzeugzeile (neben „Platzierung“, links vom Sync-Hinweis und den Einstellungen) öffnet ein Fenster mit
+  drei aufklappbaren Bereichen: **Biersorten** (Helle Lagerbiere, Weizenbiere, Dunkle und kräftige Biere, Ales und Craft-Biere, Mischgetränke und Alkoholfreies,
+  Bier mit besonderer Zutat – je Sorte ein kurzer Absatz), **Geschmack** (herb, süffig, malzig, hopfig, … samt Abgang und Körper) und **Wissenswertes**
+  (untergärig/obergärig, Reinheitsgebot, Zutaten, Stammwürze, Alkohol, Trinktemperatur, Glas und mehr). Der Text steht fest in `js/info.js`; eine Sorte oder einen Begriff
+  ergänzt man dort mit einer Zeile in der jeweiligen Liste. Das Fenster funktioniert auch ohne Anmeldung und ohne Netz (Datei liegt im Service-Worker-Cache).
 - **Platzierung:** Wer einen Benutzernamen hat, sieht neben „Statistiken“ den Knopf „Platzierung“. Das Fenster zeigt die
   besten 15 Spieler (Rang, Name, Level, Anzahl Biere, verschiedene Karten wie „16/6.372“) und, falls man nicht darunter ist, den eigenen Rang.
   Sortiert wird nach Level, bei gleichem Level nach Punkten (das Level folgt aus den Punkten); gleiche Punkte teilen sich den Platz

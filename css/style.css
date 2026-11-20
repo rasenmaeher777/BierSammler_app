@@ -184,7 +184,7 @@ button { cursor: pointer; }
 .sync:empty { display: none; }
 @media (max-width: 479px) {
   .tools.has-rank { flex-wrap: wrap; row-gap: 2px; }
-  .tools.has-rank .icon-btn { order: 2; margin-left: auto; }
+  .tools.has-rank [data-act="settings"] { order: 2; margin-left: auto; } /* der Info-Knopf bleibt direkt neben „Platzierung“ */
   .tools.has-rank .sync { order: 3; flex: 1 1 100%; max-height: none; }
 }
 
@@ -1374,3 +1374,19 @@ button.bcard:active { transform: scale(0.98); }
 
 /* STANDORT-KARTE: Knopf in den Statistiken */
 .map-open { width: 100%; margin-bottom: 14px; }
+
+/* ---------- Info-Fenster „Bierwissen“ (INFO-FENSTER, Inhalt in js/info.js) ---------- */
+.info-intro { margin: 0 0 4px; }
+.info-sec h3 { margin: 18px 0 8px; font-size: 18px; }
+.info-sec > .note { margin: 0 0 8px; }
+.info-group { border-bottom: 1px solid var(--line); }
+.info-group > summary { padding: 12px 0; font: 700 16px/1.3 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; cursor: pointer; }
+.info-in { padding: 0 0 10px; }
+.info-in > .note { margin: 0 0 10px; }
+.info-dl { margin: 0; display: grid; gap: 0; }
+.info-dl dt { margin: 12px 0 2px; font-weight: 700; }
+.info-dl dt:first-child { margin-top: 2px; }
+.info-dl dd { margin: 0; color: var(--text); }
+/* In „Geschmack“ und „Wissenswertes“ stehen die Begriffe direkt im Fenster: Trennlinie zwischen den Einträgen */
+.info-sec > .info-dl dt { padding-top: 10px; border-top: 1px solid var(--line); }
+.info-sec > .info-dl dt:first-child { border-top: 0; padding-top: 0; }

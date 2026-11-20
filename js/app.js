@@ -15,6 +15,7 @@
   const G = window.GAME;
   const STORE = window.STORE;
   const KARTE = window.KARTE; // STANDORT-KARTE (js/karte.js)
+  const INFO = window.INFO; // INFO-FENSTER (js/info.js)
   const LS_THEME = 'biersammler-theme-v1'; // 'light' | 'dark' | fehlt = System (auch im Inline-Skript in index.html)
   const LS_AGE = 'biersammler-age-v1';     // Altershinweis bestätigt
   const LS_WELCOME = 'biersammler-welcome-v1'; // Kontokennungen (Komma-getrennt), die das Willkommensfenster schon gesehen haben; „local“ = lokaler Modus
@@ -897,6 +898,17 @@
   }
   rankDlg.addEventListener('close', () => { if (!rankDlg.open) { stopRanking(); rankDlg.innerHTML = ''; } });
 
+  /* INFO-FENSTER: „Bierwissen“ – Biersorten, Geschmacksbegriffe und Hintergrundwissen (Inhalt: js/info.js, reiner Text ohne Eingaben) */
+  const infoDlg = $('#info');
+  function openInfo() {
+    infoDlg.innerHTML = `<div class="sheet-head"><h2>Bierwissen</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>
+      <div class="sheet-body">${INFO.html()}</div>`;
+    infoDlg.showModal();
+    $('.sheet-body', infoDlg).scrollTop = 0;
+    $('.close', infoDlg).focus();
+  }
+  infoDlg.addEventListener('close', () => { if (!infoDlg.open) infoDlg.innerHTML = ''; });
+
   /* Bestätigung vor dem Löschen. Gibt ein Promise<boolean> zurück.
      html: bereits mit esc() aufbereiteter Text. typeWord: Wort, das zur Bestätigung eingetippt werden muss.
      Der Fokus startet auf „Abbrechen“ (bzw. im Eingabefeld), damit Enter nicht versehentlich löscht. */
@@ -1386,6 +1398,7 @@
     else if (act === 'stats') openStats();
     else if (act === 'map') openMap(); // STANDORT-KARTE
     else if (act === 'ranking') openRanking();
+    else if (act === 'info') openInfo(); // INFO-FENSTER
     else if (act === 'settings') openSettings();
   });
 

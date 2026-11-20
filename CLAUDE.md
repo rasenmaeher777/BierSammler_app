@@ -35,6 +35,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `js/store.js` | `window.STORE`: lokaler Modus (localStorage) oder Firebase (Auth, Firestore, Warteschlange, Namen) |
 | `js/app.js` | Oberfläche (eine IIFE, sieben nummerierte Abschnitte) |
 | `js/karte.js` | `window.KARTE` (STANDORT-KARTE): Standort beim Eintragen und die Vektorkarte der Orte, siehe „Standort-Karte“ |
+| `js/info.js` | `window.INFO` (INFO-FENSTER): Text des Info-Fensters „Bierwissen“, siehe „Info-Fenster“ |
 | `js/firebase-config.js` | Konfiguration; leerer `apiKey` = lokaler Modus. Werte nicht ausgeben |
 | `sw.js` | Service Worker |
 | `firestore.rules` | Regeln (Nutzer fügt sie in der Konsole ein) |
@@ -43,7 +44,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `Datensammlung/karte/` | Kartendaten (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py` (erzeugt sie aus den Grenzdaten) |
 | `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `spezialkarten.json`, `scraper/` |
 
-Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.js`.
+Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.js`, `app.js`.
 
 ## Bierdaten
 
@@ -224,6 +225,22 @@ Der Nutzer wollte ausdrücklich, dass sich die Funktion wieder entfernen lässt 
   simulierter Zwei-Finger-Zoom, Schalter an/aus/verweigert/Zeitüberschreitung (nachgebildetes `navigator.geolocation`), Eintrag mit und ohne Ort, Knopf „Karte“ je nach Zustand, leere Karte.
   NICHT getestet: echtes iPhone/Safari (Standortfrage in der installierten Web-App, wie oft sie kommt; echter Pinch; Canvas), echte Firestore-Regeln (kein Emulator), Service Worker mit den Kartendateien, > 100 Orte (Leistung der Namenssuche je Bild),
   Offline-Start mit noch nie geöffneter Karte (dann nur Punkte auf leerem Grund).
+
+## Info-Fenster „Bierwissen“ (20.11.2026)
+
+Alles trägt die Markierung `INFO-FENSTER` (`index.html`, `js/app.js`, `css/style.css`, `sw.js`) und liegt im Übrigen in `js/info.js` (`window.INFO`). Auf Wunsch des Nutzers.
+
+- Knopf `[data-act="info"]` (runder `.icon-btn.info-btn` mit „i“-Symbol) in `.tools`, zwischen „Platzierung“ und dem Sync-Hinweis (also links von den Einstellungen). Unter 480 px mit Platzierung:
+  nur der Einstellungs-Knopf rutscht per `[data-act="settings"]` (order 2, margin-left auto) hinter den Sync-Hinweis, der Info-Knopf bleibt neben „Platzierung“ (vorher traf die Regel `.icon-btn` beide).
+- Dialog `#info` (`openInfo` in `js/app.js`, hinter dem Ranglisten-Block): Kopf wie die anderen Blätter, Inhalt = `INFO.html()`. Der Text ist fest im Code (keine Eingaben, deshalb kein `esc()`).
+  Aufbau: Biersorten (sechs aufklappbare Gruppen `.info-group`: Helle Lagerbiere, Weizenbiere, Dunkle und kräftige Biere, Ales und Craft-Biere, Mischgetränke und Alkoholfreies, Bier mit besonderer Zutat),
+  Geschmack (21 Begriffe), Wissenswertes (11 Einträge). Die Sortennamen decken alle Werte von `biersorte` in `biere.json` ab (Fruchtbiere usw. als Sammeleinträge); neue Sorten: Zeile in `SORTEN` ergänzen.
+- Inhaltlich von Claude aus Allgemeinwissen formuliert (nicht aus Quellen der Bierdatenbank). Der Nutzer sollte die Angaben gegenlesen, besonders Zahlen (Stammwürze, Trinktemperaturen, IBU) und Herkunftsangaben.
+  Bewusst nicht aufgenommen: Hinweise zu Seltenheitsstufen (stehen in der Spielanleitung; die Stufenzahl darf nie sichtbar sein).
+- `CACHE_VERSION` = `v12` (neue Datei `js/info.js` in `APP_FILES`).
+- Entfernen: Knopf und Dialog in `index.html`, `<script src="js/info.js">`, `INFO`/`openInfo`/`act === 'info'` in `js/app.js`, Abschnitt am Ende von `css/style.css`, Zeile in `sw.js` (`CACHE_VERSION` erhöhen), `js/info.js` löschen.
+- Getestet: `node --check` aller JS-Dateien, Node-Tests (49), `INFO.html()` auf paarige Tags geprüft, Abdeckung der Werte von `biersorte`. NICHT im Browser getestet (Server-Start wurde in dieser Sitzung nicht erlaubt):
+  Aussehen des Knopfs und des Fensters, 375 px mit/ohne Platzierung, hell/dunkel, Safari/iPhone.
 
 ## Glückskeks-Sprüche (18.11.2026)
 
