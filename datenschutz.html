@@ -85,6 +85,12 @@
         lesbar, in der Rangliste steht kein Ort. Die Orte werden zusammen mit dem Eintrag gelöscht (Eintrag löschen, Profil
         zurücksetzen, Konto löschen). Die Karte wird auf dem Gerät aus Dateien der App gezeichnet; es werden keine Kartenkacheln
         von Drittanbietern geladen.</li>
+      <li>Körperdaten (nur wenn die Person in den Einstellungen unter „Körperdaten“ etwas einträgt): natürliches Geschlecht und
+        freiwillig das Gewicht. Sie werden ausschließlich in localStorage des Geräts gespeichert (Schlüssel
+        <code>biersammler-koerper-v1</code>) und für die Auswertung „Alkohol und Körper“ in den Statistiken auf dem Gerät
+        verwendet. Sie werden nicht an Firebase oder andere Stellen übermittelt, stehen nicht in der Rangliste und werden beim
+        Abmelden bzw. mit „Körperdaten löschen“ entfernt. Es sind Gesundheitsangaben; der eigentliche Datenschutztext muss das
+        berücksichtigen.</li>
       <li>Ein Service Worker speichert die Dateien der App und die Bierdatenbank im Browser zwischen.</li>
       <li>Programmbibliotheken von Firebase werden von www.gstatic.com (Google) geladen.</li>
       <li>Keine Werbung, keine Analyse- oder Tracking-Werkzeuge, keine Schriften von Drittanbietern.</li>

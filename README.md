@@ -17,8 +17,9 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 6. [Service Worker und Cache-Version](#service-worker-und-cache-version)
 7. [Spielregeln](#spielregeln)
 8. [Standort und Karte](#standort-und-karte)
-9. [Rechtliches](#rechtliches)
-10. [Bekannte Grenzen](#bekannte-grenzen)
+9. [Alkohol und Körper](#alkohol-und-körper)
+10. [Rechtliches](#rechtliches)
+11. [Bekannte Grenzen](#bekannte-grenzen)
 
 ## Dateien
 
@@ -247,6 +248,20 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - **Nach dem Update:** Zuerst die neue `firestore.rules` in der Firebase-Konsole veröffentlichen, dann die App. Ohne die neuen Regeln lehnt Firestore Einträge
   mit Ort ab (der Eintrag verschwindet nach kurzem Aufblitzen wieder, siehe „Bekannte Grenzen“).
 - **Entfernen:** siehe `CLAUDE.md`, Abschnitt „Standort-Karte“.
+
+## Alkohol und Körper
+
+- **Freischalten:** Einstellungen → Körperdaten: natürliches Geschlecht (männlich/weiblich) wählen, optional das Gewicht in kg eintragen (30 bis 250, z. B. `64` oder `64,5`).
+  Erst wenn das Geschlecht gewählt ist, erscheint in den Statistiken der Abschnitt „Alkohol und Körper“. „Körperdaten löschen“ blendet ihn wieder aus.
+  Beides liegt nur in `localStorage` (`biersammler-koerper-v1`), nie in Firestore oder in der Rangliste, und wird beim Abmelden gelöscht.
+- **Was gezeigt wird:** Reinalkohol (g) = Flaschengröße × Alkoholgehalt × 0,789; Biere ohne Größenangabe zählen nicht. Daraus der Schnitt pro Woche
+  (letzte 28 Tage, bei kürzerer Nutzung seit dem ersten Eintrag, mindestens eine Woche), die Woche seit Montag, der stärkste Abend, die Zahl der Rauschtrink-Abende
+  (ab 60 g bei Männern, 48 g bei Frauen an einem Abend; ein Abend = Einträge mit höchstens 6 Stunden Abstand) und, mit Gewicht, der geschätzte Promillewert des
+  stärksten Abends samt Abbauzeit (Widmark: Faktor 0,7 Männer / 0,6 Frauen, Abbau 0,1 ‰ pro Stunde).
+- **Label A bis D** (wie beim Energielabel, nach dem Schnitt pro Woche): A bis 27 g (risikoarm) und B bis 81 g (moderat) nach den Zonen der DGE von 2024, für beide Geschlechter gleich;
+  C bis 140 g (Frauen) bzw. 210 g (Männer), das sind 20 bzw. 30 g pro Tag; darüber D. Das Gewicht beeinflusst das Label nicht, nur die Promille-Schätzung.
+- **Grenzen:** Geschätzt wird nur aus den eingetragenen Bieren (anderer Alkohol fehlt). Es ist keine medizinische Beratung und keine Auskunft über die Fahrtüchtigkeit. Die Grenzwerte
+  stehen in `js/game.js` (`LABEL_LIMITS`, `BINGE_GRAMS`) und sind Richtwerte aus Sekundärquellen, keine Originaltabellen der Leitlinien.
 
 ## Rechtliches
 

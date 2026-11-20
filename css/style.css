@@ -32,6 +32,11 @@
   --foil-k4: 0.65; --foil-k5: 0.5;  /* Deckkraft der Holo-Folie: im dunklen Modus schwächer, sonst leidet die Lesbarkeit */
   /* STANDORT-KARTE (js/karte.js): Wasser/Außenfläche, Land, Deutschland, Grenzlinie, Berlin-Ortsteile, Beschriftung, Punkt, Punktrand */
   --map-bg: #D3E1E8; --map-land: #ECEBE6; --map-de: #F6F5F1; --map-line: #BDBDB6; --map-ort: #E5ECE6; --map-label: #84857F; --map-dot: #F2690A; --map-ring: #FFFFFF;
+  /* ALKOHOL-AUSWERTUNG: Label A bis D wie beim Energielabel, feste Farben mit fester Schrift (gelten in hell und dunkel; Kontrast ≥ 4,9 : 1) */
+  --lab-a: #2F7D4F; --on-lab-a: #FFFFFF;
+  --lab-b: #A8C834; --on-lab-b: #1B2A05;
+  --lab-c: #F2A33A; --on-lab-c: #3A2000;
+  --lab-d: #C8412F; --on-lab-d: #FFFFFF;
 }
 
 /* ---------- Farben: dunkel (System-Einstellung, sofern nicht „hell“ gewählt) ---------- */
@@ -489,36 +494,97 @@ button.bcard:active { transform: scale(0.98); }
 .chips span { padding: 1px 8px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .bcard .sorte { max-width: 100%; color: color-mix(in srgb, var(--muted) 65%, var(--text)); font-size: 12px; overflow-wrap: anywhere; }
 
-/* Karten-Level: ab 4, 8, 16, 24 und 40 Mal getrunken verändert sich nur die MITTE der Karte (Hintergrund und Flasche),
-   Rahmen und Band bleiben, damit die Kategorie erkennbar bleibt. Die Stufen t1 … t5 setzt GAME.cardTier.
-   --kt ist die Tönung: die Kategorie-Farbe, bei Standardgebräu (blasses Beige) mit Bernstein gemischt. */
+/* Karten-Level: Ab 3, 7, 10, 15, 20, 25, 30 und 35 Mal getrunken verändert sich nur die MITTE der Karte (Hintergrund und Flasche),
+   Rahmen und Band bleiben, damit die Kategorie erkennbar bleibt. Die Stufen t1 … t8 setzt GAME.cardTier; ab t6 trägt das Symbol zusätzlich .g (golden).
+   Jede Stufe soll deutlich anders aussehen als die vorige:
+   t1 Glanz + Leuchten · t2 Schaumkrone, stärkeres Leuchten · t3 aufsteigende Bläschen + Strahlen · t4 funkelnde Sterne, pulsierende Strahlen ·
+   t5 silberne Flasche, sechs Sterne, heller Kern · t6 goldene Flasche, goldener Pulsring · t7 kreisender Heiligenschein, goldener Kometenring, dichte Strahlen ·
+   t8 Krone, Regenbogen-Ring, neun Sterne, kräftigstes Leuchten.
+   --kt ist die Tönung: die Kategorie-Farbe, bei Standardgebräu (blasses Beige) mit Bernstein gemischt.
+   Bewegung (Bläschen, Sterne, Strahlen, Ringe) läuft nur ohne „weniger Bewegung“ (siehe ganz unten: dann bleibt jedes Bild stehen). */
 .bcard { --kt: var(--k); }
 .bcard.k1 { --kt: color-mix(in srgb, var(--k1), var(--accent) 45%); --bk: var(--kt); }
 .bcard-body { isolation: isolate; }
-.bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, color-mix(in srgb, var(--kt) 16%, transparent), transparent); }
-.bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, color-mix(in srgb, var(--kt) 26%, transparent), transparent); }
-.bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, color-mix(in srgb, var(--kt) 34%, transparent), transparent); --ray: 14%; }
-.bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, color-mix(in srgb, var(--kt) 42%, transparent), transparent); --ray: 20%; }
+.bcard-body.t1 { background: radial-gradient(ellipse 92% 88px at 50% 46px, color-mix(in srgb, var(--kt) 34%, transparent), transparent); }
+.bcard-body.t2 { background: radial-gradient(ellipse 94% 92px at 50% 46px, color-mix(in srgb, var(--kt) 44%, transparent), transparent); }
+.bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, color-mix(in srgb, var(--kt) 50%, transparent), transparent); --ray: 26%; --rp: 18deg; }
+.bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, color-mix(in srgb, var(--kt) 56%, transparent), transparent); --ray: 32%; --rp: 14deg; }
 .bcard-body.t5 {
+  background: radial-gradient(circle 34px at 50% 46px, rgb(236 244 255 / 0.6), transparent),
+              radial-gradient(ellipse 100% 100px at 50% 46px, color-mix(in srgb, var(--kt) 60%, transparent), transparent);
+  --ray: 38%; --rp: 14deg;
+}
+.bcard-body.t6 {
   background: radial-gradient(circle 38px at 50% 46px, rgb(255 226 140 / 0.6), transparent),
-              radial-gradient(ellipse 105% 100px at 50% 46px, color-mix(in srgb, var(--kt) 52%, transparent), transparent);
-  --ray: 28%;
+              radial-gradient(ellipse 105% 100px at 50% 46px, color-mix(in srgb, var(--kt) 64%, transparent), transparent);
+  --ray: 44%; --rp: 12deg;
 }
-/* Strahlen hinter der Flasche (ab Stufe 3), zum Rand hin ausgeblendet */
-.bcard-body.t3::before, .bcard-body.t4::before, .bcard-body.t5::before {
+.bcard-body.t7 {
+  background: radial-gradient(circle 46px at 50% 46px, rgb(255 226 140 / 0.72), transparent),
+              radial-gradient(ellipse 110% 105px at 50% 46px, color-mix(in srgb, var(--kt) 70%, transparent), transparent);
+  --ray: 52%; --rp: 10deg;
+}
+.bcard-body.t8 {
+  background: radial-gradient(circle 54px at 50% 46px, rgb(255 236 170 / 0.88), transparent),
+              radial-gradient(ellipse 115% 110px at 50% 46px, color-mix(in srgb, var(--kt) 76%, transparent), transparent);
+  --ray: 60%; --rp: 8deg;
+}
+/* Strahlen hinter der Flasche (ab Stufe 3), zum Rand hin ausgeblendet; ab Stufe 4 atmen sie (nur Deckkraft, das kostet kaum Leistung) */
+.bcard-body:is(.t3, .t4, .t5, .t6, .t7, .t8)::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: repeating-conic-gradient(from 0deg at 50% 46px, color-mix(in srgb, var(--kt) var(--ray), transparent) 0 7deg, transparent 7deg 14deg);
-  -webkit-mask-image: radial-gradient(circle 120px at 50% 46px, #000, transparent);
-  mask-image: radial-gradient(circle 120px at 50% 46px, #000, transparent);
+  background: repeating-conic-gradient(from 0deg at 50% 46px, color-mix(in srgb, var(--kt) var(--ray), transparent) 0 calc(var(--rp, 14deg) / 2), transparent calc(var(--rp, 14deg) / 2) var(--rp, 14deg));
+  -webkit-mask-image: radial-gradient(circle 150px at 50% 46px, #000, transparent);
+  mask-image: radial-gradient(circle 150px at 50% 46px, #000, transparent);
 }
-.bottle { overflow: visible; }
+.bcard-body:is(.t4, .t5, .t6)::before { animation: ray-breathe 3.6s ease-in-out infinite alternate; }
+.bcard-body:is(.t7, .t8)::before { animation: ray-breathe 2.2s ease-in-out infinite alternate; }
+@keyframes ray-breathe { from { opacity: 1; } to { opacity: 0.4; } }
+/* Ring um die Flasche (ab Stufe 6): t6 goldener Pulsring, t7 goldener Kometenring (kreisender Bogen), t8 Regenbogen-Ring */
+.bcard-body:is(.t6, .t7, .t8)::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%;
+  left: 50%; top: 46px; width: 78px; height: 78px; margin: -39px 0 0 -39px;
+  -webkit-mask-image: radial-gradient(circle, transparent 55%, #000 59%, #000 67%, transparent 72%);
+  mask-image: radial-gradient(circle, transparent 55%, #000 59%, #000 67%, transparent 72%);
+}
+.bcard-body.t6::after { background: var(--ring, #FFD666); animation: ring-pulse 2.8s ease-in-out infinite; }
+.bcard-body.t7::after { background: conic-gradient(transparent 0deg, var(--ring, #FFD666) 150deg, #fff 175deg, transparent 180deg); animation: spin 3.2s linear infinite; }
+.bcard-body.t8::after { background: conic-gradient(#ff4fc8, #ffb21f, #2fe08a, #1fb6ff, #8a63ff, #ff4fc8); animation: spin 7s linear infinite; }
+@keyframes ring-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.92); } 50% { opacity: 0.95; transform: scale(1.06); } }
+
+.bottle { overflow: visible; --spark: #E8B424; --gold: #F2C14E; --gold-d: #B9820A; }
 .bottle .shine { fill: #fff; opacity: 0.45; }
 .bottle .foam circle { fill: #fff; stroke: var(--kt); stroke-width: 1.4; }
-.bottle .stars path { fill: #E8B424; }
-.bottle.t5 { filter: drop-shadow(0 0 4px rgb(242 193 78 / 0.9)); }
-.bottle.t5 .body { fill: #F2C14E; stroke: #B9820A; stroke-width: 1.2; }
-.bottle.t5 .stars path { transform-box: fill-box; transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; animation-delay: var(--d); }
+.bottle .glint path { fill: var(--spark); stroke: #fff; stroke-width: 0.5; transform-box: fill-box; transform-origin: center; animation: twinkle 2.2s ease-in-out infinite; animation-delay: var(--d); }
+.bottle .stars path { fill: var(--spark); transform-box: fill-box; transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; animation-delay: var(--d); }
 @keyframes twinkle { 0%, 100% { opacity: 0.35; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.15); } }
+/* Bläschen steigen in der Flasche auf (ab Stufe 3) */
+.bottle .bubbles circle { fill: #fff; stroke: rgb(0 0 0 / 0.3); stroke-width: 0.45; opacity: 0.8; animation: bubble-rise 2.9s ease-in infinite; animation-delay: var(--d); }
+@keyframes bubble-rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.9; } 85% { opacity: 0.8; } 100% { transform: translateY(-36px); opacity: 0; } }
+/* Leuchten der Flasche wächst mit der Stufe */
+.bottle.t1 { filter: drop-shadow(0 0 3px var(--kt)) drop-shadow(0 0 6px color-mix(in srgb, var(--kt) 60%, transparent)); }
+.bottle.t2 { filter: drop-shadow(0 0 3px var(--kt)) drop-shadow(0 0 8px var(--kt)); }
+.bottle.t3 { filter: drop-shadow(0 0 4px var(--kt)) drop-shadow(0 0 10px var(--kt)); }
+.bottle.t4 { filter: drop-shadow(0 0 4px var(--kt)) drop-shadow(0 0 8px var(--kt)) drop-shadow(0 0 12px rgb(255 255 255 / 0.8)); }
+/* t5 silbern */
+.bottle.t5 { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px rgb(150 190 255 / 0.95)); }
+.bottle.t5 .body { fill: #C4CCD8; stroke: #56626F; stroke-width: 1.1; }
+.bottle.t5 .shine { opacity: 0.95; }
+/* t6 – t8 golden */
+.bottle.g { filter: drop-shadow(0 0 3px #FFE9A0) drop-shadow(0 0 8px rgb(242 160 40 / 0.95)); }
+.bottle.t7 { filter: drop-shadow(0 0 5px rgb(255 205 80 / 0.95)); }
+.bottle.t8 { filter: drop-shadow(0 0 5px rgb(255 205 80 / 1)) drop-shadow(0 0 11px rgb(255 128 64 / 0.55)); }
+.bottle.g .body { fill: var(--gold); stroke: var(--gold-d); stroke-width: 1.2; }
+.bottle.g .shine { opacity: 0.9; animation: gleam 2.2s ease-in-out infinite alternate; }
+@keyframes gleam { from { opacity: 0.35; } to { opacity: 1; } }
+/* Heiligenschein (ab Stufe 7): gestrichelter Kreis, der um die Flasche kreist */
+.bottle .halo { fill: none; stroke: var(--spark); stroke-width: 1.2; stroke-dasharray: 3 5; stroke-linecap: round; opacity: 0.9;
+  transform-box: fill-box; transform-origin: center; animation: spin 16s linear infinite; }
+.bottle.t8 .halo { stroke-width: 1.7; stroke-dasharray: 2 3.5; animation-duration: 8s; }
+/* Krone (Stufe 8): schwebt leicht, die Edelsteine funkeln */
+.bottle .crown { animation: crown-bob 2.6s ease-in-out infinite alternate; }
+.bottle .crown path { fill: var(--gold); stroke: var(--gold-d); stroke-width: 0.9; stroke-linejoin: round; }
+.bottle .crown .gem { fill: #E5335B; stroke: #7A0F2A; stroke-width: 0.5; animation: gleam 1.3s ease-in-out infinite alternate; }
+@keyframes crown-bob { from { transform: translateY(0); } to { transform: translateY(-1.6px); } }
 
 /* Raddelfuß (seit 19.11.2026 eine Spezialkarte, Klasse sp-raddel statt Kategorie): Zuckerstangen-Rahmen aus rot-weißen Schrägstreifen, dünn dunkelrot eingefasst, damit das Weiß auf hellem Grund steht.
    Zaubertrank: schillernder Verlaufsrahmen. Heiligtum: Rahmen aus gebürstetem Gold mit Leuchten.
@@ -544,17 +610,19 @@ button.bcard:active { transform: scale(0.98); }
 
 /* ---------- Spezialkarten (Datensammlung/spezialkarten.json, Aussehen je „design“) ---------- */
 /* baer (Berliner Legende): wie Standardgebräu (Klasse k1), aber statt der Flasche der Berliner Bär (Silhouette, ein Pfad). Er folgt dem
-   Theme (dunkel auf hell, hell auf dunkel). Kartenstufen wie bei der Flasche: ab Stufe 4 Sterne, bei 5 golden. */
+   Theme (dunkel auf hell, hell auf dunkel). Kartenstufen wie bei der Flasche: ab Stufe 4 Sterne, bei 5 silbern, ab 6 golden, ab 7 mit Heiligenschein. */
 .bottle.bear { width: 44px; height: 62px; --bear: var(--text); }
 .bear .body { fill: var(--bear); stroke: none; }
 .bear .limb { fill: none; stroke: var(--bear); stroke-linecap: round; }
-.bear.t5 .limb { stroke: #F2C14E; }
+.bear.t5 .limb { stroke: #C4CCD8; }
+.bear.g .limb { stroke: var(--gold); }
 .bear .cut { fill: var(--surface); stroke: none; }
 .bear .cutline { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-linejoin: round; }
 .bear .limb { stroke-linejoin: round; }
-/* Länder-Legenden (Wahrzeichen statt Flasche, gleiche Größe und Kartenstufen wie der Bär): das Symbol folgt dem Theme, ab Stufe 5 ist es golden */
-.bear.icon.t5 .cutline { stroke: var(--surface); }
-.bear.t5 .body { stroke: #B9820A; stroke-width: 0.8; }
+/* Länder-Legenden (Wahrzeichen statt Flasche, gleiche Größe und Kartenstufen wie der Bär): das Symbol folgt dem Theme, bei Stufe 5 ist es silbern, ab Stufe 6 golden */
+.bear.icon.t5 .cutline, .bear.icon.g .cutline { stroke: var(--surface); }
+.bear.t5 .body { fill: #A3AEBD; stroke: #4A5563; stroke-width: 0.8; }
+.bear.g .body { stroke: var(--gold-d); stroke-width: 0.8; }
 
 /* sticker (Bierball-Bier): wie Standardgebräu, dazu ein „BB“-Stempel in gedecktem Marineblau auf der linken oberen Ecke des Zierrahmens.
    Flach, ohne Glanz und Schatten; der Kartengrund als Rand schneidet ihn aus dem Rahmen heraus, ein feiner Innenring
@@ -638,7 +706,7 @@ button.bcard:active { transform: scale(0.98); }
   box-shadow: inset 0 -3px 0 #FFFFFF, inset 0 -5px 0 #111;
   font-size: 13px; font-weight: 850; letter-spacing: 0.06em; line-height: 27px; padding: 0 6px;
 }
-.sp-noir .bottle:not(.t5) .body { stroke: #111; }
+.sp-noir .bottle:not(.g) .body { stroke: #111; }
 .sp-noir .chips span { border: 1px solid #111; background: #FFFFFF; }
 .sp-noir .origin .o { background: #111; box-shadow: none; border-radius: 0; }
 
@@ -675,7 +743,7 @@ button.bcard:active { transform: scale(0.98); }
   color: #2A1650; font-weight: 800; letter-spacing: 0.04em; text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
   animation: ribbon-sheen 4.4s ease-in-out infinite;
 }
-.sp-regenbogen .bottle:not(.t5) .body { fill: url(#rb-grad) #E04FA8; stroke: rgb(42 22 80 / 0.5); }
+.sp-regenbogen .bottle:not(.g) .body { fill: url(#rb-grad) #E04FA8; stroke: rgb(42 22 80 / 0.5); }
 .sp-regenbogen .bottle .cap { fill: #7A4FD0; }
 .sp-regenbogen .origin::before, .sp-regenbogen .origin::after { background: linear-gradient(90deg, transparent, #B79CFF); }
 
@@ -703,8 +771,8 @@ button.bcard:active { transform: scale(0.98); }
   background: #7BC96F; color: #072A12; box-shadow: inset 0 -2px 0 rgb(7 42 18 / 0.35);
   font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase;
 }
-.sp-hopfen .bottle:not(.t5) .body { fill: #D6F2B8; stroke: #082A14; }
-.sp-hopfen .bottle:not(.t5) .cap { fill: #8FD97A; }
+.sp-hopfen .bottle:not(.g) .body { fill: #D6F2B8; stroke: #082A14; }
+.sp-hopfen .bottle:not(.g) .cap { fill: #8FD97A; }
 .sp-hopfen .bottle .label { fill: #14562B; opacity: 0.9; }
 .sp-hopfen .chips span { border: 1px solid rgb(205 245 175 / 0.45); }
 .sp-hopfen .origin::before, .sp-hopfen .origin::after { background: linear-gradient(90deg, transparent, rgb(205 245 175 / 0.7)); }
@@ -743,8 +811,8 @@ button.bcard:active { transform: scale(0.98); }
   color: #3A0610; padding: 0 32px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase;
   box-shadow: inset 0 -2px 0 #8A5A06;
 }
-.sp-koenig .bottle:not(.t5) .body { fill: #D9AE3C; stroke: #5A3A04; }
-.sp-koenig .bottle:not(.t5) .cap { fill: #5A0914; }
+.sp-koenig .bottle:not(.g) .body { fill: #D9AE3C; stroke: #5A3A04; }
+.sp-koenig .bottle:not(.g) .cap { fill: #5A0914; }
 .sp-koenig .bottle .label { fill: #6B0C1C; opacity: 0.9; }
 .sp-koenig .chips span { border: 1px solid rgb(217 174 60 / 0.75); }
 .sp-koenig .origin::before, .sp-koenig .origin::after { background: linear-gradient(90deg, transparent, #D9AE3C); }
@@ -794,8 +862,8 @@ button.bcard:active { transform: scale(0.98); }
   text-shadow: 0 0 6px rgb(160 180 255 / 0.9);
   animation: ribbon-sheen 4.4s ease-in-out infinite;
 }
-.sp-weltall .bottle:not(.t5) .body { fill: #B9C8FF; stroke: #6B7FD8; }
-.sp-weltall .bottle:not(.t5) .cap { fill: #6B5BFF; }
+.sp-weltall .bottle:not(.g) .body { fill: #B9C8FF; stroke: #6B7FD8; }
+.sp-weltall .bottle:not(.g) .cap { fill: #6B5BFF; }
 .sp-weltall .bottle .label { fill: #0B0B2E; opacity: 0.85; }
 .sp-weltall .chips span { border: 1px solid rgb(180 200 255 / 0.5); }
 .sp-weltall .origin::before, .sp-weltall .origin::after { background: linear-gradient(90deg, transparent, rgb(180 200 255 / 0.7)); }
@@ -830,7 +898,7 @@ button.bcard:active { transform: scale(0.98); }
 .sp-mono .origin:has(.o) { justify-content: flex-start; }
 .sp-mono .origin .o { background: transparent; border: 1px solid color-mix(in srgb, var(--ink) 55%, transparent); border-radius: 3px; color: var(--ink); box-shadow: none; }
 /* Flasche: ein einfarbiges Zeichen in der Schriftfarbe; Etikett und Kronkorken in der Kartenfarbe */
-.sp-mono .bottle .body, .sp-mono .bottle.t5 .body { fill: var(--ink); stroke: none; }
+.sp-mono .bottle .body, .sp-mono .bottle.t5 .body, .sp-mono .bottle.g .body { fill: var(--ink); stroke: none; }
 .sp-mono .bottle .shade { display: none; }
 .sp-mono .bottle .cap { fill: var(--c); }
 .sp-mono .bottle .label { fill: var(--c); opacity: 1; }
@@ -838,14 +906,18 @@ button.bcard:active { transform: scale(0.98); }
 .sp-mono .bottle .hop-scales { stroke: var(--c); }
 .sp-mono .bottle .shine { fill: var(--c); opacity: 0.4; }
 .sp-mono .bottle .foam circle { fill: var(--ink); stroke: var(--c); stroke-width: 1.2; }
-.sp-mono .bottle .stars path { fill: var(--ink); }
-.sp-mono .bottle.t5 { filter: none; }
+.sp-mono .bottle { --spark: var(--ink); --gold: var(--ink); --gold-d: var(--ink); filter: none; }
+.sp-mono .bottle .crown .gem { fill: var(--c); stroke: none; }
+.sp-mono .bottle .bubbles circle { fill: var(--c); stroke: none; }
 .sp-mono .bcard-body.t1 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.12), transparent); }
-.sp-mono .bcard-body.t2 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.17), transparent); }
-.sp-mono .bcard-body.t3 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.22), transparent); }
-.sp-mono .bcard-body.t4 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.27), transparent); }
-.sp-mono .bcard-body.t5 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.33), transparent); }
-.sp-mono .bcard-body.t3::before, .sp-mono .bcard-body.t4::before, .sp-mono .bcard-body.t5::before { display: none; }
+.sp-mono .bcard-body.t2 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.16), transparent); }
+.sp-mono .bcard-body.t3 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.2), transparent); }
+.sp-mono .bcard-body.t4 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.24), transparent); }
+.sp-mono .bcard-body.t5 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.28), transparent); }
+.sp-mono .bcard-body.t6 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.32), transparent); }
+.sp-mono .bcard-body.t7 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.36), transparent); }
+.sp-mono .bcard-body.t8 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.4), transparent); }
+.sp-mono .bcard-body:is(.t3, .t4, .t5, .t6, .t7, .t8)::before, .sp-mono .bcard-body:is(.t6, .t7, .t8)::after { display: none; }
 
 /* ---------- Sonderedition 10 bis 60 (Design sp-se + sp-se10 … sp-se60) ----------
    Sechs eigenständige Karten, jede mit eigener Idee, alle flach und grafisch wie die Farbkarten (sp-mono), aber jede mit einem eigenen Motiv.
@@ -903,14 +975,18 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se10 .bottle .hop { fill: #D7392B; }
 .sp-se10 .bottle .hop-scales { stroke: #F1ECE2; }
 .sp-se10 .bottle .foam circle { fill: #FFFFFF; stroke: #161616; stroke-width: 1.2; }
-.sp-se10 .bottle .stars path { fill: #F2B705; }
+.sp-se10 .bottle { --spark: #F2B705; }
+.bcard.sp-se10 { --kt: #F2B705; } /* Leuchten der Flasche gelb statt rot (Karten-Level) */
 /* Karten-Level: gelber Schein hinter der links stehenden Flasche statt der mittigen Strahlen */
 .sp-se10 .bcard-body.t1 { background: radial-gradient(ellipse 70px 52px at 29px 43px, rgb(242 183 5 / 0.2), transparent); }
-.sp-se10 .bcard-body.t2 { background: radial-gradient(ellipse 74px 54px at 29px 43px, rgb(242 183 5 / 0.3), transparent); }
-.sp-se10 .bcard-body.t3 { background: radial-gradient(ellipse 78px 56px at 29px 43px, rgb(242 183 5 / 0.4), transparent); }
-.sp-se10 .bcard-body.t4 { background: radial-gradient(ellipse 82px 58px at 29px 43px, rgb(242 183 5 / 0.5), transparent); }
-.sp-se10 .bcard-body.t5 { background: radial-gradient(ellipse 86px 60px at 29px 43px, rgb(242 183 5 / 0.62), transparent); }
-.sp-se10 .bcard-body.t3::before, .sp-se10 .bcard-body.t4::before, .sp-se10 .bcard-body.t5::before { display: none; }
+.sp-se10 .bcard-body.t2 { background: radial-gradient(ellipse 73px 53px at 29px 43px, rgb(242 183 5 / 0.271), transparent); }
+.sp-se10 .bcard-body.t3 { background: radial-gradient(ellipse 76px 55px at 29px 43px, rgb(242 183 5 / 0.343), transparent); }
+.sp-se10 .bcard-body.t4 { background: radial-gradient(ellipse 79px 56px at 29px 43px, rgb(242 183 5 / 0.414), transparent); }
+.sp-se10 .bcard-body.t5 { background: radial-gradient(ellipse 81px 58px at 29px 43px, rgb(242 183 5 / 0.486), transparent); }
+.sp-se10 .bcard-body.t6 { background: radial-gradient(ellipse 84px 59px at 29px 43px, rgb(242 183 5 / 0.557), transparent); }
+.sp-se10 .bcard-body.t7 { background: radial-gradient(ellipse 87px 61px at 29px 43px, rgb(242 183 5 / 0.629), transparent); }
+.sp-se10 .bcard-body.t8 { background: radial-gradient(ellipse 90px 62px at 29px 43px, rgb(242 183 5 / 0.7), transparent); }
+.sp-se10 .bcard-body:is(.t3, .t4, .t5, .t6, .t7, .t8)::before, .sp-se10 .bcard-body:is(.t6, .t7, .t8)::after { display: none; }
 
 /* 20 – Neon: tiefes Schwarz mit feinem Messraster, Limette als einzige Farbe. Eine große „20“ als Umriss hinter der Flasche,
    Sucher-Ecken statt Rahmen, Band und Chips in Monospace, Flasche als leuchtende Kontur (auf der höchsten Stufe gefüllt). */
@@ -956,17 +1032,22 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se20 .bottle .hop-scales { stroke: #0D0E12; }
 .sp-se20 .bottle .shine { fill: #C6FF3A; opacity: 0.55; }
 .sp-se20 .bottle .foam circle { fill: #0D0E12; stroke: #C6FF3A; stroke-width: 1.2; }
-.sp-se20 .bottle .stars path { fill: #C6FF3A; }
-.sp-se20 .bottle.t5 { filter: drop-shadow(0 0 6px rgb(198 255 58 / 0.9)); }
-.sp-se20 .bottle.t5 .body { fill: #C6FF3A; stroke: #EFFFC4; }
-.sp-se20 .bottle.t5 .label { fill: #0D0E12; stroke: none; }
-.sp-se20 .bottle.t5 .shine { fill: #FFFFFF; }
+.sp-se20 .bottle { --spark: #C6FF3A; }
+.sp-se20 .bcard-body { --ring: #C6FF3A; }
+.sp-se20 .bottle.g { filter: drop-shadow(0 0 6px rgb(198 255 58 / 0.9)); }
+.sp-se20 .bottle.g .body { fill: #C6FF3A; stroke: #EFFFC4; }
+.sp-se20 .bottle.g .label { fill: #0D0E12; stroke: none; }
+.sp-se20 .bottle.g .shine { fill: #FFFFFF; }
+.sp-se20 .bottle.g .crown path { fill: #C6FF3A; stroke: #EFFFC4; }
 /* Karten-Level: auf Schwarz wirkt der übliche Schein zu grell, deshalb schwächer */
 .sp-se20 .bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, rgb(198 255 58 / 0.06), transparent); }
-.sp-se20 .bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, rgb(198 255 58 / 0.1), transparent); }
-.sp-se20 .bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, rgb(198 255 58 / 0.14), transparent); --ray: 8%; }
-.sp-se20 .bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, rgb(198 255 58 / 0.18), transparent); --ray: 11%; }
-.sp-se20 .bcard-body.t5 { background: radial-gradient(ellipse 105% 100px at 50% 46px, rgb(198 255 58 / 0.24), transparent); --ray: 15%; }
+.sp-se20 .bcard-body.t2 { background: radial-gradient(ellipse 93% 83px at 50% 46px, rgb(198 255 58 / 0.094), transparent); }
+.sp-se20 .bcard-body.t3 { background: radial-gradient(ellipse 96% 87px at 50% 46px, rgb(198 255 58 / 0.129), transparent); --ray: 8%; }
+.sp-se20 .bcard-body.t4 { background: radial-gradient(ellipse 99% 90px at 50% 46px, rgb(198 255 58 / 0.163), transparent); --ray: 11%; }
+.sp-se20 .bcard-body.t5 { background: radial-gradient(ellipse 101% 94px at 50% 46px, rgb(198 255 58 / 0.197), transparent); --ray: 14%; }
+.sp-se20 .bcard-body.t6 { background: radial-gradient(ellipse 104% 97px at 50% 46px, rgb(198 255 58 / 0.231), transparent); --ray: 17%; }
+.sp-se20 .bcard-body.t7 { background: radial-gradient(ellipse 107% 101px at 50% 46px, rgb(198 255 58 / 0.266), transparent); --ray: 20%; }
+.sp-se20 .bcard-body.t8 { background: radial-gradient(ellipse 110% 104px at 50% 46px, rgb(198 255 58 / 0.3), transparent); --ray: 24%; }
 
 /* 30 – Risographie: warmes Papier, zwei Druckfarben (Pink und Blau), die sich hinter der Flasche überlagern (multiply ergibt Violett),
    die Zahl ebenfalls überdruckt, leicht versetzte Schatten wie ein verrutschter Druck, Körnung des Papiers. Schrift in Tintenblau. */
@@ -1005,8 +1086,8 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se30 .bottle .hop-scales { stroke: #FF48B0; }
 .sp-se30 .bottle .shine { fill: #3C7BE0; opacity: 0.45; }
 .sp-se30 .bottle .foam circle { fill: #FFFFFF; stroke: #1D2457; stroke-width: 1.2; }
-.sp-se30 .bottle .stars path { fill: #FF48B0; }
-.sp-se30 .bottle.t5 { filter: drop-shadow(2px 1.5px 0 #3C7BE0) drop-shadow(0 0 4px rgb(242 193 78 / 0.8)); }
+.sp-se30 .bottle { --spark: #FF48B0; }
+.sp-se30 .bottle.t5, .sp-se30 .bottle.g { filter: drop-shadow(2px 1.5px 0 #3C7BE0) drop-shadow(0 0 4px rgb(242 193 78 / 0.8)); }
 
 /* 40 – Höhenlinien: Nachtblau mit sandfarbenen Höhenlinien wie auf einer Wanderkarte (auch das App-Symbol hat Höhenlinien).
    Der Gipfel liegt genau hinter der Flasche (SVG in fester Größe 280 × 420, waagerecht mittig, oben bündig), daneben die „Höhe“ ▲ 40.
@@ -1038,8 +1119,8 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se40 .chips span { background: rgb(16 36 59 / 0.75); border: 1px solid rgb(227 182 92 / 0.55); }
 .sp-se40 .origin::before, .sp-se40 .origin::after { background: linear-gradient(90deg, transparent, rgb(227 182 92 / 0.7)); }
 .sp-se40 .origin .o { background: #E3B65C; color: #10243B; }
-.sp-se40 .bottle:not(.t5) .body { fill: #E3B65C; stroke: #6E521C; }
-.sp-se40 .bottle:not(.t5) .cap { fill: #10243B; }
+.sp-se40 .bottle:not(.g) .body { fill: #E3B65C; stroke: #6E521C; }
+.sp-se40 .bottle:not(.g) .cap { fill: #10243B; }
 .sp-se40 .bottle .label { fill: #10243B; opacity: 1; }
 .sp-se40 .bottle .hop { fill: #E3B65C; }
 .sp-se40 .bottle .hop-scales { stroke: #10243B; }
@@ -1075,10 +1156,13 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se50 .bottle .foam circle { stroke: #2F2B28; stroke-width: 1.2; }
 /* Karten-Level: schwächerer Schein, damit der Stein hell bleibt */
 .sp-se50 .bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, rgb(200 85 61 / 0.08), transparent); }
-.sp-se50 .bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, rgb(200 85 61 / 0.12), transparent); }
-.sp-se50 .bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, rgb(200 85 61 / 0.16), transparent); --ray: 9%; }
-.sp-se50 .bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, rgb(200 85 61 / 0.2), transparent); --ray: 12%; }
-.sp-se50 .bcard-body.t5 { background: radial-gradient(circle 38px at 50% 46px, rgb(255 226 140 / 0.55), transparent), radial-gradient(ellipse 105% 100px at 50% 46px, rgb(200 85 61 / 0.22), transparent); --ray: 15%; }
+.sp-se50 .bcard-body.t2 { background: radial-gradient(ellipse 93% 83px at 50% 46px, rgb(200 85 61 / 0.111), transparent); }
+.sp-se50 .bcard-body.t3 { background: radial-gradient(ellipse 96% 87px at 50% 46px, rgb(200 85 61 / 0.143), transparent); --ray: 9%; }
+.sp-se50 .bcard-body.t4 { background: radial-gradient(ellipse 99% 90px at 50% 46px, rgb(200 85 61 / 0.174), transparent); --ray: 12%; }
+.sp-se50 .bcard-body.t5 { background: radial-gradient(circle 46px at 50% 46px, rgb(255 226 140 / 0.64), transparent), radial-gradient(ellipse 101% 94px at 50% 46px, rgb(200 85 61 / 0.206), transparent); --ray: 15%; }
+.sp-se50 .bcard-body.t6 { background: radial-gradient(circle 49px at 50% 46px, rgb(255 226 140 / 0.7), transparent), radial-gradient(ellipse 104% 97px at 50% 46px, rgb(200 85 61 / 0.237), transparent); --ray: 17%; }
+.sp-se50 .bcard-body.t7 { background: radial-gradient(circle 52px at 50% 46px, rgb(255 226 140 / 0.76), transparent), radial-gradient(ellipse 107% 101px at 50% 46px, rgb(200 85 61 / 0.269), transparent); --ray: 20%; }
+.sp-se50 .bcard-body.t8 { background: radial-gradient(circle 55px at 50% 46px, rgb(255 226 140 / 0.82), transparent), radial-gradient(ellipse 110% 104px at 50% 46px, rgb(200 85 61 / 0.3), transparent); --ray: 24%; }
 
 /* 60 – Art déco: tiefes Petrol mit Kupfer. Ein Strahlenfächer fällt vom Band auf die Flasche, zwei Bögen schließen ihn ab,
    Rahmen mit gestuften Ecken (eigene Eckformen für den gemeinsamen Zierrahmen), Band in einer klassizistischen Antiqua (Didot).
@@ -1113,12 +1197,12 @@ button.bcard:active { transform: scale(0.98); }
 .sp-se60 .chips span { background: rgb(14 46 54 / 0.8); border: 1px solid rgb(216 164 127 / 0.6); border-radius: 2px; }
 .sp-se60 .origin::before, .sp-se60 .origin::after { background: linear-gradient(90deg, transparent, rgb(216 164 127 / 0.75)); }
 .sp-se60 .origin .o { background: #D8A47F; color: #0E2E36; border-radius: 0; }
-.sp-se60 .bottle:not(.t5) .body { fill: #D8A47F; stroke: #6E4024; }
-.sp-se60 .bottle:not(.t5) .cap { fill: #0E2E36; }
+.sp-se60 .bottle:not(.g) .body { fill: #D8A47F; stroke: #6E4024; }
+.sp-se60 .bottle:not(.g) .cap { fill: #0E2E36; }
 .sp-se60 .bottle .label { fill: #0E2E36; opacity: 1; }
 .sp-se60 .bottle .hop { fill: #D8A47F; }
 .sp-se60 .bottle .hop-scales { stroke: #0E2E36; }
-.sp-se60 .bcard-body.t3::before, .sp-se60 .bcard-body.t4::before, .sp-se60 .bcard-body.t5::before { display: none; } /* der Fächer ersetzt die Strahlen */
+.sp-se60 .bcard-body:is(.t3, .t4, .t5, .t6, .t7, .t8)::before { display: none; } /* der Fächer ersetzt die Strahlen */
 /* Sehr schmale Geräte (Karten unter ca. 150 px): Band enger setzen, damit die Zahl der Edition nicht abgeschnitten wird */
 @media (max-width: 359px) {
   .sp-se .band .kat { padding: 0 5px; letter-spacing: 0.02em; }
@@ -1331,6 +1415,9 @@ button.bcard:active { transform: scale(0.98); }
   /* Folie und Bandglanz bleiben als ruhiger Schimmer stehen; Karte wird ohne Drehung aufgedeckt */
   .foil::before { animation: none; transform: translate(-30%, -24%); }
   .k4 .band .kat, .k5 .band .kat { animation: none; background-position: 50% 0, 0 0; }
+  /* Karten-Level: Strahlen, Ringe, Bläschen, Sterne, Heiligenschein und Krone stehen still */
+  .bcard-body::before, .bcard-body::after, .bottle .stars path, .bottle .bubbles circle, .bottle .halo, .bottle .crown, .bottle .crown .gem, .bottle.g .shine { animation: none !important; }
+  .bottle .bubbles circle { opacity: 0.55; }
   .sp-regenbogen .mat::before { animation: none; opacity: 0.8; }
   .sp-regenbogen .band .kat { animation: none; background-position: 50% 0, 0 0; }
   .sp-koenig .mat::after { animation: none; }
@@ -1396,3 +1483,31 @@ button.bcard:active { transform: scale(0.98); }
 /* In „Geschmack“ und „Wissenswertes“ stehen die Begriffe direkt im Fenster: Trennlinie zwischen den Einträgen */
 .info-sec > .info-dl dt { padding-top: 10px; border-top: 1px solid var(--line); }
 .info-sec > .info-dl dt:first-child { border-top: 0; padding-top: 0; }
+
+/* ---------- Alkohol-Auswertung (ALKOHOL-AUSWERTUNG) ---------- */
+/* Körperdaten in den Einstellungen: Gewichtsfeld neben dem Segmentschalter */
+.kg-row { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-weight: 600; }
+.kg-row input {
+  width: 96px; min-height: 44px; padding: 8px 12px; text-align: right;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); color: var(--text);
+}
+.kg-row input:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: transparent; }
+/* Label-Leiter A bis D wie beim Energielabel: Pfeilbalken, nur der eigene Bereich ist voll deckend und trägt „◀ du“ */
+.eco { list-style: none; margin: 4px 0 10px; padding: 0; display: grid; gap: 5px; }
+.eco .lab { display: flex; align-items: center; gap: 8px; opacity: 0.45; }
+.eco .lab.on { opacity: 1; }
+.eco .lab-bar {
+  display: flex; align-items: center; gap: 10px; box-sizing: border-box; min-width: 150px; height: 36px; padding: 0 24px 0 12px;
+  background: var(--lab-bg); color: var(--lab-ink);
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+}
+.eco .lab.a .lab-bar { --lab-bg: var(--lab-a); --lab-ink: var(--on-lab-a); width: 46%; }
+.eco .lab.b .lab-bar { --lab-bg: var(--lab-b); --lab-ink: var(--on-lab-b); width: 58%; }
+.eco .lab.c .lab-bar { --lab-bg: var(--lab-c); --lab-ink: var(--on-lab-c); width: 70%; }
+.eco .lab.d .lab-bar { --lab-bg: var(--lab-d); --lab-ink: var(--on-lab-d); width: 82%; }
+.eco .lab-bar b { font: 800 22px/1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; }
+.eco .lab-bar span { font-size: 13px; font-weight: 650; white-space: nowrap; }
+.eco .lab-me { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.alc-how { margin: 10px 0 4px; }
+.alc-how > summary { padding: 8px 0; font-weight: 650; cursor: pointer; }
+.alc-how p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }

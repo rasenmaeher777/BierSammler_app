@@ -524,11 +524,125 @@
     };
   }
 
+  /* ---------- Alkohol und Körper (ALKOHOL-AUSWERTUNG) ---------- */
+
+  /* Auswertung „Alkohol und Körper“ in den Statistiken. Sie erscheint erst, wenn in den Einstellungen das Geschlecht gewählt
+     ist; das Gewicht ist freiwillig (ohne Gewicht keine Promille-Schätzung). Alles ist eine grobe Schätzung aus den EINGETRAGENEN
+     Bieren (nicht eingetragene Getränke fehlen) und keine medizinische Beratung.
+     Gramm werden in Zehnteln gerechnet (197 = 19,7 g), Promille in Hundertsteln (85 = 0,85 ‰), wie die Punkte.
+     Reinalkohol (g) = Flaschengröße (l) × Vol.-% × 0,789 × 10 (Dichte von Ethanol); Biere ohne Größenangabe zählen nicht mit.
+
+     Label (Schnitt der letzten 4 Wochen, Gramm Reinalkohol pro Woche; obere Grenzen A, B, C):
+       A  bis 27 g   risikoarm      (DGE-Positionspapier 2024, für beide Geschlechter gleich)
+       B  bis 81 g   moderat        (DGE 2024)
+       C  bis 140 g (w) / 210 g (m)  erhöht; das sind 20 g (w) bzw. 30 g (m) pro Tag, ab dort steigt das Leberrisiko deutlich
+          (apotheken.de / Deutsche Leberstiftung; die Quellen nennen je nach Stelle 10–20 g (w) und 20–40 g (m))
+       D  darüber    hoch
+     Das Gewicht fließt NICHT ins Label ein (die Leitlinien gelten nicht je Kilogramm), sondern nur in die Promille-Schätzung.
+     Promille nach Widmark: g / (kg × r), r = 0,7 (m) bzw. 0,6 (w); Abbau 0,1 ‰ pro Stunde (rechtsmedizinischer Mindestwert, das
+     schätzt eher zu hoch); kein Abzug für unvollständige Aufnahme. Ein „Abend“ = Einträge mit höchstens 6 Stunden Abstand.
+     Rauschtrinken: ab 60 g (m) bzw. 48 g (w) an einem Abend (5 bzw. 4 Gläser; die Literatur nennt 50–60 g). */
+  const LABELS = ['A', 'B', 'C', 'D'];
+  const LABEL_LIMITS = { m: [27, 81, 210], w: [27, 81, 140] };
+  const BINGE_GRAMS = { m: 60, w: 48 };
+  const WIDMARK_R = { m: 0.7, w: 0.6 };
+  const ELIMINATION = 0.1;            // ‰ pro Stunde
+  const SESSION_GAP = 6 * 3600000;    // ms
+  const ALC_WINDOW_DAYS = 28;
+  const KG_MIN = 30;
+  const KG_MAX = 250;
+  const HALBE_G10 = 197;              // Zehntel Gramm in 0,5 l Bier mit 5 %
+
+  // Zehntel Gramm Reinalkohol eines Biers; null ohne Größenangabe
+  const gramsTenths = (beer) => (beer && typeof beer.alc === 'number' && typeof beer.flasche === 'number'
+    ? Math.round(beer.flasche * beer.alc * 78.9) : null);
+
+  // Gespeicherte Körperdaten prüfen: { sex: 'm' | 'w' | null, kg: Zahl (30 … 250, eine Nachkommastelle) | null }
+  function cleanBody(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const sex = r.sex === 'm' || r.sex === 'w' ? r.sex : null;
+    const kg = typeof r.kg === 'number' && Number.isFinite(r.kg) && r.kg >= KG_MIN && r.kg <= KG_MAX ? Math.round(r.kg * 10) / 10 : null;
+    return { sex, kg };
+  }
+  // Eingabe „64“, „64,5“, „64.5“ oder „64 kg“ → Zahl; alles andere und Werte außerhalb von 30 … 250 → null
+  function parseKg(text) {
+    const t = String(text).trim().replace(/\s*kg$/i, '').replace(',', '.');
+    if (!/^\d{1,3}(\.\d{1,2})?$/.test(t)) return null;
+    const v = Math.round(Number(t) * 10) / 10;
+    return v >= KG_MIN && v <= KG_MAX ? v : null;
+  }
+  // 'A' … 'D' für Gramm pro Woche (in Zehnteln); ohne Geschlecht null
+  function labelFor(weekG10, sex) {
+    const lim = LABEL_LIMITS[sex];
+    if (!lim) return null;
+    const i = lim.findIndex((l) => weekG10 <= l * 10);
+    return LABELS[i === -1 ? lim.length : i];
+  }
+  const fmtPermille = (h100) => `${fmtDec((h100 / 100).toFixed(2))} ‰`;
+
+  /* Promille eines Abends: Einträge der Reihe nach, zwischen zwei Einträgen baut der Körper ab, jeder Eintrag erhöht den Wert.
+     Gibt { peak100, soberHours } zurück (Stunden vom letzten Eintrag bis 0,0 ‰) oder null ohne Gewicht. */
+  function permilleOf(items, body) {
+    if (!body.kg) return null;
+    const r = WIDMARK_R[body.sex];
+    let c = 0; let peak = 0; let last = null;
+    for (const e of items) {
+      if (last !== null) c = Math.max(0, c - (ELIMINATION * (e.at - last)) / 3600000);
+      c += (e.g / 10) / (body.kg * r);
+      if (c > peak) peak = c;
+      last = e.at;
+    }
+    return { peak100: Math.round(peak * 100), soberHours: c / ELIMINATION };
+  }
+
+  /* Alle Zahlen der Auswertung. drinks/beerMap/now wie bei stats(), body = gespeicherte Körperdaten.
+     Gibt null zurück ohne Geschlecht oder ohne Einträge. Fenster = letzte 28 Tage; bei kürzerer Nutzung seit dem ersten Eintrag,
+     mindestens eine Woche (so wirkt ein einzelner Abend am Anfang nicht wie ein ganzer Monat). */
+  function alcoholReport(drinks, beerMap, body, now) {
+    const b = cleanBody(body);
+    if (!b.sex) return null;
+    const list = drinks.filter((d) => beerMap.has(d.beerId)).sort((x, y) => x.at - y.at);
+    if (!list.length) return null;
+    const from = now - ALC_WINDOW_DAYS * 86400000;
+    const weeks = Math.min(ALC_WINDOW_DAYS / 7, Math.max(1, (now - list[0].at) / (7 * 86400000)));
+    const monday = weekStart(now).getTime();
+    let noSize = 0; let windowG10 = 0; let thisWeekG10 = 0;
+    const inWin = [];
+    for (const d of list) {
+      if (d.at <= from) continue;
+      const g = gramsTenths(beerMap.get(d.beerId));
+      if (g === null) noSize++;
+      windowG10 += g || 0;
+      if (d.at >= monday) thisWeekG10 += g || 0;
+      if (g > 0) inWin.push({ at: d.at, g });
+    }
+    const weekG10 = Math.round(windowG10 / weeks);
+    // Abende bilden (alkoholfreie Biere machen keinen Trinkabend)
+    const sessions = [];
+    for (const e of inWin) {
+      const cur = sessions[sessions.length - 1];
+      if (cur && e.at - cur.end <= SESSION_GAP) { cur.end = e.at; cur.g += e.g; cur.n++; cur.items.push(e); }
+      else sessions.push({ start: e.at, end: e.at, g: e.g, n: 1, items: [e] });
+    }
+    let top = null; // meiste Gramm, bei Gleichstand der jüngere Abend
+    for (const s of sessions) if (!top || s.g >= top.g) top = s;
+    const bingeLimit = BINGE_GRAMS[b.sex];
+    return {
+      sex: b.sex, kg: b.kg, weeks,
+      label: labelFor(weekG10, b.sex), limits: LABEL_LIMITS[b.sex],
+      weekG10, thisWeekG10, windowG10,
+      halbe: Math.round((weekG10 * 10) / HALBE_G10),   // Zehntel: Schnitt in 0,5-l-Flaschen mit 5 %
+      binge: { limit: bingeLimit, count: sessions.filter((s) => s.g >= bingeLimit * 10).length },
+      peak: top ? { g10: top.g, n: top.n, start: top.start, end: top.end, ...permilleOf(top.items, b) } : null,
+      noSize,
+    };
+  }
+
   /* ---------- Kartenstufe ---------- */
 
   // Das Karten-Level ist die Anzahl, wie oft ein Bier getrunken wurde. Ab diesen Levels verändert sich die Optik
-  // der Karte (Stufe 1 … 5); dazwischen bleibt sie gleich. Die Kategorie ist davon unabhängig.
-  const CARD_TIER_AT = [4, 8, 16, 24, 40];
+  // der Karte (Stufe 1 … 8); dazwischen bleibt sie gleich. Die Kategorie ist davon unabhängig.
+  const CARD_TIER_AT = [3, 7, 10, 15, 20, 25, 30, 35];
   function cardTier(count) {
     let tier = 0;
     for (const n of CARD_TIER_AT) if (count >= n) tier++;
@@ -624,6 +738,7 @@
     cleanMessages, pickMessage,
     weekStart, weekKey, weeksInclusive, dayNumber, isoWeek,
     WEEKDAYS, stats,
+    LABELS, LABEL_LIMITS, BINGE_GRAMS, KG_MIN, KG_MAX, gramsTenths, cleanBody, parseKg, labelFor, fmtPermille, alcoholReport, // ALKOHOL-AUSWERTUNG
     usernameKey,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;

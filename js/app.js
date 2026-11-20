@@ -36,6 +36,7 @@
   const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
   const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: gesetzt von js/store.js nach dem Löschen des Kontos
+  const LS_BODY = 'biersammler-koerper-v1'; // ALKOHOL-AUSWERTUNG: JSON { sex: 'm' | 'w', kg } nur auf diesem Gerät; js/store.js löscht den Schlüssel beim Abmelden
   const RECENT_MAX = 8; // zuletzt getrunkene Biere im leeren Suchfeld
   const TOP_COUNT = 6;  // beste Karten auf der Startseite
 
@@ -58,6 +59,9 @@
       m.content = THEME_COLORS[theme] || own;
     });
   }
+  // ALKOHOL-AUSWERTUNG: Körperdaten lesen/schreiben (immer über GAME.cleanBody geprüft; leer = Schlüssel entfernen)
+  const readBody = () => { try { return G.cleanBody(JSON.parse(lsGet(LS_BODY))); } catch { return G.cleanBody(null); } };
+  const writeBody = (b) => { const c = G.cleanBody(b); lsSet(LS_BODY, c.sex || c.kg ? JSON.stringify(c) : null); };
   const currentTheme = () => { const t = lsGet(LS_THEME); return t === 'light' || t === 'dark' ? t : 'system'; };
 
   /* ---------- 2. Zustand ---------- */
@@ -111,40 +115,61 @@
   // Vierzackiger Stern mit Mittelpunkt (x, y) und Radius r
   const star = (x, y, r, delay) => `<path style="--d:${delay}s" d="M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z"/>`;
 
-  /* Flasche. tier = Kartenstufe (G.cardTier): 0 schlicht, 1 Glanz, 2 + Schaumkrone, 3 + (Strahlen im Hintergrund, per CSS),
-     4 + Sterne, 5 goldene Flasche mit mehr Sternen. Die Kategorie bleibt davon unberührt. */
+  /* Klassen der Kartenstufe für Flasche, Bär und Wahrzeichen: t1 … t8, ab Stufe 6 zusätzlich g (goldenes Symbol).
+     Die Stufen (Lvl 3, 7, 10, 15, 20, 25, 30, 35; GAME.CARD_TIER_AT) sind bewusst deutlich verschieden, siehe „Karten-Level“ in css/style.css:
+     1 Glanz und Leuchten · 2 Schaumkrone · 3 Bläschen und Strahlen · 4 Sterne · 5 silberne Flasche · 6 goldene Flasche ·
+     7 + kreisender Heiligenschein · 8 + Krone und Regenbogen-Ring. Die Kategorie bleibt davon unberührt. */
+  const tierCls = (tier) => (tier ? ` t${tier}${tier >= 6 ? ' g' : ''}` : '');
+
+  // Sterne der Flasche (Bildfeld 40 × 96): erst drei, ab Stufe 5 sechs, ab Stufe 8 neun
+  const BOTTLE_STARS = [[-5, 34, 6.5, 0], [46, 50, 7.5, 0.7], [-2, 78, 5, 1.4]];
+  const BOTTLE_STARS_MORE = [[47, 20, 5.5, 0.35], [-7, 56, 4.5, 1.05], [46, 84, 5, 1.75]];
+  const BOTTLE_STARS_EXTRA = [[-6, 12, 5, 0.9], [47, 68, 4.5, 1.6], [46, 4, 4.5, 0.2]];
+  const starSet = (tier, base, more, extra) => (tier >= 4
+    ? `<g class="stars">${base.concat(tier >= 5 ? more : [], tier >= 8 ? extra : []).map((x) => star(...x)).join('')}</g>`
+    : '');
+  // Einzelner funkelnder Stern an der Flaschenschulter, nur Stufe 1 bis 3 (ab Stufe 4 gibt es die Sterne rundum)
+  const GLINT = `<g class="glint">${star(33, 38, 5.5, 0)}</g>`;
+  // Aufsteigende Bläschen in der Flasche (ab Stufe 3); Kreis: [x, y, Radius, Verzögerung]
+  const BUBBLES = [[15, 84, 2, 0], [24, 80, 1.5, 0.9], [19, 87, 1.7, 1.7], [27, 83, 1.2, 2.4]];
+  const bubbles = () => `<g class="bubbles">${BUBBLES.map(([x, y, r, d]) => `<circle style="--d:${d}s" cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`;
+  // Krone (Stufe 8) mit drei Edelsteinen
+  const CROWN = '<g class="crown"><path d="M11.5 2V-7.5L16 -3.2 20 -11 24 -3.2 28.5 -7.5V2z"/><circle class="gem" cx="11.5" cy="-8.5" r="1.7"/><circle class="gem" cx="20" cy="-12" r="1.9"/><circle class="gem" cx="28.5" cy="-8.5" r="1.7"/></g>';
+
   function bottle(tier = 0) {
     const shine = tier >= 1 ? '<rect class="shine" x="9.5" y="40" width="3" height="44" rx="1.5"/>' : '';
-    const foam = tier >= 2 ? '<g class="foam"><circle cx="14.5" cy="3" r="4"/><circle cx="20" cy="0.5" r="4.6"/><circle cx="25.5" cy="3" r="4"/></g>' : '';
-    const stars = tier >= 4
-      ? `<g class="stars">${star(-4, 34, 5, 0)}${star(45, 52, 6, 0.7)}${star(-1, 76, 3.5, 1.4)}${tier >= 5 ? star(46, 22, 4, 0.35) + star(-6, 56, 3, 1.05) + star(44, 82, 3.5, 1.75) : ''}</g>`
-      : '';
+    // Schaum ab Stufe 2, ab Stufe 8 trägt die Flasche stattdessen eine Krone
+    const foam = tier >= 2 && tier < 8 ? '<g class="foam"><circle cx="14.5" cy="3" r="4"/><circle cx="20" cy="0.5" r="4.6"/><circle cx="25.5" cy="3" r="4"/></g>' : '';
+    const crown = tier >= 8 ? CROWN : '';
+    const halo = tier >= 7 ? '<circle class="halo" cx="20" cy="48" r="45"/>' : '';
     // Kronkorken nur, solange die Flasche noch zu ist (ab Stufe 2 steht Schaum darauf)
     const cap = tier < 2 ? '<path class="cap" d="M13.6 .4h12.8v4.4H13.6z"/>' : '';
     const hop = '<path class="hop" d="M20 54.6c-2.7 0-4 2-4 4.1 0 2.7 1.9 5 4 6.4 2.1-1.4 4-3.7 4-6.4 0-2.1-1.3-4.1-4-4.1z"/><path class="hop-scales" d="M16.9 58.2q3.1 1.7 6.2 0M17.2 61.4q2.8 1.5 5.6 0"/>';
-    return `<svg class="bottle${tier ? ` t${tier}` : ''}" viewBox="0 0 40 96" aria-hidden="true"><path class="body" d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="shade" x="26.5" y="46" width="4" height="42" rx="2"/>${cap}<rect class="label" x="10" y="52" width="20" height="18" rx="3"/>${hop}${shine}${foam}${stars}</svg>`;
+    return `<svg class="bottle${tierCls(tier)}" viewBox="0 0 40 96" aria-hidden="true">${halo}<path class="body" d="M15 2h10v6h-1v16c0 4 9 9 9 22v42c0 3-2 6-5 6H12c-3 0-5-3-5-6V46c0-13 9-18 9-22V8h-1z"/><rect class="shade" x="26.5" y="46" width="4" height="42" rx="2"/>${cap}<rect class="label" x="10" y="52" width="20" height="18" rx="3"/>${hop}${tier >= 3 ? bubbles() : ''}${tier >= 1 && tier < 4 ? GLINT : ''}${shine}${foam}${crown}${starSet(tier, BOTTLE_STARS, BOTTLE_STARS_MORE, BOTTLE_STARS_EXTRA)}</svg>`;
   }
   const BOTTLE = bottle();
 
-  /* Sterne um Bär und Wahrzeichen (Bildfeld 60 × 86; ab Kartenstufe 4, bei 5 drei weitere). Je Stern [x, y, Radius, Verzögerung].
-     Der Bär hat eigene Plätze: Er streckt die Pfoten nach links, dort würden die üblichen Sterne ihn überdecken. */
+  /* Sterne um Bär und Wahrzeichen (Bildfeld 60 × 86; ab Kartenstufe 4 drei, ab 5 sechs, ab 8 neun). Je Stern [x, y, Radius, Verzögerung].
+     Der Bär hat eigene Plätze: Er streckt die Pfoten nach links, dort würden die üblichen Sterne ihn überdecken.
+     Ab Stufe 7 kreist ein Heiligenschein um das Symbol (Kreis um die Mitte des Bildfelds). */
   const HERO_STARS = [[5, 30, 5, 0], [55, 52, 6, 0.7], [3, 70, 3.5, 1.4]];
   const HERO_STARS_MORE = [[56, 14, 4, 0.35], [2, 50, 3, 1.05], [54, 76, 3.5, 1.75]];
+  const HERO_STARS_EXTRA = [[4, 10, 3.5, 0.9], [57, 34, 3, 1.6], [56, 64, 3, 0.2]];
   const BEAR_STARS = [[12, 7, 5, 0], [56.5, 44, 4.5, 0.7], [6, 62, 3.5, 1.4]];
   const BEAR_STARS_MORE = [[57.5, 21, 3.5, 0.35], [4.5, 32, 3, 1.05], [57, 70, 3.5, 1.75]];
-  const heroStars = (tier, base = HERO_STARS, more = HERO_STARS_MORE) => tier >= 4
-    ? `<g class="stars">${base.concat(tier >= 5 ? more : []).map((s) => star(...s)).join('')}</g>`
-    : '';
+  const BEAR_STARS_EXTRA = [[3, 47, 3, 0.9], [38, 3, 3, 1.6], [56, 82, 3, 0.2]];
+  const heroStars = (tier, base = HERO_STARS, more = HERO_STARS_MORE, extra = HERO_STARS_EXTRA) => starSet(tier, base, more, extra);
+  const heroHalo = (tier) => (tier >= 7 ? '<circle class="halo" cx="30" cy="43" r="41"/>' : '');
 
   /* Berliner Bär (Spezialkarte „baer“) statt der Flasche. Der Umriss ist aus der Vorlage des Nutzers (Wappenbär-Silhouette, schaut
      nach links) Punkt für Punkt nachgefahren und darf NICHT von Hand verändert werden: Es ist ein Berliner Wahrzeichen, kein eigenes Motiv.
-     Gleiche Kartenstufen wie die Flasche: ab 4 Sterne, bei 5 golden. Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel),
+     Gleiche Kartenstufen wie die Flasche (Sterne ab 4, silbern bei 5, golden ab 6, Heiligenschein ab 7). Farbe folgt dem Theme (dunkel auf hell, hell auf dunkel),
      siehe .bear in css/style.css. */
   const BEAR_PATH = 'M42.38 2.01 45.34 2.23 48.34 2.81 52.25 2.81 53.46 3.51 53.83 4.11 53.95 4.71 53.87 5.92 53.11 8.02 52.97 8.92 53.23 13.74 53.01 16.44 51.87 20.35 51.59 22.16 51.59 27.57 51.42 29.98 50.79 32.68 48.87 38.7 48.49 41.41 48.53 42.91 48.85 44.41 51.42 52.83 52.46 57.65 52.53 58.85 52.38 60.35 51.3 62.76 51.19 63.66 51.56 69.08 52.33 73.89 52.32 75.99 52.08 76.9 51.39 78.1 50.15 79.35 48.04 80.88 45.34 82.45 43.53 83.23 42.33 83.43 41.13 83.36 40.22 82.94 39.53 82.31 38.97 81.41 38.62 80.51 38.66 79.9 39.02 79.39 39.65 79 42.93 77.93 43.62 77.2 43.55 76.6 42.63 75.35 39.8 72.99 37.53 69.38 36.32 67.87 35.11 67.18 34.21 67.18 32.7 67.73 31.2 68.65 28.49 70.79 26.09 73.1 25.06 74.49 24.2 76.29 23.87 77.5 23.47 80.51 23.08 81.96 22.63 82.91 21.88 83.68 21.27 83.94 19.47 83.89 17.97 83.32 15.26 81.94 11.35 80.91 10.15 80.34 9.36 79.6 8.86 78.7 8.73 77.5 8.85 76.6 9.55 75.57 10.75 74.96 12.25 75.01 15.56 76.11 16.16 76.1 16.76 75.81 17.18 75.39 17.77 74.19 17.99 72.99 17.78 66.07 17.9 64.87 18.52 62.76 19.67 60.65 21.58 58.54 23.68 56.97 27.29 55.09 27.71 54.64 27.8 53.74 27.61 48.32 27.29 47.55 26.69 47.3 23.08 48.43 21.58 48.72 17.97 48.83 15.26 48.42 12.85 47.53 10.45 45.99 8.28 43.81 7.6 42.61 7.01 41.11 6.71 39.9 6.67 38.4 6.94 37.8 7.44 37.36 8.34 37.32 9.55 37.67 11.65 38.84 13.76 40.87 14.36 41.24 15.56 41.45 17.06 41.16 18.57 40.59 22.78 38.32 25.18 37.31 25.66 36.89 25.89 36.29 25.49 35.85 15.26 28.8 10.72 24.86 8.59 22.46 6.54 19.44 6.06 17.95 6.18 15.84 6.81 14.64 8.34 13.7 9.85 13.43 11.05 13.62 11.95 14.13 12.71 14.94 14.9 19.15 15.62 20.05 16.76 21.06 19.17 22.27 22.48 23.47 29.09 25.2 30.6 25.25 31.76 24.56 33.91 22.41 36.71 20.05 37.38 19.15 37.68 18.25 37.6 17.65 36.91 16.91 35.71 16.27 32.4 15.02 31.5 14.46 30.52 13.44 29.87 12.23 29.26 9.83 29.17 7.12 29.62 5.62 30 5.2 30.6 4.9 34.81 4.8 39.02 2.58 40.22 2.23z';
-  const bear = (tier = 0) => `<svg class="bottle bear${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true"><path class="body" d="${BEAR_PATH}"/>${heroStars(tier, BEAR_STARS, BEAR_STARS_MORE)}</svg>`;
+  const bear = (tier = 0) => `<svg class="bottle bear${tierCls(tier)}" viewBox="0 0 60 86" aria-hidden="true">${heroHalo(tier)}<path class="body" d="${BEAR_PATH}"/>${heroStars(tier, BEAR_STARS, BEAR_STARS_MORE, BEAR_STARS_EXTRA)}</svg>`;
 
   /* Wahrzeichen der Länder-Legenden (Spezialkarten „kuckucksuhr“ … „bratwurst“) statt der Flasche, wie der Bär: gleiche Größe (60 × 86),
-     gleiche Kartenstufen (ab 4 Sterne, bei 5 golden). Klassen: body (gefüllt, Farbe folgt dem Theme), limb (Strich), cut (Aussparung in
+     gleiche Kartenstufen (Sterne ab 4, silbern bei 5, golden ab 6, Heiligenschein ab 7). Klassen: body (gefüllt, Farbe folgt dem Theme), limb (Strich), cut (Aussparung in
      Kartenfarbe), cutline (Aussparung als Strich). Siehe .bear in css/style.css. */
   const ICONS = {
     // BW: Kuckucksuhr mit Tannenzapfen-Gewichten
@@ -221,7 +246,7 @@
       <path class="cutline" style="stroke-width:1.5" d="M14 35l5 9M23 35l5 9M32 35l5 9M41 35l5 9"/></g>`,
   };
 
-  const icon = (name, tier = 0) => `<svg class="bottle bear icon ico-${name}${tier ? ` t${tier}` : ''}" viewBox="0 0 60 86" aria-hidden="true">${ICONS[name]}${heroStars(tier)}</svg>`;
+  const icon = (name, tier = 0) => `<svg class="bottle bear icon ico-${name}${tierCls(tier)}" viewBox="0 0 60 86" aria-hidden="true">${heroHalo(tier)}${ICONS[name]}${heroStars(tier)}</svg>`;
   // Symbol in der Mitte der Karte: Flasche, bei Spezialkarten der Bär oder das Wahrzeichen
   const symbol = (b, tier) => {
     const design = b.spezial && b.spezial.design;
@@ -716,6 +741,56 @@
     $('.sheet-body', statsDlg).scrollTop = 0;
   }
   const plural = (n, one, many) => `${G.fmtInt(n)} ${n === 1 ? one : many}`;
+
+  /* ALKOHOL-AUSWERTUNG: Abschnitt „Alkohol und Körper“ der Statistiken (Rechnung und Grenzen in GAME.alcoholReport).
+     Gibt '' zurück, solange in den Einstellungen kein Geschlecht gewählt ist; ohne Gewicht entfällt nur die Promille-Schätzung. */
+  const LABEL_TEXT = {
+    A: 'Risikoarm nach der Empfehlung der Deutschen Gesellschaft für Ernährung (DGE, 2024).',
+    B: 'Moderates Risiko nach der Empfehlung der DGE (2024).',
+    C: 'Erhöhtes Risiko; die Leber wird dauerhaft deutlich belastet.',
+    D: 'Hohes Risiko: Ab dieser Menge steigt das Risiko für Leberschäden deutlich.',
+  };
+  function alcoholHtml(now) {
+    const r = G.alcoholReport(drinks, db.map, readBody(), now);
+    if (!r) return '';
+    const g = (tenths) => `${G.fmt1(tenths)} g`;
+    const tile = (value, label, sub = '') => `<div class="tile"><b>${value}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const lim = r.limits;
+    const ranges = { A: `bis ${lim[0]} g`, B: `${lim[0]} bis ${lim[1]} g`, C: `${lim[1]} bis ${lim[2]} g`, D: `über ${lim[2]} g` };
+    const ladder = G.LABELS.map((l) => `<li class="lab ${l.toLowerCase()}${l === r.label ? ' on' : ''}">
+        <span class="lab-bar"><b>${l}</b><span>${ranges[l]}</span></span>${l === r.label ? '<span class="lab-me" aria-hidden="true">◀ du</span><span class="sr-only"> (dein Bereich)</span>' : ''}</li>`).join('');
+    const span = r.weeks >= 4 ? 'letzte 4 Wochen' : 'seit dem ersten Eintrag';
+    const p = r.peak;
+    const tiles = tile(g(r.weekG10), 'Ø pro Woche', span)
+      + tile(g(r.thisWeekG10), 'diese Woche', 'seit Montag')
+      + tile(p ? g(p.g10) : '–', 'stärkster Abend', p ? `${plural(p.n, 'Bier', 'Biere')} · ${fmtDay.format(p.end)}` : 'in den letzten 4 Wochen keiner')
+      + tile(G.fmtInt(r.binge.count), r.binge.count === 1 ? 'Rauschtrink-Abend' : 'Rauschtrink-Abende',`ab ${r.binge.limit} g an einem Abend, letzte 4 Wochen`)
+      + (p && p.peak100 !== undefined
+        ? tile(G.fmtPermille(p.peak100), 'Promille am stärksten Abend', 'geschätzt, mit deinem Gewicht')
+          + tile(`ca. ${Math.max(1, Math.round(p.soberHours))} Std.`, 'bis wieder 0,0 ‰', 'nach dem letzten Bier dieses Abends')
+        : '');
+    return `<h3>Alkohol und Körper <span class="h-sub">Schätzung</span></h3>
+      <p class="stat-line"><b>${g(r.weekG10)}</b> Reinalkohol pro Woche im Schnitt (≈ ${G.fmt1(r.halbe)} Flaschen à 0,5 l mit 5 %) – Bereich <b>${r.label}</b></p>
+      <ol class="eco" aria-label="Bereiche A bis D nach Gramm Reinalkohol pro Woche">${ladder}</ol>
+      <p class="note">${esc(LABEL_TEXT[r.label])}</p>
+      <div class="tiles">${tiles}</div>
+      ${r.kg ? '' : '<p class="note">Mit deinem Gewicht (Einstellungen → Körperdaten) kommt eine Promille-Schätzung dazu.</p>'}
+      ${r.noSize ? `<p class="note">${plural(r.noSize, 'Bier', 'Biere')} ohne Größenangabe nicht mitgezählt.</p>` : ''}
+      <p class="note">Gerechnet wird nur mit den Bieren, die du hier einträgst; anderer Alkohol und nicht eingetragene Biere fehlen. Das ist keine
+        medizinische Beratung und keine Auskunft über deine Fahrtüchtigkeit: Wer getrunken hat, fährt nicht.</p>
+      <details class="alc-how"><summary>So wird gerechnet</summary>
+        <p>Reinalkohol (g) = Menge (ml) × Alkoholgehalt (%) ÷ 100 × 0,789. Als Schnitt zählen die letzten 4 Wochen (bei kürzerer Nutzung seit dem
+          ersten Eintrag, mindestens eine Woche).</p>
+        <p><b>A</b> bis 27 g und <b>B</b> bis 81 g pro Woche entsprechen den Zonen „risikoarm“ und „moderat“ der DGE von 2024; sie gelten für beide Geschlechter gleich.
+          <b>C</b> reicht bis 20 g (Frauen) bzw. 30 g (Männer) pro Tag, also bis 140 bzw. 210 g pro Woche; darüber liegt <b>D</b>. Das sind Richtwerte: Die Quellen
+          nennen für die Leber je nach Stelle 10–20 g pro Tag für Frauen und 20–40 g für Männer.</p>
+        <p>Das Gewicht ändert den Bereich nicht (die Leitlinien gelten nicht je Kilogramm), sondern nur die Promille-Schätzung nach Widmark:
+          Gramm ÷ (Gewicht × Faktor), Faktor 0,7 für Männer und 0,6 für Frauen, Abbau 0,1 ‰ pro Stunde, ohne Abzug für unvollständige Aufnahme (die Schätzung fällt
+          eher zu hoch aus). Ein Abend sind Einträge mit höchstens 6 Stunden Abstand. Als Rauschtrinken gelten ab ${G.BINGE_GRAMS.m} g (Männer) bzw. ${G.BINGE_GRAMS.w} g (Frauen)
+          an einem Abend, etwa 5 bzw. 4 Gläser.</p>
+      </details>`;
+  }
+
   function paintStats() {
     const scroll = $('.sheet-body', statsDlg)?.scrollTop || 0;
     const head = '<div class="sheet-head"><h2>Statistiken</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>';
@@ -784,6 +859,7 @@
           ${fact('Liter insgesamt', `${G.fmt1(s.liter)} l`, s.noSize ? `(${plural(s.noSize, 'Bier', 'Biere')} ohne Größenangabe nicht mitgezählt)` : '')}
           ${fact('Anteil alkoholfrei', `${s.freePct} %`)}
         </dl>
+        ${alcoholHtml(now)}
         <h3>Bundesländer <span class="h-sub">${s.states.length} / 16 entdeckt</span></h3>
         <ul class="states">${states}</ul>
         <p class="note">Gezählt werden Biere deutscher Brauereien und Vertriebe nach ihrem Sitz.</p>`);
@@ -977,6 +1053,19 @@
           <p class="note">Ist der Schalter an, merkt sich die App bei jedem eingetragenen Bier, wo du gerade bist, und zeigt die Orte
             als Punkte auf der Karte (nur du siehst sie). Löschst du ein getrunkenes Bier oder setzt dein Profil zurück, verschwindet auch sein Ort.</p>
         </section>` : '';
+    // ALKOHOL-AUSWERTUNG: Geschlecht (Pflicht für die Auswertung in den Statistiken) und Gewicht (freiwillig), nur auf diesem Gerät gespeichert
+    const body = readBody();
+    const sexOpt = (value, label) => `<label class="seg-opt"><input type="radio" name="sex" value="${value}"${body.sex === value ? ' checked' : ''}><span>${label}</span></label>`;
+    const koerper = `<section class="set-sec"><h3>Körperdaten</h3>
+          <p class="note">Natürliches Geschlecht: Erst wenn du es wählst, erscheint in den Statistiken die Auswertung „Alkohol und Körper“.</p>
+          <div class="seg" role="radiogroup" aria-label="Natürliches Geschlecht">${sexOpt('m', 'männlich')}${sexOpt('w', 'weiblich')}</div>
+          <label class="kg-row"><span>Gewicht (freiwillig)</span>
+            <input id="set-kg" type="text" inputmode="decimal" maxlength="6" placeholder="z. B. 64" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" value="${body.kg ? esc(G.fmtDec(body.kg)) : ''}"><span>kg</span></label>
+          <p class="name-msg" id="set-body-msg" role="status" aria-live="polite"></p>
+          <p class="note">Das Geschlecht bestimmt die Grenzwerte und den Faktor der Promille-Schätzung, das Gewicht macht die Promille-Schätzung möglich.
+            Beides bleibt nur auf diesem Gerät gespeichert (nicht im Konto, nicht in der Rangliste) und wird beim Abmelden gelöscht.</p>
+          <button class="btn small danger-ghost" type="button" data-set="bodyclear">Körperdaten löschen</button>
+        </section>`;
     // Neigungssensor: Knopf für die ausdrückliche Erlaubnis (iPhone fragt nur auf einen Klick hin); ohne Sensor-Unterstützung entfällt der Abschnitt
     const tiltSec = typeof DeviceOrientationEvent !== 'undefined' ? `<section class="set-sec"><h3>Neigung</h3>
           <button class="btn" type="button" data-set="tilt" id="set-tilt">Neigungssensor aktivieren</button>
@@ -1004,6 +1093,7 @@
         </section>
         ${tiltSec}
         ${standort}
+        ${koerper}
         ${account}
         <section class="set-sec"><h3>Profil zurücksetzen</h3>
           <p class="note">Löscht alle Einträge${STORE.mode === 'firebase' ? ' und gibt deinen Benutzernamen frei' : ''}. Punkte, Level und Sammlung beginnen wieder bei null.</p>
@@ -1205,6 +1295,7 @@
     if (act === 'minus' || act === 'delete') deleteFromCard(b.dataset.id, act === 'delete');
     else if (act === 'reset') resetProfile();
     else if (act === 'tilt') enableTilt(b);
+    else if (act === 'bodyclear') clearBody();
     else if (act === 'signout') signOutFlow();
     else if (act === 'deleteaccount') deleteAccountFlow();
   });
@@ -1233,8 +1324,31 @@
     // Der Knopf „Karte der Orte öffnen“ steht in den Statistiken (paintStats) und richtet sich beim Öffnen nach dem Schalter
     if (statsDlg.open) paintStats();
   }
+  // ALKOHOL-AUSWERTUNG: Körperdaten speichern (jede Änderung sofort); ungültiges Gewicht wird nicht gespeichert, das alte bleibt
+  function bodyMsg(text, kind = '') {
+    const msg = $('#set-body-msg', setDlg);
+    if (msg) { msg.textContent = text; msg.className = `name-msg ${kind}`; }
+  }
+  function saveKg(input) {
+    const text = input.value.trim();
+    if (!text) { writeBody({ ...readBody(), kg: null }); bodyMsg('Gewicht entfernt. Die Promille-Schätzung entfällt.', 'ok'); return; }
+    const kg = G.parseKg(text);
+    if (kg === null) { bodyMsg(`Bitte ein Gewicht zwischen ${G.KG_MIN} und ${G.KG_MAX} kg eingeben, z. B. 64.`, 'err'); return; }
+    writeBody({ ...readBody(), kg });
+    input.value = G.fmtDec(kg);
+    bodyMsg('Gespeichert.', 'ok');
+  }
+  function clearBody() {
+    writeBody({});
+    for (const r of setDlg.querySelectorAll('input[name="sex"]')) r.checked = false;
+    const kg = $('#set-kg', setDlg);
+    if (kg) kg.value = '';
+    bodyMsg('Körperdaten gelöscht. Die Auswertung in den Statistiken ist ausgeblendet.', 'ok');
+  }
   setDlg.addEventListener('change', (e) => {
     if (e.target.id === 'set-geo') { toggleGeo(e.target); return; }
+    if (e.target.name === 'sex') { writeBody({ ...readBody(), sex: e.target.value }); bodyMsg('Gespeichert. Die Auswertung steht jetzt in den Statistiken.', 'ok'); return; }
+    if (e.target.id === 'set-kg') { saveKg(e.target); return; }
     if (e.target.name === 'theme') {
       lsSet(LS_THEME, e.target.value === 'system' ? null : e.target.value);
       applyTheme(e.target.value);

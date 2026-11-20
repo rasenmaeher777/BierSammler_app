@@ -46,6 +46,7 @@ window.STORE = (() => {
   const MODE = cfg.apiKey ? 'firebase' : 'local';
   const LS_DRINKS = 'biersammler-drinks-v1'; // nur lokaler Modus
   const LS_OWNER = 'biersammler-uid-v1';     // Konto, dem der Zwischenspeicher auf diesem Gerät gehört
+  const LS_BODY = 'biersammler-koerper-v1';  // ALKOHOL-AUSWERTUNG: Körperdaten (Geschlecht, Gewicht), von js/app.js geschrieben; hier nur zum Löschen
   const BATCH_MAX = 500;                      // Höchstzahl Vorgänge je Firestore-Batch
   const NAME_TIMEOUT = 10000;                 // ms; danach gilt der Server als nicht erreichbar
   const SCORE_DELAY = 1500;                   // ms; Änderungen der Rangliste werden so lange gebündelt
@@ -143,6 +144,7 @@ window.STORE = (() => {
     try { await fb.terminate(db); await fb.clearIndexedDbPersistence(db); } catch (err) { console.warn('Zwischenspeicher konnte nicht gelöscht werden', err); }
     lsSet(LS_OWNER, newOwner); // auch bei Fehlschlag setzen, sonst würde nach dem Neuladen endlos weiter gelöscht
     lsSet(LS_DRINKS, null);
+    lsSet(LS_BODY, null); // ALKOHOL-AUSWERTUNG: Geschlecht und Gewicht gehören zur Person, nicht zum Gerät
     location.reload();
   }
 

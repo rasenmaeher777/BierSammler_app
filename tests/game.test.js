@@ -451,8 +451,8 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
-test('Kartenstufe: Veränderung ab 4, 8, 16, 24 und 40 Mal getrunken', () => {
-  const expected = [[0, 0], [1, 0], [3, 0], [4, 1], [7, 1], [8, 2], [15, 2], [16, 3], [23, 3], [24, 4], [39, 4], [40, 5], [41, 5], [500, 5]];
+test('Kartenstufe: Veränderung ab 3, 7, 10, 15, 20, 25, 30 und 35 Mal getrunken', () => {
+  const expected = [[0, 0], [1, 0], [2, 0], [3, 1], [6, 1], [7, 2], [9, 2], [10, 3], [14, 3], [15, 4], [19, 4], [20, 5], [24, 5], [25, 6], [29, 6], [30, 7], [34, 7], [35, 8], [36, 8], [500, 8]];
   for (const [count, tier] of expected) assert.strictEqual(G.cardTier(count), tier, `count ${count}`);
 });
 
@@ -610,6 +610,129 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   assert.strictEqual(r.map.get('BS-000887').kategorie, 'Standardgebräu'); assert.strictEqual(r.map.get('BS-000887').stufe, 1);
   assert.strictEqual(G.beerPoints(r.map.get('BS-000887')), 10); assert.strictEqual(G.beerPoints(r.map.get('BS-000057')), 10);
 });
+
+/* ---------- Alkohol-Auswertung (ALKOHOL-AUSWERTUNG) ---------- */
+
+test('Reinalkohol: Größe × Prozent × 0,789, in Zehntel Gramm', () => {
+  assert.strictEqual(G.gramsTenths({ alc: 5, flasche: 0.5 }), 197);       // 19,7 g
+  assert.strictEqual(G.gramsTenths({ alc: 4.8, flasche: 0.33 }), 125);    // 12,5 g
+  assert.strictEqual(G.gramsTenths({ alc: 0, flasche: 0.5 }), 0);         // alkoholfrei
+  assert.strictEqual(G.gramsTenths({ alc: 5, flasche: null }), null);     // ohne Größe: nicht mitgezählt
+  assert.strictEqual(G.gramsTenths({ alc: null, flasche: 0.5 }), null);
+  assert.strictEqual(G.gramsTenths(null), null);
+});
+
+test('Körperdaten: cleanBody und parseKg prüfen streng', () => {
+  assert.deepStrictEqual(G.cleanBody(null), { sex: null, kg: null });
+  assert.deepStrictEqual(G.cleanBody({ sex: 'w', kg: 64 }), { sex: 'w', kg: 64 });
+  assert.deepStrictEqual(G.cleanBody({ sex: 'x', kg: 10 }), { sex: null, kg: null });
+  assert.deepStrictEqual(G.cleanBody({ sex: 'm', kg: 'viel' }), { sex: 'm', kg: null });
+  assert.deepStrictEqual(G.cleanBody({ sex: 'm', kg: 64.26 }), { sex: 'm', kg: 64.3 });
+  assert.deepStrictEqual(G.cleanBody({ kg: 64 }), { sex: null, kg: 64 }); // Gewicht allein bleibt, die Auswertung braucht aber das Geschlecht
+  assert.strictEqual(G.parseKg('64'), 64);
+  assert.strictEqual(G.parseKg(' 64,5 '), 64.5);
+  assert.strictEqual(G.parseKg('64.5'), 64.5);
+  assert.strictEqual(G.parseKg('64 kg'), 64);
+  for (const bad of ['', 'abc', '29,9', '251', '-5', '6 4', '64,555', '1e2', '0x40']) assert.strictEqual(G.parseKg(bad), null, bad);
+  assert.strictEqual(G.parseKg('30'), 30); assert.strictEqual(G.parseKg('250'), 250);
+});
+
+test('Label A bis D: Grenzen für Frauen und Männer (Gramm pro Woche in Zehnteln)', () => {
+  assert.deepStrictEqual(G.LABELS, ['A', 'B', 'C', 'D']);
+  const want = [[0, 'A'], [270, 'A'], [271, 'B'], [810, 'B'], [811, 'C']];
+  for (const sex of ['m', 'w']) for (const [g, l] of want) assert.strictEqual(G.labelFor(g, sex), l, `${sex} ${g}`);
+  assert.strictEqual(G.labelFor(1400, 'w'), 'C'); assert.strictEqual(G.labelFor(1401, 'w'), 'D'); // 20 g pro Tag
+  assert.strictEqual(G.labelFor(2100, 'm'), 'C'); assert.strictEqual(G.labelFor(2101, 'm'), 'D'); // 30 g pro Tag
+  assert.strictEqual(G.labelFor(1500, 'w'), 'D'); assert.strictEqual(G.labelFor(1500, 'm'), 'C'); // dasselbe Trinken, anderer Bereich
+  assert.strictEqual(G.labelFor(100, null), null);
+});
+
+{
+  // Mi 18.11.2026 12:00. P = 0,5 l 5 % (19,7 g), H = 0,33 l 4,8 % (12,5 g), F = alkoholfrei, X = ohne Größe
+  const NOW = at(2026, 11, 18, 12);
+  const abeers = new Map([
+    ['P', { id: 'P', alc: 5, flasche: 0.5 }], ['H', { id: 'H', alc: 4.8, flasche: 0.33 }],
+    ['F', { id: 'F', alc: 0, flasche: 0.5 }], ['X', { id: 'X', alc: 5, flasche: null }],
+    ['S', { id: 'S', alc: 6.4, flasche: 0.5 }], // 25,3 g
+  ]);
+  const e = (id, y, m, d, h) => ({ beerId: id, at: at(y, m, d, h) });
+  const entries = [
+    e('P', 2026, 10, 9, 20),                                                   // 40 Tage her: außerhalb der 28 Tage, zählt aber für die Wochenzahl
+    e('P', 2026, 11, 6, 20), e('P', 2026, 11, 6, 21),                          // Abend 1: 39,4 g
+    e('P', 2026, 11, 14, 20), e('P', 2026, 11, 14, 21), e('H', 2026, 11, 14, 22), // Abend 2: 51,9 g (Samstag)
+    e('P', 2026, 11, 16, 19), e('F', 2026, 11, 16, 20),                        // Abend 3 (Montag, diese Woche): 19,7 g; alkoholfrei zählt nicht
+    e('X', 2026, 11, 17, 18),                                                  // ohne Größe
+  ];
+
+  test('Auswertung: ohne Geschlecht oder ohne Einträge gibt es keine', () => {
+    assert.strictEqual(G.alcoholReport(entries, abeers, null, NOW), null);
+    assert.strictEqual(G.alcoholReport(entries, abeers, { kg: 80 }, NOW), null);
+    assert.strictEqual(G.alcoholReport([], abeers, { sex: 'm' }, NOW), null);
+    assert.strictEqual(G.alcoholReport([{ beerId: 'unbekannt', at: NOW - 1000 }], abeers, { sex: 'm' }, NOW), null);
+  });
+
+  test('Auswertung: Schnitt, diese Woche, Label, Abende', () => {
+    const r = G.alcoholReport(entries, abeers, { sex: 'm' }, NOW);
+    assert.strictEqual(r.weeks, 4);
+    assert.strictEqual(r.windowG10, 394 + 519 + 197);   // 111,0 g in 28 Tagen
+    assert.strictEqual(r.weekG10, 278);                  // 27,8 g pro Woche (277,5 gerundet)
+    assert.strictEqual(r.label, 'B');
+    assert.strictEqual(r.thisWeekG10, 197);              // seit Montag 16.11.
+    assert.strictEqual(r.noSize, 1);
+    assert.deepStrictEqual(r.limits, [27, 81, 210]);
+    assert.strictEqual(r.halbe, 14);                     // 1,4 Flaschen à 0,5 l
+    assert.strictEqual(r.peak.g10, 519); assert.strictEqual(r.peak.n, 3);
+    assert.strictEqual(r.peak.start, at(2026, 11, 14, 20)); assert.strictEqual(r.peak.end, at(2026, 11, 14, 22));
+    assert.strictEqual(r.peak.peak100, undefined);       // ohne Gewicht keine Promille
+    assert.deepStrictEqual(r.binge, { limit: 60, count: 0 });
+  });
+
+  test('Auswertung: Frauen haben niedrigere Rauschtrink-Grenze, anderes Label bei gleichem Trinken', () => {
+    const w = G.alcoholReport(entries, abeers, { sex: 'w' }, NOW);
+    assert.deepStrictEqual(w.binge, { limit: 48, count: 1 }); // Abend 2 mit 51,9 g
+    assert.deepStrictEqual(w.limits, [27, 81, 140]);
+    const many = [e('P', 2026, 10, 9, 20)]; for (let i = 0; i < 32; i++) many.push(e('P', 2026, 11, 10 + (i % 8), 8 + (i % 12))); // 6.304 / 4 Wochen = 157,6 g pro Woche
+    const m = G.alcoholReport(many, abeers, { sex: 'm' }, NOW); const f = G.alcoholReport(many, abeers, { sex: 'w' }, NOW);
+    assert.strictEqual(m.weekG10, f.weekG10);
+    assert.ok(m.weekG10 > 1400 && m.weekG10 <= 2100, String(m.weekG10));
+    assert.strictEqual(m.label, 'C'); assert.strictEqual(f.label, 'D');
+  });
+
+  test('Auswertung: Promille nach Widmark mit Gewicht (0,7 Männer, 0,6 Frauen, Abbau 0,1 ‰/h)', () => {
+    const m = G.alcoholReport(entries, abeers, { sex: 'm', kg: 80 }, NOW).peak;
+    // 19,7 g/(80·0,7)=0,3518; nach 1 h −0,1; zweites Bier; nach 1 h −0,1; drittes (12,5 g): 0,7268 ‰
+    assert.strictEqual(m.peak100, 73);
+    assert.ok(Math.abs(m.soberHours - 7.268) < 0.001, String(m.soberHours));
+    const f = G.alcoholReport(entries, abeers, { sex: 'w', kg: 64 }, NOW).peak;
+    assert.ok(f.peak100 > m.peak100, 'leichter und kleinerer Faktor → höherer Wert');
+    // Ein einzelnes Bier: 19,7 g, 80 kg, Mann → 0,35 ‰, in 3,5 Stunden abgebaut
+    const one = G.alcoholReport([e('P', 2026, 11, 18, 10)], abeers, { sex: 'm', kg: 80 }, NOW).peak;
+    assert.strictEqual(one.peak100, 35); assert.ok(Math.abs(one.soberHours - 3.518) < 0.001);
+    assert.strictEqual(G.fmtPermille(73), '0,73 ‰'); assert.strictEqual(G.fmtPermille(100), '1,00 ‰');
+  });
+
+  test('Auswertung: Abend endet nach 6 Stunden Pause; kurze Nutzung zählt mindestens eine Woche', () => {
+    const w = { sex: 'w' };
+    const close = [e('S', 2026, 11, 17, 12), e('S', 2026, 11, 17, 17)];   // 5 h Abstand: ein Abend mit 50,6 g
+    const far = [e('S', 2026, 11, 17, 12), e('S', 2026, 11, 17, 19)];     // 7 h Abstand: zwei Abende
+    assert.strictEqual(G.alcoholReport(close, abeers, w, NOW).binge.count, 1);
+    assert.strictEqual(G.alcoholReport(far, abeers, w, NOW).binge.count, 0);
+    assert.strictEqual(G.alcoholReport(far, abeers, w, NOW).peak.n, 1);
+    // Erster Eintrag vor einem Tag: Fenster = 1 Woche, kein Hochrechnen
+    const r = G.alcoholReport([e('P', 2026, 11, 17, 12)], abeers, { sex: 'm' }, NOW);
+    assert.strictEqual(r.weeks, 1); assert.strictEqual(r.weekG10, 197); assert.strictEqual(r.label, 'A');
+    // Erster Eintrag vor 14 Tagen: Fenster = 2 Wochen
+    const r2 = G.alcoholReport([e('P', 2026, 11, 4, 12), e('P', 2026, 11, 5, 12)], abeers, { sex: 'm' }, NOW);
+    assert.ok(r2.weeks > 1.9 && r2.weeks < 2.1, String(r2.weeks));
+    assert.strictEqual(r2.weekG10, Math.round(394 / r2.weeks));
+  });
+
+  test('Auswertung: nur alkoholfreie oder alte Einträge → Bereich A, kein Abend', () => {
+    const r = G.alcoholReport([e('F', 2026, 11, 17, 12), e('P', 2026, 9, 1, 12)], abeers, { sex: 'm', kg: 70 }, NOW);
+    assert.strictEqual(r.weekG10, 0); assert.strictEqual(r.label, 'A'); assert.strictEqual(r.peak, null);
+    assert.deepStrictEqual(r.binge, { limit: 60, count: 0 });
+  });
+}
 
 /* ---------- Echte Datenbank ---------- */
 

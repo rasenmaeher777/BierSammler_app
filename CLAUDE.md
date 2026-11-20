@@ -245,6 +245,38 @@ Alles trägt die Markierung `INFO-FENSTER` (`index.html`, `js/app.js`, `css/styl
   (375 px hell/dunkel, 320 px, schmale Desktop-Breite): Knopf, Öffnen/Schließen, aufklappbare Gruppen, Geschmack/Wissenswertes, keine Konsolenfehler. Die Platzierung wurde nur per Skript
   eingeblendet (`hidden` entfernt, `has-rank` gesetzt), weil dafür eine Anmeldung nötig wäre. NICHT getestet: Safari/iPhone (`<details>`-Pfeil, Dialog), Service Worker mit `js/info.js`, Tastaturbedienung.
 
+## Alkohol-Auswertung (20.11.2026)
+
+Alles trägt die Markierung `ALKOHOL-AUSWERTUNG` (`js/game.js`, `js/app.js`, `js/store.js`, `css/style.css`). Auf Wunsch des Nutzers, nach einer Recherche am selben Tag
+(Quellen unten). Es gibt KEINE neue Datei; deshalb keine neue `CACHE_VERSION` (bleibt `v12`).
+
+- **Einstellungen → „Körperdaten“** (`openSettings` in `js/app.js`, Abschnitt `koerper`): Segmentschalter „männlich/weiblich“ (Optionsfelder `name="sex"`) und Gewichtsfeld `#set-kg`
+  (freiwillig, 30–250 kg, `GAME.parseKg`: „64“, „64,5“, „64 kg“); jede Änderung wird sofort gespeichert (`change`), ein ungültiges Gewicht wird NICHT gespeichert (altes bleibt, Meldung rot),
+  leeres Feld entfernt das Gewicht; „Körperdaten löschen“ (`data-set="bodyclear"`) leert beides. Die Bezeichnung „Natürliches Geschlecht“ stammt vom Nutzer.
+- **Speicher:** localStorage `biersammler-koerper-v1` = `{ sex: 'm' | 'w', kg }` (je Gerät, `readBody`/`writeBody` in `js/app.js`, Prüfung immer über `GAME.cleanBody`). Bewusst NICHT in Firestore
+  und nicht in der Rangliste (Gesundheitsangaben; keine Regeländerung nötig). `wipeAndReload` in `js/store.js` löscht den Schlüssel beim Abmelden und beim Kontowechsel (damit erbt kein anderes Konto
+  auf demselben Gerät die Angaben); im lokalen Modus (ohne Anmeldung) bleibt er stehen. „Profil zurücksetzen“ lässt ihn unberührt. `datenschutz.html` (Arbeitshilfe) hat einen Punkt dazu;
+  der eigentliche Datenschutztext ist Sache des Nutzers.
+- **Statistik:** `alcoholHtml` in `js/app.js` (zwischen „Genuss“ und „Bundesländer“), nur wenn `GAME.alcoholReport` nicht `null` ist, also erst nach Wahl des Geschlechts und mit mindestens einem Eintrag.
+  Inhalt: Satz mit Schnitt in g und Flaschen-Gegenwert, Label-Leiter A–D (Pfeilbalken wie beim Energielabel, eigener Bereich „◀ du“, die anderen gedämpft), vier bzw. sechs Kacheln
+  (Ø pro Woche, diese Woche, stärkster Abend, Rauschtrink-Abende; mit Gewicht zusätzlich Promille des stärksten Abends und Stunden bis 0,0 ‰), Hinweise, aufklappbares „So wird gerechnet“.
+  Label-Farben fest in hell und dunkel (`--lab-a` … `--on-lab-d` im ersten Farbblock; Kontrast ≥ 4,9 : 1).
+- **Rechnung (`js/game.js`, Abschnitt „Alkohol und Körper“, Gramm in Zehnteln, Promille in Hundertsteln):** Reinalkohol = `flasche × alc × 78,9` (Zehntel g; Dichte 0,789), Biere ohne Größe zählen nicht (Hinweis in der Anzeige).
+  Schnitt = Summe der letzten 28 Tage ÷ Wochen (`min(4, max(1, Tage seit dem ersten Eintrag / 7))`). Label: `LABEL_LIMITS` `{ m: [27, 81, 210], w: [27, 81, 140] }` g pro Woche (A ≤ 27, B ≤ 81, C ≤ dritte Zahl, D darüber).
+  A/B = DGE-Positionspapier 2024 (27 / 81 g pro Woche, beide Geschlechter gleich; übernimmt die kanadischen Zonen). C/D-Grenze = 20 g (w) bzw. 30 g (m) pro Tag (Zirrhoserisiko steigt laut Deutscher Leberstiftung bei Männern über 30 g/Tag;
+  apotheken.de nennt 20 g/Tag als Schwelle für Frauen; Deutsche Leberhilfe 10/20 g; Quellen uneinheitlich, es sind Richtwerte). Das Gewicht fließt bewusst NICHT ins Label ein (Leitlinien gelten nicht je kg).
+  Abend = Einträge mit höchstens 6 Stunden Abstand (`SESSION_GAP`), alkoholfreie Biere (0 g) machen keinen Abend. Rauschtrinken ab 60 g (m) / 48 g (w) an einem Abend (5 bzw. 4 Gläser zu 12 g; die Literatur nennt 50–60 g).
+  Promille nach Widmark: g ÷ (kg × r), r = 0,7 (m) / 0,6 (w), Abbau 0,1 ‰/h (`ELIMINATION`), kein Abzug für unvollständige Aufnahme (Schätzung eher zu hoch). Beispiel: 80 kg, Mann, 1 × 0,5 l Pils (19,7 g) → 0,35 ‰, nach 3,5 h abgebaut.
+- **Nicht (weiter) belegt:** Die Grenzen stammen aus Suchzusammenfassungen und Sekundärquellen, nicht aus den Originaltabellen der DGE/S3-Leitlinie; der Nutzer sollte sie gegenlesen (Zahlen in `LABEL_LIMITS`, `BINGE_GRAMS`, Texte in `alcoholHtml`).
+  Die Meta-Analyse zur Zirrhose (Llamosas-Falcón u. a. 2023: RR 1,8 bei 25 g/Tag) wird in der App NICHT angezeigt; eine Prozentzahl „Leberschaden“ gibt es bewusst nicht (Scheingenauigkeit).
+- Zielkonflikt Spiel/Gesundheit: Die Auswertung ist Information, kein Spielelement (keine Punkte, nicht in der Rangliste). Der Satz „Wer getrunken hat, fährt nicht“ und der Hinweis „keine medizinische Beratung“ müssen bleiben.
+- Tests: 9 neue in `tests/game.test.js` (Reinalkohol, `cleanBody`/`parseKg`, Label-Grenzen, Bericht mit festem `now`, Frauen/Männer, Widmark, Abendgrenze 5 h/7 h, kurze Nutzung, nur alte/alkoholfreie Einträge) → 58 Tests, auch mit `TZ=America/New_York` und `TZ=Pacific/Auckland`.
+  Im eingebauten Browser mit Kopie ohne Schlüssel (Scratchpad) geprüft: Abschnitt fehlt ohne Geschlecht, Auswahl und Gewicht per echtem Klick/Tipp, ungültige Werte (abc, 20), „64,5“, leeres Feld, Löschen, Männer und Frauen,
+  375 px hell, 390 px dunkel und 320 px (kein Überlauf), keine Konsolenfehler. NICHT getestet: iPhone/Safari (`clip-path`-Pfeile, Eingabe mit Dezimaltastatur `inputmode="decimal"`), echtes Firebase (Löschen beim Abmelden),
+  Desktop-Breite, Bildschirmleser.
+- Entfernen: Abschnitt `koerper` und `bodyMsg`/`saveKg`/`clearBody` samt `change`-/`click`-Zweigen in `js/app.js`, `alcoholHtml` samt Aufruf in `paintStats`, `LS_BODY`/`readBody`/`writeBody`, Abschnitt „Alkohol und Körper“ in `js/game.js` samt Export und Tests,
+  `LS_BODY` in `js/store.js`, CSS-Abschnitt am Ende und die `--lab-…`-Zeilen, Punkt in `datenschutz.html`, Abschnitt in README.
+
 ## Glückskeks-Sprüche (18.11.2026)
 
 - `Datensammlung/nachrichten.json`: Liste `{ id, nachricht }` (id = Ganzzahl > 0 oder Text, eindeutig; Nutzer trägt die Sprüche selbst ein,
@@ -269,11 +301,20 @@ Alles trägt die Markierung `INFO-FENSTER` (`index.html`, `js/app.js`, `css/styl
 - Pflicht-Beispiele (reine Summen über `level`/`fmtRing`, ohne Kartenbonus), die nach jeder Änderung exakt herauskommen müssen (`node tests/game.test.js`):
   0 → Level 1, Ring 0 · 10×Stufe 5 = 250 → Level 3, 5,0/10 · 10×Stufe 1 = 100 → Level 2, 0,0/10 · 20×Stufe 1 = 200 → Level 3, 0,0/10 ·
   19×Stufe 4 = 285 → Level 3, 8,5/10 · 13×Stufe 1 + 5×Stufe 5 = 255 → Level 3, 5,5/10 · 3×Stufe 3 = 39 → „3,9“ (seit 19.11.2026, vorher mit 6 Stufen).
-- Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Ab 4, 8, 16,
-  24 und 40 Mal verändert sich die Optik der Karte in fünf Stufen (`GAME.cardTier`, Klassen `t1`…`t5` auf `.bcard-body`
-  und `.bottle`): Farbschimmer in der Mitte, Glanz, Schaumkrone, Strahlen, Sterne, goldene Flasche mit Funkeln. Rahmen
-  und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht). Alles wird aus dem
-  Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 40 zählt die Zahl weiter.
+- Karten-Level: Die Plakette auf der Karte zeigt „Lvl n“ (n = wie oft das Bier getrunken wurde; vorher „×n“). Seit 20.11.2026 verändert sich die Optik der Karte
+  ab Lvl 3, 7, 10, 15, 20, 25, 30 und 35 in ACHT Stufen (`GAME.cardTier`, `CARD_TIER_AT`; vorher 4, 8, 16, 24, 40 in fünf Stufen), Klassen `t1`…`t8` auf `.bcard-body` und
+  `.bottle`, ab t6 zusätzlich `.g` (goldenes Symbol; die Spezialkarten-Regeln `:not(.g)` / `.g` ersetzen die früheren `:not(.t5)` / `.t5`). Jede Stufe soll deutlich
+  anders aussehen als die vorige (Wunsch des Nutzers): t1 Glanz, Leuchten, ein funkelnder Stern · t2 Schaumkrone, stärkeres Leuchten · t3 aufsteigende Bläschen + Strahlen ·
+  t4 Sterne (3), atmende Strahlen · t5 silberne Flasche, 6 Sterne, heller Kern · t6 goldene Flasche, goldener Pulsring (`::after`) · t7 kreisender Heiligenschein
+  (gestrichelter Kreis im SVG), goldener Kometenring, dichte Strahlen · t8 Krone statt Schaum, Regenbogen-Ring, 9 Sterne, kräftigstes Leuchten.
+  Bär und Wahrzeichen: Sterne ab t4, silbern t5, golden ab t6, Heiligenschein ab t7, kein Schaum/Krone/Bläschen. Bewegung läuft per CSS-Animation (Bläschen, Sterne, Glanz,
+  Strahlen atmen, Ringe, Heiligenschein, Krone); bei „weniger Bewegung“ stehen alle still (Block am Ende von `css/style.css`). Strahlen/Ring kreisen nicht per Verlauf,
+  sondern nur Deckkraft/Drehung kleiner Elemente (Leistung auf dem iPhone bei vielen Karten). Variablen `--spark`, `--gold`, `--gold-d`, `--ring` auf `.bottle`/`.bcard-body`
+  lassen Spezialkarten die Farben ändern (mono = Schriftfarbe, se10 gelb, se20 limette, se30 pink). Spezialkarten mit eigenem Hintergrund (mono, se10, se20, se50) haben ihre acht
+  Stufen einzeln in `css/style.css`; mono, se10 und se60 blenden Strahlen/Ring aus. Rahmen und Band (Kategorie) bleiben unverändert. Die Stufen werden in der App NICHT erklärt (so gewünscht).
+  Alles wird aus dem Protokoll berechnet, beim Löschen von Einträgen fällt die Karte also zurück. Ab Lvl 35 zählt die Zahl weiter.
+  Getestet 20.11.2026: Node-Tests (58), eingebauter Browser mit Testseite (Karten aus den echten Funktionen von `js/app.js`, alle Designs, Lvl 3–35, hell und dunkel; Testseite wieder gelöscht).
+  NICHT getestet: iPhone/Safari (Animationen, `mask`, Leistung bei vielen hohen Karten), „weniger Bewegung“, große Kartenansicht mit Neigung.
   „Level“ ohne Zusatz bleibt das Spieler-Level in der Kopfleiste.
   Plakette `.count` (19.11.2026): sitzt INNERHALB des Zierrahmens (`top`/`right` 13 px, Schrift 12,5 px), damit sie Linie und Ecke des Rahmens nicht mehr überdeckt (vorher 8 px, schnitt die Ecke).
   Ausnahmen mit eigenem Abstand: Bierkönig (Eckornamente, 22/20 px, 11,5 px) und Schwarze Nachtigal (Doppelrahmen, 17 px, 11,5 px); Spezial-Karten `sp-mono` haben keinen Rahmen (9/12 px). Der BB-Sticker der Bierball-Karte darf den Rahmen bewusst überdecken.
