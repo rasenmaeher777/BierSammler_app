@@ -55,6 +55,9 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Helles Dose (je 5,1 %, 0,5 l, Stufe 1), Helles alkoholfrei (0 = „alkoholfrei“, Stufe 2), Naturtrübes Radler (2,2 %, Saisonartikel, Stufe 2; bis 19.11.2026 Stufe 3).
   Die Stufen sind eine Annahme (Seite nennt keine Seltenheit); Vertrieb „REWE“, Brauerei auf der Seite nicht genannt, Beschreibungen selbst formuliert.
   Stufe nachträglich ändern verschiebt die Punkte aller Spieler, die das Bier schon haben.
+  Nachtrag 20.11.2026: `BM-000005`…`BM-000007` = die übrigen Sorten von berliner-pilsner.de neben dem schon vorhandenen `BS-001490` (Berliner - Pilsner): Mildes Lager (4,8 %),
+  Pranke (Vollbier, 6 %), Natur Radler (2,5 %); alle Klassiker/Stufe 2, Brauerei Berliner-Kindl-Schultheiss wie beim Pilsner. Mildes Lager = Klassiker auf Wunsch des Nutzers, die anderen von Claude gewählt.
+  Die Seite nennt weder Flaschengröße (angenommen 0,5 l wie beim Pilsner) noch den Alkohol des Radlers (2,5 % = halb Pilsner mit 5,0 %, abgeleitet); Beschreibungen sind gekürzt aus dem Seitentext.
 - `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
   `GAME.mergeBeers` (5. Parameter, `applyFix`) auf den Rohdatensatz gelegt, bevor `cleanBeer` läuft. Änderbar: name,
   beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,
@@ -148,6 +151,20 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `app.j
   Die ÄLTEREN Angaben oben zu „je 40/35 Standardgebräu-Biere“ und den Samen `…-2026-11-19` sind damit überholt. Legenden und Bierball unverändert (Bierball: feste 1,0;
   Sternburg und Oettinger Export sind jetzt Standardgebräu). `cleanSpecials` prüft `bonus` (0,0…1,0 in Zehnteln); `beerPoints` = `punkte` falls gesetzt, sonst Stufe + `bonus`.
   Die echte Kategorie ist auf Spezialkarten nicht sichtbar (Band und „Kategorie“ in der Kartenansicht zeigen den Titel); die Statistik „Sammlung“ zählt weiter nach Stufe.
+- **Sonderedition 10 bis 60 (20.11.2026, Wunsch des Nutzers: „hebt sich deutlich ab und sieht hochwertig aus“ wie die Farbkarten, aber je eigenes Design):** sechs Karten
+  (ids/Designs `sonderedition-10` … `-60`, Titel „Sonderedition 10“ … „60“, `"bonus": 1.0`, ans Ende der Datei) mit je 40 Bieren NUR aus Stufe 3 (Spezialität), gezogen mit
+  `random.Random("sonderedition-<n>-2026-11-20").sample(pool, 40)` (sortiert) in der Reihenfolge 10…60 aus den nach ID sortierten freien `BS`-Spezialitäten (1.641 frei, danach 1.401); nicht neu würfeln.
+  Klassen `sp-se sp-se10` … `sp-se60` (CSS-Abschnitt „Sonderedition 10 bis 60“ nach den Farbkarten), kein JS nötig (Flasche bleibt das Symbol), alle Farben fest in hell und dunkel, `--k`/`--on-k`
+  auf der Klasse selbst (Sammlungsliste). Gemeinsam: Sans-Titel, keine Kategorie-Muster; die Zahl steckt teils als Gestaltung in `.mat::before { content }` (aria-hidden).
+  10 Bauhaus: Creme, schwarze Kontur, rote Scheibe mit „10“, gelbes Dreieck, blauer Viertelkreis, linksbündig (eigene Level-Scheine links, keine Strahlen). 20 Neon: Schwarz, Messraster, „20“ als Limetten-Umriss
+  hinter der Flasche, Sucher-Ecken, Monospace, Flasche als Kontur (Lvl 40 gefüllt), Level-Schein gedämpft. 30 Risographie: Papier, Pink/Blau mit `background-blend-mode: multiply`, „30“ überdruckt,
+  versetzte Schatten, ausgesparte Flasche. 40 Höhenlinien: SVG 280 × 420 in fester Größe, Gipfel bei (140, 78) hinter der Flasche, „▲ 40“. 50 Terrazzo: ein SVG (cover), in der Textmitte nur kleine helle Steine
+  (dunkle Splitter neben dem Text wirkten wie Satzzeichen), „Nº 50“-Schildchen, Level-Schein gedämpft. 60 Art déco: Petrol/Kupfer, Strahlenfächer vom Band (maskierter `repeating-conic-gradient`) mit zwei Bögen,
+  gestufte Rahmenecken über eigene `--corner-*`, Band in Didot, keine Strahlen. Die SVGs (40, 50) erzeugte ein Skript im Scratchpad; bei Änderungen die Data-URIs im CSS von Hand anpassen.
+  Bänder: bei 375 px Breite (Karten ca. 165 px) passen alle Titel; unter 360 px enger gesetzt (`@media (max-width: 359px)`), geprüft bei 320 px. Keine neue `CACHE_VERSION` (keine neue Datei).
+  Getestet: Node-Tests (49; Test der echten Datei um die sechs Karten erweitert: je 40, nur Stufe 3, Titel, Aussehen, Punkte 1,3 + 1,0), eingebauter Browser mit Kopie ohne Schlüssel
+  (430/375/320 px, hell und dunkel, Lvl 1/8/40, große Ansicht 10 und 40 mit „+2,3“, Farbstreifen der Sammlungsliste per berechnetem Stil).
+  NICHT getestet: iPhone/Safari (`background-blend-mode`, `mix-blend-mode`, `-webkit-text-stroke`, Didot), Desktop-Breite, „Sammlung verwalten“ als echter Dialog.
 - **Punkte je Bier in der Kartenansicht (19.11.2026):** neben „Gesammelte Punkte“ eine Pille `.per-beer` mit „+1,5“ (= `GAME.beerPoints`), für jede Karte;
   Spielanleitung erwähnt, dass Sonderkarten einen Punkt mehr bringen.
 - Getestet (Umbau): Node-Tests (48), eingebauter Browser mit Kopie ohne Schlüssel (375 px hell/dunkel): Raddelfuß-, Sanchi-, Spezial-Rot-, Heiligtum-, Zaubertrank-Karten,

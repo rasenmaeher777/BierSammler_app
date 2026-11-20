@@ -842,6 +842,283 @@ button.bcard:active { transform: scale(0.98); }
 .sp-mono .bcard-body.t5 { background: radial-gradient(ellipse 100% 56px at 22% 52px, rgb(255 255 255 / 0.33), transparent); }
 .sp-mono .bcard-body.t3::before, .sp-mono .bcard-body.t4::before, .sp-mono .bcard-body.t5::before { display: none; }
 
+/* ---------- Sonderedition 10 bis 60 (Design sp-se + sp-se10 … sp-se60) ----------
+   Sechs eigenständige Karten, jede mit eigener Idee, alle flach und grafisch wie die Farbkarten (sp-mono), aber jede mit einem eigenen Motiv.
+   Alle Farben fest (gleich in hell und dunkel). Die Zahl der Edition steht im Band; einige Karten greifen sie zusätzlich als Gestaltungselement auf
+   (.mat::before mit content, liegt hinter dem Inhalt und ist aria-hidden). Die Muster-SVGs (40 Höhenlinien, 50 Terrazzo) wurden einmal per Skript erzeugt
+   und hier eingebettet (Skript nur im Scratchpad); bei Änderungen die Data-URIs von Hand anpassen.
+   --k/--on-k stehen auf der Klasse selbst, weil auch die Zeilen in „Sammlung verwalten“ die Klasse tragen (Farbstreifen links). */
+.sp-se10 { --k: #D7392B; --on-k: #FFFFFF; }
+.sp-se20 { --k: #C6FF3A; --on-k: #0D0E12; }
+.sp-se30 { --k: #FF48B0; --on-k: #1D2457; }
+.sp-se40 { --k: #E3B65C; --on-k: #10243B; }
+.sp-se50 { --k: #B8472F; --on-k: #FFF6EE; }
+.sp-se60 { --k: #D8A47F; --on-k: #0E2E36; }
+/* Gemeinsam: keine Kategorie-Muster, schlichte Sans-Schrift im Titel, Flasche ohne Schattenstreifen */
+.sp-se .mat::before { background: none; opacity: 1; -webkit-mask-image: none; mask-image: none; }
+.sp-se .band { box-shadow: none; }
+.bcard.sp-se .title { font-family: -apple-system, "Helvetica Neue", system-ui, sans-serif; font-weight: 750; letter-spacing: -0.015em; line-height: 1.15; }
+.sp-se .bottle .shade { display: none; }
+.sp-se .origin .o { box-shadow: none; }
+
+/* 10 – Bauhaus: Creme wie Druckpapier, schwarze Kontur, die Grundformen Kreis (rot, trägt die Zahl), Dreieck (gelb) und Viertelkreis (blau)
+   auf der rechten Seite, Text linksbündig. Schrift Schwarz auf Creme (über 15 : 1). */
+.bcard.sp-se10 {
+  --surface: #F1ECE2; --surface-2: transparent; --text: #161616; --muted: #45413A; --kt: #D7392B; --bk: #161616; --glow: transparent;
+  border: 2px solid #161616; border-radius: 4px; background: #F1ECE2;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.sp-se10 .mat {
+  background:
+    linear-gradient(to top right, #F2B705 50%, transparent 50.5%) right 54px top 92px / 18px 18px no-repeat,
+    radial-gradient(circle at 100% 100%, #1F4E9C 0 38px, transparent 38.5px),
+    #F1ECE2;
+}
+.sp-se10 .mat::before {
+  content: "10"; inset: auto; top: 62px; right: 12px; width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; background: #D7392B; color: #FFFFFF;
+  font: 800 16px/1 -apple-system, "Helvetica Neue", system-ui, sans-serif; letter-spacing: -0.02em;
+}
+.sp-se10 .mat::after { opacity: 0.32; }
+.bcard.sp-se10::before { display: none; }
+.sp-se10 .band .kat {
+  background: #161616; color: #F1ECE2; padding: 0 12px; text-align: left;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.sp-se10 .bcard-body { align-items: flex-start; gap: 3px; padding: 12px 16px 6px; text-align: left; }
+.sp-se10 .count { top: 9px; right: 12px; background: #161616; color: #F1ECE2; border-radius: 0; }
+.sp-se10 .chips { justify-content: flex-start; }
+.sp-se10 .chips span { background: transparent; border: 1.5px solid #161616; border-radius: 0; }
+.sp-se10 .origin, .sp-se10 .origin:has(.o) { justify-content: flex-start; padding: 0 16px 14px; }
+.sp-se10 .origin::before, .sp-se10 .origin::after { display: none; }
+.sp-se10 .origin .o { background: #161616; color: #F1ECE2; border-radius: 0; }
+.sp-se10 .bottle .body { fill: #161616; stroke: none; }
+.sp-se10 .bottle .cap { fill: #D7392B; }
+.sp-se10 .bottle .label { fill: #F1ECE2; opacity: 1; }
+.sp-se10 .bottle .hop { fill: #D7392B; }
+.sp-se10 .bottle .hop-scales { stroke: #F1ECE2; }
+.sp-se10 .bottle .foam circle { fill: #FFFFFF; stroke: #161616; stroke-width: 1.2; }
+.sp-se10 .bottle .stars path { fill: #F2B705; }
+/* Karten-Level: gelber Schein hinter der links stehenden Flasche statt der mittigen Strahlen */
+.sp-se10 .bcard-body.t1 { background: radial-gradient(ellipse 70px 52px at 29px 43px, rgb(242 183 5 / 0.2), transparent); }
+.sp-se10 .bcard-body.t2 { background: radial-gradient(ellipse 74px 54px at 29px 43px, rgb(242 183 5 / 0.3), transparent); }
+.sp-se10 .bcard-body.t3 { background: radial-gradient(ellipse 78px 56px at 29px 43px, rgb(242 183 5 / 0.4), transparent); }
+.sp-se10 .bcard-body.t4 { background: radial-gradient(ellipse 82px 58px at 29px 43px, rgb(242 183 5 / 0.5), transparent); }
+.sp-se10 .bcard-body.t5 { background: radial-gradient(ellipse 86px 60px at 29px 43px, rgb(242 183 5 / 0.62), transparent); }
+.sp-se10 .bcard-body.t3::before, .sp-se10 .bcard-body.t4::before, .sp-se10 .bcard-body.t5::before { display: none; }
+
+/* 20 – Neon: tiefes Schwarz mit feinem Messraster, Limette als einzige Farbe. Eine große „20“ als Umriss hinter der Flasche,
+   Sucher-Ecken statt Rahmen, Band und Chips in Monospace, Flasche als leuchtende Kontur (auf der höchsten Stufe gefüllt). */
+.bcard.sp-se20 {
+  --surface: #0D0E12; --surface-2: rgb(198 255 58 / 0.1); --text: #F4F7EC; --muted: #B4B9A8; --kt: #C6FF3A; --bk: #C6FF3A; --glow: rgb(198 255 58 / 0.35);
+  border: 1px solid #2B3022; border-radius: 14px; background: #0D0E12;
+  box-shadow: 0 0 0 1px #000000, 0 3px 12px var(--shadow);
+}
+.sp-se20 .mat {
+  background:
+    radial-gradient(ellipse 85% 46% at 50% 28%, rgb(198 255 58 / 0.09), transparent 72%),
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px) 0 0 / 14px 14px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px) 0 0 / 14px 14px,
+    #0D0E12;
+}
+.sp-se20 .mat::before {
+  content: "20"; inset: 28px 0 auto; text-align: center; color: transparent;
+  font: 900 94px/1 -apple-system, "Helvetica Neue", system-ui, sans-serif; letter-spacing: -0.05em;
+  -webkit-text-stroke: 1.3px rgb(198 255 58 / 0.6);
+}
+.sp-se20 .mat::after { display: none; }
+.bcard.sp-se20::before {
+  inset: 36px 6px 6px; -webkit-mask: none; mask: none;
+  background:
+    linear-gradient(#C6FF3A, #C6FF3A) 0 0 / 12px 1.5px no-repeat, linear-gradient(#C6FF3A, #C6FF3A) 0 0 / 1.5px 12px no-repeat,
+    linear-gradient(#C6FF3A, #C6FF3A) 100% 0 / 12px 1.5px no-repeat, linear-gradient(#C6FF3A, #C6FF3A) 100% 0 / 1.5px 12px no-repeat,
+    linear-gradient(#C6FF3A, #C6FF3A) 0 100% / 12px 1.5px no-repeat, linear-gradient(#C6FF3A, #C6FF3A) 0 100% / 1.5px 12px no-repeat,
+    linear-gradient(#C6FF3A, #C6FF3A) 100% 100% / 12px 1.5px no-repeat, linear-gradient(#C6FF3A, #C6FF3A) 100% 100% / 1.5px 12px no-repeat;
+}
+.sp-se20 .band .kat {
+  background: #0D0E12; color: #C6FF3A; box-shadow: inset 0 -1px 0 rgb(198 255 58 / 0.45);
+  font: 700 11px/30px ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.sp-se20 .count { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; border-radius: 3px; }
+.sp-se20 .chips span { background: transparent; border: 1px solid rgb(198 255 58 / 0.5); border-radius: 3px; color: #E6FFB3; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; }
+.sp-se20 .origin::before, .sp-se20 .origin::after { background: linear-gradient(90deg, transparent, rgb(198 255 58 / 0.55)); }
+.sp-se20 .origin .o { background: #C6FF3A; color: #0D0E12; border-radius: 2px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.sp-se20 .bottle { filter: drop-shadow(0 0 3px rgb(198 255 58 / 0.55)); }
+.sp-se20 .bottle .body { fill: rgb(198 255 58 / 0.1); stroke: #C6FF3A; stroke-width: 1.3; }
+.sp-se20 .bottle .cap { fill: #C6FF3A; }
+.sp-se20 .bottle .label { fill: none; stroke: #C6FF3A; stroke-width: 1; opacity: 1; }
+.sp-se20 .bottle .hop { fill: #C6FF3A; }
+.sp-se20 .bottle .hop-scales { stroke: #0D0E12; }
+.sp-se20 .bottle .shine { fill: #C6FF3A; opacity: 0.55; }
+.sp-se20 .bottle .foam circle { fill: #0D0E12; stroke: #C6FF3A; stroke-width: 1.2; }
+.sp-se20 .bottle .stars path { fill: #C6FF3A; }
+.sp-se20 .bottle.t5 { filter: drop-shadow(0 0 6px rgb(198 255 58 / 0.9)); }
+.sp-se20 .bottle.t5 .body { fill: #C6FF3A; stroke: #EFFFC4; }
+.sp-se20 .bottle.t5 .label { fill: #0D0E12; stroke: none; }
+.sp-se20 .bottle.t5 .shine { fill: #FFFFFF; }
+/* Karten-Level: auf Schwarz wirkt der übliche Schein zu grell, deshalb schwächer */
+.sp-se20 .bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, rgb(198 255 58 / 0.06), transparent); }
+.sp-se20 .bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, rgb(198 255 58 / 0.1), transparent); }
+.sp-se20 .bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, rgb(198 255 58 / 0.14), transparent); --ray: 8%; }
+.sp-se20 .bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, rgb(198 255 58 / 0.18), transparent); --ray: 11%; }
+.sp-se20 .bcard-body.t5 { background: radial-gradient(ellipse 105% 100px at 50% 46px, rgb(198 255 58 / 0.24), transparent); --ray: 15%; }
+
+/* 30 – Risographie: warmes Papier, zwei Druckfarben (Pink und Blau), die sich hinter der Flasche überlagern (multiply ergibt Violett),
+   die Zahl ebenfalls überdruckt, leicht versetzte Schatten wie ein verrutschter Druck, Körnung des Papiers. Schrift in Tintenblau. */
+.bcard.sp-se30 {
+  --surface: #F6F1E7; --surface-2: rgb(255 72 176 / 0.16); --text: #1D2457; --muted: #3F4680; --kt: #FF48B0; --bk: #2F5BD3; --glow: rgb(255 72 176 / 0.4);
+  border: 0; border-radius: 10px; background: #F6F1E7;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.sp-se30 .mat {
+  background:
+    radial-gradient(circle at calc(50% + 18px) 58px, #3C7BE0 0 27px, transparent 27.5px),
+    radial-gradient(circle at calc(50% - 8px) 76px, #FF48B0 0 36px, transparent 36.5px),
+    #F6F1E7;
+  background-blend-mode: multiply;
+}
+.sp-se30 .mat::before {
+  content: "30"; inset: auto; top: 37px; left: 10px; color: #3C7BE0; mix-blend-mode: multiply;
+  font: 900 40px/1 -apple-system, "Helvetica Neue", system-ui, sans-serif; letter-spacing: -0.04em;
+}
+.sp-se30 .mat::after { opacity: 0.5; }
+.bcard.sp-se30::before { display: none; }
+.sp-se30 .band .kat {
+  background: #2F5BD3; color: #FFF8EC; text-shadow: 1px 1px 0 #FF48B0; padding: 0 8px;
+  font-size: 11.5px; font-weight: 850; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.sp-se30 .count { top: 10px; right: 11px; background: #1D2457; color: #FFF8EC; box-shadow: 1.5px 1px 0 #FF48B0; }
+.sp-se30 .chips span { background: rgb(255 72 176 / 0.16); color: #1D2457; border-radius: 2px; }
+.sp-se30 .origin::before, .sp-se30 .origin::after { background: linear-gradient(90deg, transparent, rgb(255 72 176 / 0.75)); }
+.sp-se30 .origin .o { background: #1D2457; color: #FFF8EC; border-radius: 2px; box-shadow: 1.5px 1px 0 #FF48B0; }
+/* Flasche ausgespart (Papierfarbe) mit Tintenkontur und blau versetztem Schatten */
+.sp-se30 .bottle { filter: drop-shadow(2px 1.5px 0 #3C7BE0); }
+.sp-se30 .bottle .body { fill: #FFF8EC; stroke: #1D2457; stroke-width: 1.1; }
+.sp-se30 .bottle .cap { fill: #1D2457; }
+.sp-se30 .bottle .label { fill: #FF48B0; opacity: 1; }
+.sp-se30 .bottle .hop { fill: #1D2457; }
+.sp-se30 .bottle .hop-scales { stroke: #FF48B0; }
+.sp-se30 .bottle .shine { fill: #3C7BE0; opacity: 0.45; }
+.sp-se30 .bottle .foam circle { fill: #FFFFFF; stroke: #1D2457; stroke-width: 1.2; }
+.sp-se30 .bottle .stars path { fill: #FF48B0; }
+.sp-se30 .bottle.t5 { filter: drop-shadow(2px 1.5px 0 #3C7BE0) drop-shadow(0 0 4px rgb(242 193 78 / 0.8)); }
+
+/* 40 – Höhenlinien: Nachtblau mit sandfarbenen Höhenlinien wie auf einer Wanderkarte (auch das App-Symbol hat Höhenlinien).
+   Der Gipfel liegt genau hinter der Flasche (SVG in fester Größe 280 × 420, waagerecht mittig, oben bündig), daneben die „Höhe“ ▲ 40.
+   Schrift Creme auf Nachtblau (über 12 : 1). */
+.bcard.sp-se40 {
+  --surface: #10243B; --surface-2: rgb(227 182 92 / 0.14); --text: #F5EBD6; --muted: #D3C4A4; --kt: #E3B65C; --bk: #E3B65C; --glow: rgb(227 182 92 / 0.4);
+  border: 0; border-radius: 12px; background: #10243B;
+  box-shadow: 0 0 0 1px #081422, 0 3px 10px var(--shadow);
+}
+.sp-se40 .mat {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='420' viewBox='0 0 280 420'%3E%3Cg fill='none' stroke='%23E3B65C' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M279 131 267 142 259 154 255 166 252 191 249 199 245 204 239 211 230 218 196 236 193 242 196 250 204 259 213 266 223 270 235 272 247 272 263 270 279 267' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M0 177 4 175 6 171 5 167 0 163' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M141 216 132 219 128 224 129 231 135 236 143 239 152 240 164 237 169 234 169 232 168 227 161 221 150 216 141 216' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 115 255 132 244 143 238 156 230 185 225 193 218 199 209 203 199 204 158 197 145 196 131 198 119 201 108 207 102 213 100 221 103 233 110 246 120 255 132 260 169 267 199 279 214 283 235 283 279 279' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M0 202 16 198 29 192 36 185 38 176 35 163 31 155 26 148 15 139 0 134' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 99 268 107 241 124 230 132 220 144 205 168 201 173 196 176 184 179 143 184 110 190 77 198 72 200 71 202 85 233 99 259 109 272 121 279 130 282 157 286 185 293 197 295 212 295 257 289 279 288' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M0 216 60 201 66 199 67 197 48 154 34 131 28 124 21 118 0 108' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 75 273 84 265 92 221 121 209 132 189 153 177 162 163 168 145 173 119 178 101 179 85 177 79 174 72 169 62 154 45 120 37 108 28 99 8 84 0 76' stroke-width='1.1' stroke-opacity='0.55'/%3E%3Cpath d='M279 295 260 295 238 299 213 305 178 317 167 319 157 319 110 312 100 308 93 301 90 292 85 268 80 254 71 239 61 228 51 224 39 222 21 224 0 230' stroke-width='1.1' stroke-opacity='0.55'/%3E%3Cpath d='M279 26 264 66 258 76 249 85 213 113 180 143 168 152 158 157 147 162 133 166 119 168 106 169 96 167 87 163 79 157 73 151 67 141 54 108 47 96 37 86 12 67 5 60 0 52' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 302 257 302 233 307 210 317 183 336 173 341 161 344 148 343 122 336 90 330 80 326 73 321 69 315 67 307 68 277 67 264 60 250 51 241 40 237 27 236 12 240 0 247' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M18 420 11 408 0 399' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M211 0 222 4 231 9 237 16 242 24 245 35 245 47 243 59 239 69 232 79 222 90 169 139 158 146 147 152 136 156 124 158 112 159 100 157 91 153 84 147 75 133 63 101 55 87 45 76 22 60 13 52 5 41 0 27' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 308 268 307 257 308 235 314 225 318 214 324 189 345 179 352 165 357 153 357 115 348 74 341 64 338 56 333 52 328 48 322 45 311 45 301 48 280 48 270 44 262 38 256 33 255 27 255 17 258 9 265 0 277' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M30 420 25 407 19 398 12 390 0 384' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M15 0 11 8 9 18 11 30 16 39 25 49 50 66 60 76 69 91 83 125 91 138 97 143 104 147 118 149 135 147 154 138 173 124 197 102 213 84 221 70 224 56 223 43 219 32 211 22 200 14 189 10 166 6 109 6 97 4 84 0' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 315 269 313 259 314 248 316 236 320 218 330 193 352 183 360 171 366 157 368 145 367 106 357 61 354 47 351 40 348 35 343 21 322 17 318 9 314 0 317' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M40 420 35 397 27 381 18 373 0 365' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M36 0 28 4 23 12 22 22 26 31 35 41 57 57 67 67 75 82 89 117 96 128 107 136 114 138 121 139 130 138 138 136 154 128 174 114 193 94 204 80 210 66 210 52 207 40 202 32 195 25 186 20 175 16 154 13 110 14 95 13 81 9 55 0' stroke-width='1.1' stroke-opacity='0.55'/%3E%3Cpath d='M279 321 269 319 259 320 249 321 237 326 221 336 187 366 175 373 164 377 156 378 147 378 116 368 98 366 79 366 63 370 54 376 49 385 48 398 50 420' stroke-width='1.1' stroke-opacity='0.55'/%3E%3Cpath d='M51 20 49 24 50 26 52 30 65 43 73 55 97 111 104 120 114 126 124 128 134 127 145 123 157 117 171 106 183 94 192 82 197 71 199 56 198 49 195 42 186 31 179 27 171 23 160 21 146 19 86 23 74 22 58 20 51 20' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 328 269 326 260 325 250 327 240 332 225 341 200 364 187 374 173 383 161 387 152 388 143 387 115 378 103 376 89 376 78 379 69 384 63 392 61 404 61 420' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M129 27 111 30 96 36 89 42 87 51 88 62 93 77 97 91 103 102 108 108 113 113 121 117 128 118 137 117 148 113 159 106 169 98 177 89 184 79 188 70 189 61 188 52 185 45 180 39 172 33 164 30 154 27 142 26 129 27' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 335 270 332 260 332 250 334 241 338 227 347 200 371 184 384 167 395 155 400 148 401 140 400 115 390 106 388 95 388 87 390 80 395 75 402 73 410 74 420' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M123 36 110 42 102 50 100 59 101 73 108 90 116 101 126 106 133 106 139 106 148 103 156 98 164 92 170 84 174 78 178 70 179 64 178 56 176 51 172 45 166 40 159 37 151 35 142 34 123 36' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M279 344 269 339 259 339 249 341 238 346 226 355 169 404 162 412 157 420' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M102 413 102 416 105 414 102 413' stroke-width='0.6' stroke-opacity='0.32'/%3E%3Cpath d='M129 44 120 49 114 56 112 65 113 75 118 85 125 91 133 94 142 94 153 88 162 79 165 74 167 68 167 59 163 51 154 45 142 43 129 44' stroke-width='1.1' stroke-opacity='0.55'/%3E%3Cpath d='M279 355 271 349 262 346 251 348 240 353 224 365 187 397 177 409 170 420' stroke-width='1.1' stroke-opacity='0.55'/%3E%3C/g%3E%3C/svg%3E") 50% 0 / 280px 420px no-repeat,
+    radial-gradient(ellipse 75% 34% at 50% 20%, #183555, transparent 72%),
+    #10243B;
+}
+.sp-se40 .mat::before {
+  content: "▲ 40"; inset: auto; top: 41px; left: 13px; color: #E3B65C;
+  font: 700 10px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.06em;
+}
+.sp-se40 .mat::after { opacity: 0.16; }
+.bcard.sp-se40::before {
+  inset: 37px 6px 6px; -webkit-mask: none; mask: none; background: none;
+  border: 1px solid rgb(227 182 92 / 0.45); border-radius: 8px;
+}
+.sp-se40 .band .kat {
+  background: #E3B65C; color: #10243B; padding: 0 8px;
+  font-size: 11px; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.sp-se40 .chips span { background: rgb(16 36 59 / 0.75); border: 1px solid rgb(227 182 92 / 0.55); }
+.sp-se40 .origin::before, .sp-se40 .origin::after { background: linear-gradient(90deg, transparent, rgb(227 182 92 / 0.7)); }
+.sp-se40 .origin .o { background: #E3B65C; color: #10243B; }
+.sp-se40 .bottle:not(.t5) .body { fill: #E3B65C; stroke: #6E521C; }
+.sp-se40 .bottle:not(.t5) .cap { fill: #10243B; }
+.sp-se40 .bottle .label { fill: #10243B; opacity: 1; }
+.sp-se40 .bottle .hop { fill: #E3B65C; }
+.sp-se40 .bottle .hop-scales { stroke: #10243B; }
+
+/* 50 – Terrazzo: heller Steinboden mit bunten Splittern (Terrakotta, Salbei, Ocker, Rosé, Anthrazit), in der Textmitte nur kleine Steine.
+   Ein Schildchen „Nº 50“ wie in einer Ausstellung. Ein einziges SVG (cover), nicht gekachelt. Schrift Anthrazit (über 12 : 1). */
+.bcard.sp-se50 {
+  --surface: #EDE6DC; --surface-2: rgb(255 255 255 / 0.78); --text: #2A2623; --muted: #574F48; --kt: #C8553D; --bk: #B8472F; --glow: rgb(200 85 61 / 0.35);
+  border: 0; border-radius: 14px; background: #EDE6DC;
+  box-shadow: 0 0 0 1px rgb(42 38 35 / 0.12), 0 2px 10px var(--shadow);
+}
+.sp-se50 .mat { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300' preserveAspectRatio='xMidYMid slice'%3E%3Crect width='200' height='300' fill='%23EDE6DC'/%3E%3Cpath fill='%23C8553D' d='M139.6 284.0L141.1 293.2L131.0 294.0L129.7 282.5ZM190.8 7.2L188.9 7.6L186.7 4.6L187.7 2.7L189.3 1.8L192.3 3.7L191.7 5.8ZM194.9 81.1L196.5 86.3L196.9 93.1L188.7 94.2L186.5 89.6L188.1 83.9L189.7 80.9ZM195.9 12.0L194.2 11.2L194.3 8.5L197.8 8.0L198.2 11.1ZM166.1 26.2L164.6 31.9L160.1 29.9L162.3 24.7ZM-10.1 200.0L-6.8 197.7L-2.4 195.8L1.0 201.8L-1.7 206.3L-5.1 207.3ZM154.0 48.4L151.5 47.3L151.2 46.0L152.8 44.3L153.9 44.2L155.2 45.7L154.6 47.0ZM196.7 244.8L197.7 246.6L195.9 246.9L195.2 245.0ZM97.2 37.5L91.9 31.4L99.3 21.5L104.7 32.5ZM87.6 21.4L86.3 20.6L85.9 19.0L87.6 18.5L88.6 19.3L88.8 20.8ZM99.5 282.1L99.5 280.6L101.3 278.2L104.3 279.8L103.4 282.7ZM146.8 40.0L148.8 42.6L144.7 43.8L144.1 41.6ZM181.8 23.5L184.3 21.4L186.2 23.3L186.3 26.2L184.3 27.6L181.1 26.7L180.6 26.1ZM161.3 274.5L160.1 275.7L158.8 275.4L158.0 275.0L159.1 272.7L160.6 272.9ZM174.6 280.9L176.8 279.5L179.9 283.7L177.0 285.4L173.5 284.2ZM34.0 295.3L33.1 293.0L33.8 291.2L35.3 291.6L36.9 292.6L37.6 294.5L35.3 295.4ZM137.3 33.5L136.6 32.5L137.1 31.0L139.2 32.2ZM197.4 215.0L200.0 218.2L197.9 219.7L194.6 219.0L195.6 215.2ZM74.4 12.7L72.9 11.3L72.8 8.4L75.9 6.6L78.2 8.3L78.1 12.1ZM38.8 85.4L38.9 84.4L41.7 83.6L42.0 85.0L40.8 86.2ZM-2.7 272.1L-4.7 269.4L-2.2 267.5L0.0 267.4L2.0 269.4L0.7 271.0L-1.1 273.4ZM42.0 39.7L40.6 39.6L40.8 37.2L43.1 36.0L44.4 36.0L43.9 38.8Z'/%3E%3Cpath fill='%23F7F2EA' d='M166.9 146.8L165.5 146.6L165.3 145.0L167.1 144.5L167.9 145.1L167.5 146.4ZM29.3 201.0L27.4 199.8L28.1 198.3L29.7 198.9L30.0 200.2ZM23.1 177.1L24.4 178.0L23.9 179.0L22.4 179.6L21.2 179.8L21.4 178.1L22.4 176.6ZM21.7 164.6L20.8 163.7L22.1 162.5L24.1 161.8L24.8 162.5L24.9 165.1L22.7 166.1ZM68.8 93.9L68.4 95.0L67.7 95.0L66.3 94.0L66.7 93.4L67.7 92.7L68.1 92.4ZM166.6 15.9L166.6 11.6L169.6 11.0L173.2 12.2L173.2 14.9L170.9 16.4ZM103.1 -0.1L100.6 2.1L99.2 1.5L98.2 -1.1L100.3 -2.9L102.9 -1.8ZM183.8 118.5L185.3 118.8L185.4 120.0L184.5 121.1L183.4 120.7L182.4 119.6L182.8 118.9ZM80.7 177.9L81.3 177.5L82.8 176.8L83.4 177.8L83.0 179.7L82.2 179.9L80.5 180.0ZM99.1 306.2L99.7 303.3L100.8 302.9L102.7 303.6L102.5 305.7L101.5 306.3ZM6.9 65.2L5.6 63.5L7.3 61.1L9.1 63.7ZM168.2 171.2L168.3 169.4L170.0 168.7L171.4 168.4L172.0 170.7L171.3 171.4L169.9 172.9ZM51.8 138.7L50.5 140.2L49.4 138.5L50.6 137.4ZM-5.2 38.8L-7.4 37.4L-4.6 34.5L-2.1 35.0L-1.9 37.7ZM146.7 59.6L146.2 57.6L148.5 54.9L152.0 56.8L150.9 59.2ZM58.1 175.1L58.2 173.5L59.7 172.6L60.8 174.1L60.4 176.1ZM50.2 222.7L49.2 224.2L47.7 223.3L47.4 222.4L49.3 221.6ZM118.1 58.7L119.2 56.0L121.8 55.8L122.3 57.5L122.7 59.8L119.0 59.8ZM73.0 279.0L75.4 279.1L76.8 283.5L75.3 283.8L71.2 284.4L71.3 282.5L71.7 278.7ZM44.3 136.1L44.5 138.5L42.7 138.3L41.7 138.5L41.4 136.8L41.8 134.7L43.2 134.4ZM133.3 151.3L134.2 150.1L135.6 150.1L136.2 151.4L135.6 152.2L134.4 152.3ZM197.2 121.9L200.2 121.1L200.4 123.7L198.1 123.7ZM70.8 208.1L72.2 210.3L69.8 211.8L68.4 209.2ZM44.6 23.8L41.1 29.9L37.2 28.6L32.2 24.0L30.8 20.7L36.0 16.2L42.3 19.3ZM-0.6 177.8L-1.7 176.4L-1.2 174.9L0.3 175.1L0.8 176.7L0.5 177.2ZM49.5 193.9L47.9 192.8L49.0 191.6L50.7 191.3L51.7 192.9ZM168.2 240.7L166.1 240.3L166.4 238.4L167.5 237.2L169.4 238.5ZM11.7 165.9L12.6 164.8L14.4 165.1L14.4 168.0L12.6 168.4L11.1 167.7ZM111.4 131.3L112.3 130.6L113.8 131.8L113.1 132.5L111.6 133.1ZM136.0 237.1L137.8 236.2L138.6 237.0L138.8 237.7L137.6 238.3L136.5 237.9ZM60.8 192.6L61.6 193.6L61.1 195.0L58.7 195.1L58.7 193.7ZM136.7 177.2L135.8 177.7L134.3 177.8L134.2 176.9L133.9 175.9L135.2 175.0L136.7 175.8ZM37.3 7.2L38.3 7.2L39.1 7.4L40.1 8.6L39.7 10.3L38.4 9.9L36.5 9.5ZM129.2 230.0L127.4 230.3L126.0 229.0L126.6 227.9L129.7 227.5L129.9 228.4ZM133.4 136.6L132.8 134.7L133.3 134.4L134.9 134.6L135.1 135.4L134.5 136.4ZM179.9 54.9L183.8 50.1L187.0 52.7L183.5 57.4ZM4.2 164.4L3.8 166.5L2.4 167.5L0.6 165.5L2.3 163.5ZM130.3 201.2L132.1 198.8L133.4 200.8L132.5 202.4ZM105.8 240.4L106.4 241.6L105.2 242.2L104.3 241.8L104.3 240.3ZM154.2 159.3L153.3 157.3L155.0 156.1L156.4 157.2ZM9.2 138.4L11.2 139.6L11.0 141.1L9.5 141.0L8.8 140.0ZM124.9 242.4L123.6 243.6L122.9 244.0L121.9 243.0L121.2 242.0L122.2 240.9L124.1 241.4Z'/%3E%3Cpath fill='%23B9C6CF' d='M192.3 71.8L191.5 70.8L190.6 67.0L192.3 66.9L194.4 67.7L196.6 69.2L194.9 70.6ZM205.5 285.2L204.3 289.1L202.9 288.3L201.3 285.3L203.0 283.9L204.8 283.4ZM161.1 220.2L162.5 221.0L163.1 221.8L161.3 222.8L160.1 222.4ZM183.7 177.4L184.2 175.1L185.3 174.9L186.8 175.6L187.2 177.0L186.4 178.1L184.8 178.4ZM-4.9 120.4L-4.3 118.3L-2.2 117.5L0.5 117.8L0.6 120.3L-0.8 122.5L-4.5 122.4ZM104.6 145.0L105.8 147.5L104.1 149.3L102.3 147.0ZM160.9 65.3L157.4 64.6L157.5 62.5L161.1 62.2L162.2 63.3ZM26.4 154.3L26.3 153.0L27.6 151.1L29.1 151.7L30.4 152.3L29.7 153.4L29.0 155.1ZM203.9 174.5L202.1 174.1L201.6 173.2L201.9 171.8L203.6 171.5L204.3 172.1L204.7 173.4ZM153.2 74.9L152.2 71.5L156.4 70.3L157.5 73.7L156.0 77.4ZM152.5 205.2L153.2 203.6L155.3 203.7L155.3 205.9L153.8 206.6ZM188.0 194.9L186.3 195.8L185.1 195.0L184.2 193.6L185.7 191.9L188.0 192.6ZM161.1 98.2L161.9 97.3L163.2 98.8L163.1 99.6L161.6 100.1L160.9 99.6ZM11.3 278.3L12.5 279.7L12.2 280.5L10.1 280.9L10.1 279.0ZM59.3 243.2L58.2 245.0L57.0 245.5L56.1 243.7L57.4 241.5ZM36.9 247.5L37.4 249.1L36.1 250.3L34.4 249.8L33.6 247.6L34.5 246.6L35.6 246.7ZM12.1 93.0L13.4 94.7L11.5 96.3L9.4 94.7L10.7 92.9ZM129.0 100.1L127.7 99.8L126.6 98.6L127.5 98.0L128.6 97.3L128.9 98.3L129.1 98.8ZM101.3 120.6L99.4 118.9L101.1 117.0L103.0 118.9Z'/%3E%3Cpath fill='%23E8A598' d='M42.8 270.5L45.8 270.6L46.3 273.2L44.3 274.5L42.7 273.2ZM14.3 305.1L11.8 303.4L13.9 300.4L16.1 302.7ZM101.8 222.8L100.0 222.9L100.1 221.0L100.7 219.8L102.7 220.3L102.7 221.7ZM68.8 256.6L67.0 257.8L65.8 256.0L67.3 254.9ZM80.0 26.4L78.3 26.6L77.1 24.8L77.8 23.7L79.7 21.9L81.7 23.1L80.8 25.7ZM83.4 284.5L84.1 286.3L82.4 287.4L80.7 286.0L81.7 284.8ZM27.0 271.6L24.9 268.8L26.4 266.6L28.3 265.7L31.0 265.9L30.9 269.2L30.0 270.8ZM172.5 187.9L170.9 188.7L170.6 188.0L170.8 186.1L171.0 184.9L172.8 185.5L173.8 187.0ZM106.7 91.1L106.3 92.3L105.7 92.8L104.7 92.2L104.3 91.3L104.9 90.7L106.1 90.7ZM27.2 131.7L29.3 130.0L30.4 132.2L29.1 132.7ZM23.1 5.6L20.1 4.6L20.9 2.7L22.9 2.9ZM48.5 104.7L46.6 105.3L45.9 104.3L46.2 102.7L48.3 103.7ZM-0.5 5.8L-2.6 5.8L-3.5 3.5L-1.1 2.6ZM-8.5 232.4L-3.9 226.3L0.2 225.7L3.9 235.0L0.3 240.2L-7.8 237.4ZM0.6 296.5L-0.5 289.3L3.4 287.8L8.8 287.4L12.9 293.1L9.9 296.4ZM-3.7 76.7L5.2 77.3L8.3 83.4L6.9 86.9L1.0 92.1L-5.3 89.8L-5.6 81.0ZM159.5 196.7L161.0 198.1L160.8 199.3L159.1 200.3L158.5 198.8L158.6 197.9ZM95.1 92.1L95.6 91.5L96.7 91.3L97.0 92.3L96.4 93.4L95.3 93.2ZM158.6 252.6L157.9 254.7L155.6 254.0L156.1 252.4ZM68.2 198.0L69.9 199.5L69.5 201.2L67.1 200.6L66.1 199.1ZM1.8 100.0L2.0 99.0L2.8 97.7L4.0 97.5L5.0 99.2L3.8 100.0ZM199.4 53.8L202.1 55.2L201.3 57.0L197.7 57.5L196.7 55.2ZM139.2 187.4L139.1 185.1L141.0 184.8L143.1 186.6L141.1 188.4ZM7.8 154.8L3.9 156.0L2.2 154.5L4.2 150.6L8.8 152.2ZM118.3 189.2L119.1 188.2L120.9 188.7L121.2 190.0L121.1 191.4L119.6 191.5L118.0 191.5ZM85.7 303.3L82.2 302.6L82.2 300.3L84.9 299.4L85.8 301.2Z'/%3E%3Cpath fill='%23C9D6C2' d='M116.5 254.3L115.5 254.3L114.3 253.4L113.6 251.4L115.7 251.3L116.8 250.8L117.0 252.7ZM84.6 121.8L85.9 123.7L84.2 124.6L83.4 124.4L82.1 123.0L83.2 120.6ZM153.1 122.9L154.5 121.8L156.2 122.1L156.7 122.9L155.4 124.6L154.1 125.4L153.6 124.5ZM138.0 212.3L136.8 212.4L136.9 211.2L137.5 210.1L138.8 210.7L139.0 212.1ZM91.9 157.9L93.5 158.7L93.7 160.1L92.3 161.2L91.5 160.3ZM171.4 196.3L171.9 195.8L173.1 194.8L174.6 196.5L174.1 197.7L171.7 198.2ZM66.8 170.8L63.8 170.6L64.5 167.4L66.6 168.4ZM166.7 255.8L165.7 254.3L165.3 253.0L166.8 251.9L168.9 253.1L168.8 254.3L167.8 254.9ZM136.6 158.2L134.9 157.2L136.2 155.7L137.6 157.2ZM93.3 126.3L92.5 127.6L91.7 127.4L90.7 126.1L91.8 125.3L92.6 125.9ZM148.6 196.5L149.1 194.9L150.5 193.4L151.5 194.6L152.5 196.1L152.0 197.7L150.0 197.4ZM57.3 253.8L55.5 254.6L54.5 253.2L56.2 251.9ZM188.3 138.3L187.9 139.5L186.1 140.6L185.4 138.4L186.2 137.8L188.3 137.4ZM85.4 258.1L84.5 260.0L81.7 259.1L82.5 257.8L84.4 256.6ZM112.8 265.2L111.7 266.3L110.0 266.0L110.2 264.5L111.2 263.7L112.7 263.2ZM136.7 90.3L138.1 91.6L137.0 92.6L135.2 92.2Z'/%3E%3Cpath fill='%23E0A43A' d='M161.9 55.8L161.4 52.9L162.3 52.0L164.7 52.8L163.7 55.2ZM34.2 62.1L33.9 63.6L32.2 62.6L32.2 61.0L33.6 60.1ZM57.3 59.8L58.9 57.8L60.4 59.6L58.8 61.2ZM106.7 14.0L107.4 13.9L108.7 13.4L109.7 14.6L110.3 15.4L109.2 16.0L107.3 15.7ZM22.3 299.4L23.4 298.6L25.3 299.4L25.0 301.1L23.1 301.8ZM64.4 298.4L63.5 295.9L64.1 295.2L65.4 293.8L67.6 294.0L67.8 297.2L66.7 298.3ZM40.5 281.1L42.4 282.7L40.4 284.5L38.2 283.1L39.3 280.2ZM37.8 58.8L37.1 58.7L36.7 57.6L37.5 56.4L38.7 56.2L39.5 57.5L39.2 58.3Z'/%3E%3Cpath fill='%238AA67E' d='M52.0 56.6L53.1 57.8L53.2 59.7L52.2 61.2L51.1 60.3L49.2 59.3L49.7 57.8ZM201.2 304.7L195.1 300.6L196.2 296.4L200.5 296.1L204.6 298.5L203.3 303.6ZM60.9 16.3L59.7 14.8L61.1 13.6L62.7 15.3ZM4.6 247.2L3.2 247.0L2.3 245.8L2.5 244.7L3.9 244.5L5.1 245.3ZM138.8 82.0L139.7 79.9L142.0 79.4L143.9 80.8L143.5 82.8L141.8 83.8ZM114.3 34.2L115.4 30.6L117.0 29.9L121.4 31.1L120.9 35.5L118.6 36.0ZM77.9 57.5L76.7 56.7L76.7 55.7L77.6 54.5L79.8 54.3L80.2 56.2L80.0 57.0ZM127.9 41.7L129.2 42.7L128.9 43.8L127.7 44.5L126.7 43.1ZM206.5 257.4L207.0 258.4L205.1 260.1L204.0 258.2L203.6 257.5L204.5 255.7ZM19.1 68.1L17.8 68.1L17.4 66.0L18.9 65.5L19.5 65.8L20.2 67.5ZM142.1 51.5L138.1 52.4L136.9 49.9L139.7 48.1Z'/%3E%3Cpath fill='%233A3634' d='M58.5 4.4L58.9 -1.2L64.2 -5.0L67.0 -1.8L69.8 1.1L65.6 5.8L63.7 5.2ZM206.6 40.2L201.4 39.9L200.2 31.8L205.1 30.5L210.8 34.9ZM5.3 257.4L-0.0 258.2L0.6 253.8L3.6 254.3ZM178.4 61.0L177.5 62.7L175.2 63.3L174.0 62.6L174.2 60.1L176.6 59.6ZM107.0 54.6L104.0 54.5L104.3 51.8L107.6 51.5ZM81.8 61.6L80.9 65.9L78.8 67.0L75.8 64.3L77.1 61.7Z'/%3E%3C/svg%3E") center / cover no-repeat, #EDE6DC; }
+.sp-se50 .mat::before {
+  content: "Nº 50"; inset: auto; top: 41px; left: 12px; padding: 3px 6px; border-radius: 3px;
+  background: #FAF6F0; color: #2A2623; box-shadow: 0 1px 2px rgb(42 38 35 / 0.25);
+  font: 750 10px/1 -apple-system, "Helvetica Neue", system-ui, sans-serif; letter-spacing: 0.06em;
+}
+.sp-se50 .mat::after { opacity: 0.22; }
+.bcard.sp-se50::before { display: none; }
+.sp-se50 .band .kat {
+  background: #B8472F; color: #FFF6EE; padding: 0 8px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.sp-se50 .count { top: 10px; right: 11px; }
+.sp-se50 .chips span { background: rgb(255 255 255 / 0.82); }
+.sp-se50 .origin::before, .sp-se50 .origin::after { background: linear-gradient(90deg, transparent, rgb(184 71 47 / 0.75)); }
+.sp-se50 .origin .o { background: #2F2B28; }
+.sp-se50 .bottle .body { fill: #2F2B28; stroke: none; }
+.sp-se50 .bottle .cap { fill: #C8553D; }
+.sp-se50 .bottle .label { fill: #EDE6DC; opacity: 1; }
+.sp-se50 .bottle .hop { fill: #C8553D; }
+.sp-se50 .bottle .hop-scales { stroke: #EDE6DC; }
+.sp-se50 .bottle .foam circle { stroke: #2F2B28; stroke-width: 1.2; }
+/* Karten-Level: schwächerer Schein, damit der Stein hell bleibt */
+.sp-se50 .bcard-body.t1 { background: radial-gradient(ellipse 90% 80px at 50% 46px, rgb(200 85 61 / 0.08), transparent); }
+.sp-se50 .bcard-body.t2 { background: radial-gradient(ellipse 90% 85px at 50% 46px, rgb(200 85 61 / 0.12), transparent); }
+.sp-se50 .bcard-body.t3 { background: radial-gradient(ellipse 95% 90px at 50% 46px, rgb(200 85 61 / 0.16), transparent); --ray: 9%; }
+.sp-se50 .bcard-body.t4 { background: radial-gradient(ellipse 100% 95px at 50% 46px, rgb(200 85 61 / 0.2), transparent); --ray: 12%; }
+.sp-se50 .bcard-body.t5 { background: radial-gradient(circle 38px at 50% 46px, rgb(255 226 140 / 0.55), transparent), radial-gradient(ellipse 105% 100px at 50% 46px, rgb(200 85 61 / 0.22), transparent); --ray: 15%; }
+
+/* 60 – Art déco: tiefes Petrol mit Kupfer. Ein Strahlenfächer fällt vom Band auf die Flasche, zwei Bögen schließen ihn ab,
+   Rahmen mit gestuften Ecken (eigene Eckformen für den gemeinsamen Zierrahmen), Band in einer klassizistischen Antiqua (Didot).
+   Schrift Creme auf Petrol (über 12 : 1). */
+.bcard.sp-se60 {
+  --surface: #0E2E36; --surface-2: rgb(216 164 127 / 0.14); --text: #F7EBDD; --muted: #E2CDB7; --kt: #D8A47F; --bk: #D8A47F; --glow: rgb(216 164 127 / 0.4);
+  --corner-tl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M.6 14V9H5V5H9V.6H14' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E");
+  --corner-tr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M13.4 14V9H9V5H5V.6H0' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E");
+  --corner-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M.6 0V5H5V9H9V13.4H14' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E");
+  --corner-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M13.4 0V5H9V9H5V13.4H0' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E");
+  border: 2px solid #D8A47F; border-radius: 6px; background: #0E2E36;
+  box-shadow: 0 0 0 1px #061A1F, 0 3px 10px var(--shadow);
+}
+.sp-se60 .mat {
+  background:
+    radial-gradient(circle at 50% 30px, transparent 0 64px, rgb(216 164 127 / 0.75) 64px 65.2px, transparent 65.4px 69px, rgb(216 164 127 / 0.45) 69px 70px, transparent 70.2px),
+    radial-gradient(ellipse 70% 40% at 50% 22%, #13414B, transparent 72%),
+    #0E2E36;
+}
+.sp-se60 .mat::before {
+  background: repeating-conic-gradient(from 90deg at 50% 30px, #D8A47F 0 0.9deg, transparent 0.9deg 7.5deg); opacity: 0.32;
+  -webkit-mask-image: radial-gradient(circle at 50% 30px, #000 0 61px, transparent 62px); mask-image: radial-gradient(circle at 50% 30px, #000 0 61px, transparent 62px);
+  -webkit-mask-size: auto; mask-size: auto;
+}
+.sp-se60 .mat::after { opacity: 0.14; }
+.sp-se60 .band .kat {
+  background: #0E2E36; color: #E9BE9B;
+  box-shadow: inset 0 -1px 0 #D8A47F, inset 0 -3px 0 #0E2E36, inset 0 -4px 0 rgb(216 164 127 / 0.55);
+  padding: 0 8px; font: 600 11px/30px Didot, "Bodoni 72", "Bodoni MT", Georgia, serif; letter-spacing: 0.05em; text-transform: uppercase;
+}
+.sp-se60 .count { top: 15px; right: 15px; border-radius: 2px; }
+.sp-se60 .chips span { background: rgb(14 46 54 / 0.8); border: 1px solid rgb(216 164 127 / 0.6); border-radius: 2px; }
+.sp-se60 .origin::before, .sp-se60 .origin::after { background: linear-gradient(90deg, transparent, rgb(216 164 127 / 0.75)); }
+.sp-se60 .origin .o { background: #D8A47F; color: #0E2E36; border-radius: 0; }
+.sp-se60 .bottle:not(.t5) .body { fill: #D8A47F; stroke: #6E4024; }
+.sp-se60 .bottle:not(.t5) .cap { fill: #0E2E36; }
+.sp-se60 .bottle .label { fill: #0E2E36; opacity: 1; }
+.sp-se60 .bottle .hop { fill: #D8A47F; }
+.sp-se60 .bottle .hop-scales { stroke: #0E2E36; }
+.sp-se60 .bcard-body.t3::before, .sp-se60 .bcard-body.t4::before, .sp-se60 .bcard-body.t5::before { display: none; } /* der Fächer ersetzt die Strahlen */
+/* Sehr schmale Geräte (Karten unter ca. 150 px): Band enger setzen, damit die Zahl der Edition nicht abgeschnitten wird */
+@media (max-width: 359px) {
+  .sp-se .band .kat { padding: 0 5px; letter-spacing: 0.02em; }
+}
+
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */
 #add[open] { height: 92vh; height: 92dvh; }

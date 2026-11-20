@@ -46,5 +46,41 @@
     "flaschengroesse": 0.5,
     "kategorie_name": "Klassiker",
     "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000005",
+    "name": "Berliner - Mildes Lager",
+    "biersorte": ["Lager"],
+    "alkoholgehalt": 4.8,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Berliner-Kindl-Schultheiss-Brauerei GmbH", "adresse": "Indira-Gandhi-Str. 66-69, 13053 Berlin", "region": "Berlin", "land": "Deutschland" },
+    "beschreibung": "Hell und erfrischend mild im Geschmack. Für alle, denen ein Pils zu herb ist: Helle Malze, eine dezente Hopfennote und Brauwasser aus den eigenen Tiefbrunnen.",
+    "zutaten": ["Wasser", "Gerstenmalz", "Hopfen", "Hopfenextrakt"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000006",
+    "name": "Berliner - Pranke",
+    "biersorte": ["Vollbier"],
+    "alkoholgehalt": 6.0,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Berliner-Kindl-Schultheiss-Brauerei GmbH", "adresse": "Indira-Gandhi-Str. 66-69, 13053 Berlin", "region": "Berlin", "land": "Deutschland" },
+    "beschreibung": "Herb machen andere. Ein mildes, süffiges Vollbier mit aromatischen Malzen und leichten Hopfennoten. Die einen nennen es Wegbier, die anderen Fußpils.",
+    "zutaten": ["Wasser", "Gerstenmalz", "Hopfenextrakt"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000007",
+    "name": "Berliner - Natur Radler",
+    "biersorte": ["Radler"],
+    "alkoholgehalt": 2.5,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Berliner-Kindl-Schultheiss-Brauerei GmbH", "adresse": "Indira-Gandhi-Str. 66-69, 13053 Berlin", "region": "Berlin", "land": "Deutschland" },
+    "beschreibung": "Fertig gemischt aus 50 % feinherb-spritzigem Berliner Pilsner und 50 % naturtrüber Zitronenlimonade, ohne künstliche Zusatzstoffe. Fruchtig, frisch und leicht.",
+    "zutaten": ["Bier (Wasser, Gerstenmalz, Hopfenextrakt)", "Zitronenlimonade (naturtrüb)"],
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   }
 ]

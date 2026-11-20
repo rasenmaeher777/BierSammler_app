@@ -126,6 +126,9 @@
        weltall  eigenständiges Design: Weltall mit glitzernden Sternen (Außenseiter)
        spezial-rot | spezial-tuerkis | spezial-orange | spezial-rosa  eigenständiges, ganz schlichtes Einfarb-Design (Klasse sp-mono + Farbe), linksbündig, ohne Rahmen und Muster
        raddelfuss  eigenständiges Design: rot-weißes Karo mit Zuckerstangen-Rahmen (früher die Kategorie Raddelfuß)
+       sonderedition-10 … sonderedition-60  sechs eigenständige Designs der Reihe „Sonderedition“ (Klasse sp-se + sp-se10 … sp-se60):
+         10 Bauhaus (Creme, rote Scheibe mit der Zahl), 20 Neon (Schwarz und Limette, Umriss-Zahl), 30 Risographie (Papier, Pink und Blau übereinander gedruckt),
+         40 Höhenlinien (Nachtblau und Sand, Gipfel hinter der Flasche), 50 Terrazzo (Steinboden mit bunten Splittern), 60 Art déco (Petrol und Kupfer, Strahlenfächer)
        Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
        kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
        leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
@@ -136,7 +139,9 @@
   const LEGEND_ICONS = ['kuckucksuhr', 'brezel', 'gurke', 'schluessel', 'anker', 'bembel', 'leuchtturm', 'schaf', 'dom', 'traube', 'hammer', 'schwibbogen', 'nebra', 'strandkorb', 'bratwurst'];
   const SPECIAL_DESIGNS = { baer: 'k1 sp-baer', sticker: 'k1 sp-sticker', sanchi: 'sp-sanchi', noir: 'sp-noir', regenbogen: 'sp-regenbogen', hopfen: 'sp-hopfen', koenig: 'sp-koenig', weltall: 'sp-weltall',
     'spezial-rot': 'sp-mono sp-rot', 'spezial-tuerkis': 'sp-mono sp-tuerkis', 'spezial-orange': 'sp-mono sp-orange', 'spezial-rosa': 'sp-mono sp-rosa',
-    raddelfuss: 'sp-raddel' };
+    raddelfuss: 'sp-raddel',
+    'sonderedition-10': 'sp-se sp-se10', 'sonderedition-20': 'sp-se sp-se20', 'sonderedition-30': 'sp-se sp-se30',
+    'sonderedition-40': 'sp-se sp-se40', 'sonderedition-50': 'sp-se sp-se50', 'sonderedition-60': 'sp-se sp-se60' };
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 

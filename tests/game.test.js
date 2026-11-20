@@ -565,7 +565,7 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
 });
 
-test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten mit je 40 Bieren aus Stufe 2 bis 5 und 1 Punkt extra', () => {
+test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten (Stufe 2 bis 5) und 6 Sondereditionen (Spezialität) mit je 40 Bieren und 1 Punkt extra', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
@@ -579,7 +579,13 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   const zufall = [['aussenseiter', 'Außenseiter', 'sp-weltall'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'],
     ['raddelfuss', 'Raddelfuß', 'sp-raddel'], ['regenbogen', 'Spezial-Edition 04', 'sp-regenbogen'], ['sanchi', 'Sanchi', 'sp-sanchi'], ['schwarzweiss', 'Schwarze Nachtigal', 'sp-noir'],
     ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0])].sort());
+  // Sonderedition 10 bis 60 (20.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
+  const sonder = [10, 20, 30, 40, 50, 60].map((n) => [`sonderedition-${n}`, `Sonderedition ${n}`, `sp-se sp-se${n}`]);
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0]), ...sonder.map((z) => z[0])].sort());
+  for (const [k, titel, look] of sonder) {
+    assert.strictEqual(by[k].length, 40, k);
+    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.stufe === 3 && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(3) + 10), `${titel}: Stufe, Titel, Aussehen, Punkte`);
+  }
   // Astra - Rakete: eigene Karte, sieht aus wie die Hamburger Legende, bringt aber feste 1,0 statt 1,3 (Stufe bleibt Spezialität)
   assert.deepStrictEqual(by['hh-rakete'].map((b) => b.id), ['BS-004132']);
   const rakete = r.map.get('BS-004132');
