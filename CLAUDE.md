@@ -59,6 +59,10 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   Nachtrag 20.11.2026: `BM-000005`…`BM-000007` = die übrigen Sorten von berliner-pilsner.de neben dem schon vorhandenen `BS-001490` (Berliner - Pilsner): Mildes Lager (4,8 %),
   Pranke (Vollbier, 6 %), Natur Radler (2,5 %); alle Klassiker/Stufe 2, Brauerei Berliner-Kindl-Schultheiss wie beim Pilsner. Mildes Lager = Klassiker auf Wunsch des Nutzers, die anderen von Claude gewählt.
   Die Seite nennt weder Flaschengröße (angenommen 0,5 l wie beim Pilsner) noch den Alkohol des Radlers (2,5 % = halb Pilsner mit 5,0 %, abgeleitet); Beschreibungen sind gekürzt aus dem Seitentext.
+  Nachtrag 21.11.2026 (Wunsch des Nutzers): `BM-000008` = „Unbekanntes Bier“, Standardgebräu/Stufe 1, Alkohol 4,9 %, sonst alles leer (keine Sorte, Brauerei, Zutaten, Flaschengröße);
+  die Beschreibung sagt, dass man es wählen darf, wenn ein Bier nicht in der Datenbank steht (z. B. Kneipenbiere ohne Angaben im Netz). Es ist eine gewöhnliche Karte: 1,0 Punkte je Trinken,
+  einmal 3,5 Bonus für die neue Karte. Ohne Flaschengröße zählt es in der Alkohol-Auswertung nicht mit (siehe dort). Findbar über die Suche („unbek“); die Spielanleitung (`howtoHtml` in `js/app.js`) hat dazu den Absatz „Bier nicht gefunden?“. Keine neue Datei, `CACHE_VERSION` unverändert.
+  Getestet: Node-Tests (58), Zusammenführen ohne Warnung (6.376 Biere), Suche, Eintragen, Kartenansicht samt Beschreibung im eingebauten Browser (390 px, lokaler Modus). NICHT getestet: iPhone/Safari, echte Firestore-Regeln (ID passt zu `^B[SM]-[0-9]{6}$`).
 - `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
   `GAME.mergeBeers` (5. Parameter, `applyFix`) auf den Rohdatensatz gelegt, bevor `cleanBeer` läuft. Änderbar: name,
   beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,

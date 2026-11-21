@@ -82,5 +82,17 @@
     "flaschengroesse": 0.5,
     "kategorie_name": "Klassiker",
     "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000008",
+    "name": "Unbekanntes Bier",
+    "biersorte": [],
+    "alkoholgehalt": 4.9,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": null, "adresse": null, "region": null, "land": null },
+    "beschreibung": "Dieses Bier darfst du wählen, wenn dein Bier nicht in der Datenbank steht, zum Beispiel weil es in einer Kneipe ausgeschenkt wird und es im Internet ohnehin keine Angaben dazu gibt.",
+    "zutaten": [],
+    "flaschengroesse": null,
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   }
 ]

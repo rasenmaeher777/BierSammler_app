@@ -1201,6 +1201,8 @@
       .map((st) => `<li class="k${st}"><span class="dot" aria-hidden="true"></span>${esc(db.kat[st].name)} <span class="h-sub">${fmtPoints(G.pointsFor(st))} pro Bier</span></li>`).join('');
     return `<p><b>So geht’s:</b> Tippe nach jedem Bier auf <b>+</b>, suche es und bestätige. Die Karte wird aufgedeckt –
         erst dann siehst du, wie selten dein Bier ist. Jedes Trinken zählt einzeln; das Level der Karte zeigt, wie oft (z. B. „Lvl 4“).</p>
+      <p><b>Bier nicht gefunden?</b> Dann wähle <b>„Unbekanntes Bier“</b>. Das ist für Biere gedacht, die nicht in der Datenbank stehen, etwa vom Fass in der Kneipe.
+        Es zählt als Standardgebräu.</p>
       <p><b>Kategorien</b> von häufig bis sehr selten:</p>
       ${kats ? `<ul class="howto-kats">${kats}</ul>` : '<p class="note">Die Kategorien erscheinen, sobald die Bierdatenbank geladen ist.</p>'}
       <p><b>Neue Biere lohnen sich:</b> Trinkst du ein Bier zum ersten Mal, bekommst du für die neue Karte einmalig
