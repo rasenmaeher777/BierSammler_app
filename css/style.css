@@ -509,6 +509,13 @@ button.bcard:active { transform: scale(0.98); }
 .bcard .brand { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: color-mix(in srgb, var(--muted) 65%, var(--text)); font-size: 13px; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }
 .chips span { padding: 1px 8px; border-radius: 999px; background: var(--surface-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+/* Großes Fragezeichen auf der Karte „Unbekanntes Bier“ (js/app.js, UNKNOWN_BEER_ID). Die Höhe (51 px + 4 px Abstand) gleicht den Platz aus, den bei anderen Karten
+   Marke, Sorte und die Herkunftsbox einnehmen (gemessen bei 390 px Breite: Karte mit allen Angaben 247 px, ohne 192 px). */
+.bcard .mystery {
+  display: block; height: 51px; color: var(--muted); opacity: 0.6;
+  font: 800 46px/51px ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  text-shadow: 0 0 4px var(--surface), 0 0 9px var(--surface);
+}
 .bcard .sorte { max-width: 100%; color: color-mix(in srgb, var(--muted) 65%, var(--text)); font-size: 12px; overflow-wrap: anywhere; }
 
 /* Karten-Level: Ab 3, 7, 10, 15, 20, 25, 30 und 35 Mal getrunken verändert sich nur die MITTE der Karte (Hintergrund und Flasche),
