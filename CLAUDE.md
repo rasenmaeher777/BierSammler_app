@@ -170,6 +170,25 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   Getestet: Node-Tests (49; Test der echten Datei um die sechs Karten erweitert: je 40, nur Stufe 3, Titel, Aussehen, Punkte 1,3 + 1,0), eingebauter Browser mit Kopie ohne Schlüssel
   (430/375/320 px, hell und dunkel, Lvl 1/8/40, große Ansicht 10 und 40 mit „+2,3“, Farbstreifen der Sammlungsliste per berechnetem Stil).
   NICHT getestet: iPhone/Safari (`background-blend-mode`, `mix-blend-mode`, `-webkit-text-stroke`, Didot), Desktop-Breite, „Sammlung verwalten“ als echter Dialog.
+- **Mischa, Rollmops, Penner (22.11.2026, Wunsch des Nutzers):** drei weitere Karten (ids/Designs `mischa`, `rollmops`, `penner`, Titel gleich, `"bonus": 1.0`, ans Ende der Datei) mit je 40 Bieren NUR aus Stufe 3 (Spezialität),
+  gezogen mit `random.Random("<id>-2026-11-22").sample(pool, 40)` (sortiert) in der Reihenfolge Mischa, Rollmops, Penner aus den nach ID sortierten freien `BS`-Spezialitäten (1.401 frei, danach 1.281); nicht neu würfeln.
+  Klassen `sp-mischa`, `sp-rollmops`, `sp-penner` (CSS-Abschnitt „Mischa, Rollmops, Penner“ nach der Sonderedition), kein JS nötig (Flasche bleibt das Symbol), alle Farben fest in hell und dunkel. Anders als die
+  bisherigen Flächen-Designs sind es Illustrationen als SVG-Hintergrund auf `.mat` (SVGs per Skript erzeugt, nur im Scratchpad; bei Änderungen die Data-URIs im CSS von Hand anpassen).
+  Mischa: Zeichentrick-Junge (Stachelhaare, gestreiftes Hemd, winkt) auf Himmel mit Comic-Raster, Wolken, Wiese; dicke dunkelblaue Konturen, harter Schlagschatten, Schrift in Marker-Schrift mit weißer Kontur;
+  Ober- und Unterkante als zwei SVGs mit `100% auto` (bleiben bei unterschiedlicher Kartenhöhe unverzerrt). Rollmops: Sonnenaufgang (Verlauf Indigo → Magenta → Orange), Strahlenfächer, halbe Sonne am Horizont,
+  darauf schwimmt eine Bockwurst mit Senf und Dampf (ein SVG unten; seit der Nachbesserung ist die Wurst die Herkunftsbox, siehe unten). Penner: Pappbraun mit Flecken und Schmierstreifen, ein einziges SVG (cover) voller Müll
+  (Dosen, Papierknäuel, Kippen, Bananenschalen, Pizzakartons, Kronkorken, Kaugummi, Fischgräten, Fliegen), starke Körnung, Band aus eingerissener Pappe (`clip-path`), Schreibmaschinenschrift.
+  Keine neue `CACHE_VERSION` (keine neue Datei). Test der echten Datei um die drei Karten erweitert (58 Tests).
+  Getestet: Node-Tests, eingebauter Browser mit statischer Vorschau (eigene Seite im Scratchpad mit dem echten CSS und der echten Flaschen-Funktion; Karten bei 170 und 148 px Breite, Lvl 0/1/10/25/35/40).
+  NICHT getestet: die echte App mit Anmeldung (Sammlungsliste, große Kartenansicht, Farbstreifen), dunkles Theme (Farben sind fest), iPhone/Safari (`clip-path` am Band, SVG-Filter `feTurbulence` im Penner-Bild, Marker-Schrift).
+  **Nachbesserung (22.11.2026, später):** Rollmops war durch die 58 px Extraplatz rund 50 px höher als alle anderen Karten und zog im Raster die ganze Reihe mit.
+  Jetzt ist die Herkunftsbox selbst die Bockwurst (`.sp-rollmops .origin .o`: rotbraune Pille mit dunkler Kontur, Senf-Zickzack `--senf` oben, leicht schräg, Schatten aufs Wasser;
+  Dampf als `.origin::before`; ohne Herkunft zeichnet `.origin:empty::after` eine kleine Wurst ohne Schrift). Wurst und Dampf sind aus dem SVG entfernt, Horizont von y 252 auf 272
+  gesenkt und die Sonne verkleinert (r 60 → 44, wärmer), damit die Sorten-Zeile nicht mehr auf hellem Grund steht. Rollmops ist jetzt so hoch wie Mischa/Penner (~250 px bei 166 px Breite).
+  Mischa: der Junge ist eine eigene Hintergrundebene mit `min(100%, 170px) auto` (in der großen Ansicht wuchs er sonst in den Titel), Herkunftsbox mit etwas mehr Breite
+  (`.origin` 8 px Rand, `.o` 8 px Innenabstand), damit „Meckl.-Vorpommern“ bei 166 px ganz passt. Penner unverändert. Geprüft im eingebauten Browser mit Kopie ohne Schlüssel
+  (375 px hell, 320 px dunkel, Raster und große Ansicht, Lvl 1/8/10/25/40, Karte ohne Herkunft per DOM nachgestellt). Bei 320 px kürzen alle Karten „Baden-Württemberg“ (wie Sanchi, schon vorher so).
+  NICHT getestet: iPhone/Safari.
 - **Punkte je Bier in der Kartenansicht (19.11.2026):** neben „Gesammelte Punkte“ eine Pille `.per-beer` mit „+1,5“ (= `GAME.beerPoints`), für jede Karte;
   Spielanleitung erwähnt, dass Sonderkarten einen Punkt mehr bringen.
 - Getestet (Umbau): Node-Tests (48), eingebauter Browser mit Kopie ohne Schlüssel (375 px hell/dunkel): Raddelfuß-, Sanchi-, Spezial-Rot-, Heiligtum-, Zaubertrank-Karten,

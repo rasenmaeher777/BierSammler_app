@@ -581,6 +581,8 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
     ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
   // Sonderedition 10 bis 60 (20.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
   const sonder = [10, 20, 30, 40, 50, 60].map((n) => [`sonderedition-${n}`, `Sonderedition ${n}`, `sp-se sp-se${n}`]);
+  // Mischa, Rollmops, Penner (22.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
+  sonder.push(['mischa', 'Mischa', 'sp-mischa'], ['rollmops', 'Rollmops', 'sp-rollmops'], ['penner', 'Penner', 'sp-penner']);
   assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0]), ...sonder.map((z) => z[0])].sort());
   for (const [k, titel, look] of sonder) {
     assert.strictEqual(by[k].length, 40, k);

@@ -129,6 +129,9 @@
        sonderedition-10 … sonderedition-60  sechs eigenständige Designs der Reihe „Sonderedition“ (Klasse sp-se + sp-se10 … sp-se60):
          10 Bauhaus (Creme, rote Scheibe mit der Zahl), 20 Neon (Schwarz und Limette, Umriss-Zahl), 30 Risographie (Papier, Pink und Blau übereinander gedruckt),
          40 Höhenlinien (Nachtblau und Sand, Gipfel hinter der Flasche), 50 Terrazzo (Steinboden mit bunten Splittern), 60 Art déco (Petrol und Kupfer, Strahlenfächer)
+       mischa    eigenständiges Zeichentrick-Design: ein kleiner Junge im Comic-Stil auf blauem Himmel mit Wolken und Wiese
+       rollmops  eigenständiges Design: Sonnenaufgang über dem Meer mit einer Bockwurst auf dem Wasser
+       penner    eigenständiges Design: schmutzige Karte, überall Müll (Dosen, Papierknäuel, Kippen, Bananenschale)
        Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
        kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
        leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
@@ -141,7 +144,8 @@
     'spezial-rot': 'sp-mono sp-rot', 'spezial-tuerkis': 'sp-mono sp-tuerkis', 'spezial-orange': 'sp-mono sp-orange', 'spezial-rosa': 'sp-mono sp-rosa',
     raddelfuss: 'sp-raddel',
     'sonderedition-10': 'sp-se sp-se10', 'sonderedition-20': 'sp-se sp-se20', 'sonderedition-30': 'sp-se sp-se30',
-    'sonderedition-40': 'sp-se sp-se40', 'sonderedition-50': 'sp-se sp-se50', 'sonderedition-60': 'sp-se sp-se60' };
+    'sonderedition-40': 'sp-se sp-se40', 'sonderedition-50': 'sp-se sp-se50', 'sonderedition-60': 'sp-se sp-se60',
+    mischa: 'sp-mischa', rollmops: 'sp-rollmops', penner: 'sp-penner' };
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 
