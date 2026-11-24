@@ -94,5 +94,53 @@
     "flaschengroesse": null,
     "kategorie_name": "Standardgebräu",
     "kategorie_stufe": 1
+  },
+  {
+    "id": "BM-000009",
+    "name": "Frankfurter - Pilsener",
+    "biersorte": ["Pils"],
+    "alkoholgehalt": 5.2,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Frankfurter Brauhaus GmbH", "adresse": "Lebuser Chaussee 3, 15234 Frankfurt (Oder)", "region": "Brandenburg", "land": "Deutschland" },
+    "beschreibung": "Premium-Pilsener aus Frankfurt (Oder): mild und feinherb mit harmonischer Hopfennote und vollem Körper. Stammwürze 11,8 °P.",
+    "zutaten": null,
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000010",
+    "name": "Frankfurter - Export",
+    "biersorte": ["Export"],
+    "alkoholgehalt": 5.2,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Frankfurter Brauhaus GmbH", "adresse": "Lebuser Chaussee 3, 15234 Frankfurt (Oder)", "region": "Brandenburg", "land": "Deutschland" },
+    "beschreibung": "Premium-Export aus Frankfurt (Oder): weich und malzaromatisch mit leicht herbem Abgang. Stammwürze 11,9 °P.",
+    "zutaten": null,
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000011",
+    "name": "Frankfurter - Helles",
+    "biersorte": ["Helles"],
+    "alkoholgehalt": 4.2,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Frankfurter Brauhaus GmbH", "adresse": "Lebuser Chaussee 3, 15234 Frankfurt (Oder)", "region": "Brandenburg", "land": "Deutschland" },
+    "beschreibung": "Untergäriges, nur schwach gehopftes Helles aus Frankfurt (Oder) mit wenig Alkohol. Stammwürze 9,3 °P.",
+    "zutaten": null,
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
+  },
+  {
+    "id": "BM-000012",
+    "name": "Frankfurter - Radler Naturtrüb",
+    "biersorte": ["Radler", "Biermischgetränk"],
+    "alkoholgehalt": 2.5,
+    "brauerei_vertrieb": { "typ": "Brauerei", "name": "Frankfurter Brauhaus GmbH", "adresse": "Lebuser Chaussee 3, 15234 Frankfurt (Oder)", "region": "Brandenburg", "land": "Deutschland" },
+    "beschreibung": "Je zur Hälfte Bier und Erfrischungsgetränk mit Zitronengeschmack. Das unfiltrierte Zwickelbier darin macht das Radler naturtrüb.",
+    "zutaten": null,
+    "flaschengroesse": 0.5,
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   }
 ]
