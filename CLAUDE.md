@@ -42,7 +42,7 @@ Firestore. Genutzt auf iPhone und MacBook, auch als installierte Web-App und ohn
 | `tests/game.test.js` | Node-Tests der Spiellogik |
 | `impressum.html`, `datenschutz.html` | Nur Platzhalter, KEINE Rechtstexte erfinden |
 | `Datensammlung/karte/` | Kartendaten (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py` (erzeugt sie aus den Grenzdaten) |
-| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `spezialkarten.json`, `scraper/` |
+| `Datensammlung/` | `biere.json` (Scraper, nie ändern), `biere_manuell.json` (Nachträge), `biere_beerdb.json` (aus beer-db.org), `biere_korrekturen.json` (Korrekturen), `kategorien.json`, `spezialkarten.json`, `scraper/` |
 
 Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.js`, `app.js`.
 
@@ -63,6 +63,16 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   die Beschreibung sagt, dass man es wählen darf, wenn ein Bier nicht in der Datenbank steht (z. B. Kneipenbiere ohne Angaben im Netz). Es ist eine gewöhnliche Karte: 1,0 Punkte je Trinken,
   einmal 3,5 Bonus für die neue Karte. Ohne Flaschengröße zählt es in der Alkohol-Auswertung nicht mit (siehe dort). Findbar über die Suche („unbek“); die Spielanleitung (`howtoHtml` in `js/app.js`) hat dazu den Absatz „Bier nicht gefunden?“. Auf der Karte steht unter dem Alkohol ein großes Fragezeichen (`.mystery` in `css/style.css`, `UNKNOWN_BEER_ID` in `js/app.js`), damit sie so hoch ist wie Karten mit Marke, Sorte und Herkunft (bei 390 px beide 247 px; ändert sich der Kartenaufbau, die 51 px neu messen). Keine neue Datei, `CACHE_VERSION` unverändert.
   Getestet: Node-Tests (58), Zusammenführen ohne Warnung (6.376 Biere), Suche, Eintragen, Kartenansicht samt Beschreibung im eingebauten Browser (390 px, lokaler Modus). NICHT getestet: iPhone/Safari, echte Firestore-Regeln (ID passt zu `^B[SM]-[0-9]{6}$`).
+- `biere_beerdb.json` (24.11.2026, Wunsch des Nutzers): 4.464 Biere aus beer-db.org (robots.txt und llms.txt erlauben KI-Crawler ausdrücklich, Bitte um Quellenangabe →
+  Abschnitt „Bierdaten“ in `impressum.html` und Feld `quelle` je Eintrag). IDs `BM-100001` … `BM-104464` (die Firestore-Regeln erlauben nur `^B[SM]-`; `biere_manuell.json` bleibt darunter).
+  `GAME.mergeBeers` 7. Parameter `beerdb` (nach `biere_manuell.json`), `BEER_FILES.beerdb` in `js/app.js`, `DATA_FILES` in `sw.js`, `CACHE_VERSION` `v13`. Gesammelt im eingebauten Browser
+  aus der Liste von beer-db.org (die Seite lädt per „Mehr laden“ 7.985 Zeilen, davon nur 6.579 verschiedene – Fehler beim Nachladen auf der Seite selbst; die Suche dort ist ebenfalls
+  unbrauchbar; ~1.400 Biere von beer-db.org fehlen deshalb noch) plus Brauereiliste (1.168, mit Adresse). Den API-Schlüssel der Seite auszulesen hat die Rechteprüfung abgelehnt.
+  Abgleich (Skripte nur im Scratchpad): Brauerei-Kennwörter + Namenskern (Jaccard, Teilmenge bei gleichem Alkohol, alkoholfrei ≠ normal), 2.115 vorhanden, 4.464 neu.
+  Sorte aus dem Namen abgeleitet (Vokabular aus `biere.json`), Stufe wie `scraper.kategorie` (Brauerei-Stufe über sicher erkannte vorhandene Biere derselben Brauerei).
+  Nutzer wollte ALLE, auch 1.418 ohne Alkoholgehalt (zählen in der Alkohol-Auswertung nicht). Keine Beschreibungen/Zutaten. bierentdecker.com und bierverkostung.de verbieten Scraping → nicht nutzen.
+  Getestet: Node-Tests (59, neuer Test der echten Datei: alle gültig, fortlaufende IDs, keine Warnung), Kopie ohne Schlüssel im eingebauten Browser (10.840 Biere, Suche, Eintragen „Kummert - Helles“, Zaubertrank, keine Konsolenfehler).
+  NICHT getestet: iPhone/Safari, echtes Firebase (Regeln gedanklich: ID passt), Service-Worker-Wechsel v12 → v13, Ladezeit mit zusätzlichen 2,5 MB.
 - `biere_korrekturen.json` (18.11.2026): Objekt `{ "<ID>": { feld: wert } }` mit den Feldnamen aus `biere.json`, wird in
   `GAME.mergeBeers` (5. Parameter, `applyFix`) auf den Rohdatensatz gelegt, bevor `cleanBeer` läuft. Änderbar: name,
   beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,

@@ -243,8 +243,9 @@
      Ungültige Einträge werden weggelassen; bei doppelter ID gilt der erste Eintrag (biere.json kommt zuerst).
      warn(text) wird für jede Auffälligkeit aufgerufen (im Browser: console.warn).
      fixes: Objekt aus biere_korrekturen.json oder undefined. specials: Liste aus spezialkarten.json oder undefined.
+     beerdb: Liste aus biere_beerdb.json (Nachtrag aus beer-db.org, IDs BM-100001 …) oder undefined; kommt nach biere_manuell.json.
      Ergebnis: { list, map } mit map = Map(id → Bier). */
-  function mergeBeers(main, manual, kategorien, warn = () => {}, fixes, specials) {
+  function mergeBeers(main, manual, kategorien, warn = () => {}, fixes, specials, beerdb) {
     const katNames = {};
     for (const k of Array.isArray(kategorien) ? kategorien : []) if (k && Number.isInteger(k.stufe)) katNames[k.stufe] = String(k.name || '');
     const fixMap = fixes && typeof fixes === 'object' && !Array.isArray(fixes) ? fixes : {};
@@ -263,6 +264,7 @@
     };
     take(main, 'biere.json');
     take(manual, 'biere_manuell.json');
+    take(beerdb, 'biere_beerdb.json');
     for (const id of Object.keys(fixMap)) if (!map.has(id)) warn(`biere_korrekturen.json: unbekannte ID ${id}, wird ignoriert`);
     applySpecials(map, cleanSpecials(specials, warn), warn);
     return { list: [...map.values()], map };

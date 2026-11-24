@@ -315,6 +315,24 @@ test('Kartendateien (Datensammlung/karte): Format, Anzahl, Lage', () => {
   for (const f of berlin.f) { const [lng, lat] = [f.c[0] / berlin.s, f.c[1] / berlin.s]; assert.ok(lng > 13 && lng < 13.8 && lat > 52.3 && lat < 52.7, f.n); }
 });
 
+test('Echte biere_beerdb.json (Nachtrag aus beer-db.org): alle gültig, IDs BM-100001 fortlaufend, keine Warnung beim Zusammenführen', () => {
+  const dir = path.join(__dirname, '..', 'Datensammlung');
+  const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+  const beerdb = rd('biere_beerdb.json');
+  const main = rd('biere.json'); const manual = rd('biere_manuell.json');
+  const warns = [];
+  const r = G.mergeBeers(main, manual, rd('kategorien.json'), (w) => warns.push(w), rd('biere_korrekturen.json'), rd('spezialkarten.json'), beerdb);
+  assert.deepStrictEqual(warns, []);
+  assert.strictEqual(r.list.length, main.length + manual.length + beerdb.length);
+  beerdb.forEach((b, i) => {
+    assert.strictEqual(b.id, `BM-${String(100001 + i).padStart(6, '0')}`);
+    const x = r.map.get(b.id);
+    assert.ok(x && x._file === 'biere_beerdb.json' && x.stufe === b.kategorie_stufe && x.kategorie === b.kategorie_name, b.id);
+    assert.ok(x.company.name && /^https:\/\/beer-db\.org\/bier\//.test(b.quelle), b.id);
+  });
+  assert.ok(manual.every((b) => Number(b.id.slice(3)) < 100001), 'biere_manuell.json bleibt unter BM-100001');
+});
+
 /* ---------- Wochen ---------- */
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();

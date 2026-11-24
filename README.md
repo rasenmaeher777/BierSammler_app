@@ -39,6 +39,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `impressum.html`, `datenschutz.html` | Platzhalterseiten – **noch auszufüllen** |
 | `Datensammlung/biere.json` | Bierdatenbank (vom Scraper erzeugt, **nie von Hand ändern**) |
 | `Datensammlung/biere_manuell.json` | Selbst nachgetragene Biere |
+| `Datensammlung/biere_beerdb.json` | 4.464 Biere aus beer-db.org (siehe „Biere aus beer-db.org“) |
 | `Datensammlung/biere_korrekturen.json` | Einzelne Angaben bestehender Biere korrigieren (z. B. Beschreibungen) |
 | `Datensammlung/kategorien.json` | Die fünf Kategorien |
 | `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte oder Extrapunkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
@@ -144,6 +145,22 @@ Beispiel:
 ]
 ```
 
+## Biere aus beer-db.org (`biere_beerdb.json`)
+
+`Datensammlung/biere_beerdb.json` enthält 4.464 Biere aus der offenen Bierdatenbank [beer-db.org](https://beer-db.org),
+die in `biere.json` und `biere_manuell.json` fehlten (Stand 24.11.2026). beer-db.org erlaubt die Nutzung ausdrücklich und bittet um
+Quellenangabe; die steht im Impressum und in jedem Eintrag im Feld `quelle` (wird von der App nicht angezeigt).
+
+- IDs `BM-100001` … `BM-104464`. Absichtlich `BM-` statt eines eigenen Präfixes: Die Firestore-Regeln erlauben nur `BS-`/`BM-`.
+  Eigene Nachträge in `biere_manuell.json` deshalb immer unter `BM-100001` halten.
+- Gleiches Format wie `biere.json`, Angaben: Name („Marke - Bier“), Brauerei mit Adresse und Bundesland, Alkoholgehalt (bei 1.418 Bieren unbekannt),
+  Füllmenge (oft unbekannt). Keine Beschreibung und keine Zutaten. Die Sorte ist aus dem Biernamen abgeleitet (sonst „Bier“).
+- Kategorie wie beim Scraper: Brauerei schon bekannt → deren Stufe, sonst Zaubertrank, Gasthausbrauerei oder Ausland (auch Österreich) → Heiligtum,
+  Sonder-/Saisonbiere eine Stufe höher. Ergebnis: 66 / 224 / 595 / 2.729 / 850 (Stufe 1–5).
+- Der Abgleich lief über Brauerei, Name und Alkoholgehalt; einzelne Doppelungen mit `biere.json` sind möglich. Beim Durchsehen falsche Angaben
+  in `biere_korrekturen.json` berichtigen (gilt auch für diese IDs).
+- Die Datei ist nicht von einem Skript im Projekt erzeugt; ein neuer Scraper-Lauf lässt sie unberührt.
+
 ## Einzelne Angaben korrigieren
 
 Soll bei einem **bestehenden** Bier etwas anders stehen (z. B. die Beschreibung), trägst du es in
@@ -169,7 +186,7 @@ Scraper-Lauf, weil die Bier-ID der Schlüssel ist.
 Prüfen, ob alles lesbar ist (zeigt Warnungen oder „alles in Ordnung“):
 
 ```bash
-node -e "const G=require('./js/game.js'),fs=require('fs'),r=(f)=>JSON.parse(fs.readFileSync('Datensammlung/'+f,'utf8')),w=[];const m=G.mergeBeers(r('biere.json'),r('biere_manuell.json'),r('kategorien.json'),(t)=>w.push(t),r('biere_korrekturen.json'));console.log(w.length?w.join('\n'):'alles in Ordnung: '+m.list.length+' Biere')"
+node -e "const G=require('./js/game.js'),fs=require('fs'),r=(f)=>JSON.parse(fs.readFileSync('Datensammlung/'+f,'utf8')),w=[];const m=G.mergeBeers(r('biere.json'),r('biere_manuell.json'),r('kategorien.json'),(t)=>w.push(t),r('biere_korrekturen.json'),undefined,r('biere_beerdb.json'));console.log(w.length?w.join('\n'):'alles in Ordnung: '+m.list.length+' Biere')"
 ```
 
 Nach dem Push erscheinen neue Biere ab dem **übernächsten** Start der App (siehe nächster Abschnitt).

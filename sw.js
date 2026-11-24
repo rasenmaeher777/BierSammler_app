@@ -14,7 +14,7 @@
    js/app.js (STUFEN_MARKE) hochsetzen, sonst läuft neuer Code einmal mit alten Bierdaten. */
 'use strict';
 
-const CACHE_VERSION = 'v12'; // v12: neue Datei js/info.js (INFO-FENSTER)
+const CACHE_VERSION = 'v13'; // v13: neue Datei Datensammlung/biere_beerdb.json (v12: js/info.js, INFO-FENSTER)
 const CACHE = `biersammler-${CACHE_VERSION}`;
 const FIREBASE_SDK = '10.12.2'; // muss zu js/store.js und den modulepreload-Links in index.html passen
 const SDK_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
@@ -44,6 +44,7 @@ const APP_FILES = [
 const DATA_FILES = [
   'Datensammlung/biere.json?stufen=5',
   'Datensammlung/biere_manuell.json?stufen=5',
+  'Datensammlung/biere_beerdb.json?stufen=5', // Nachtrag aus beer-db.org (24.11.2026)
   'Datensammlung/kategorien.json?stufen=5',
   'Datensammlung/biere_korrekturen.json',
   'Datensammlung/nachrichten.json',
