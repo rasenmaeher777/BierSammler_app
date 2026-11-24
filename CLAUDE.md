@@ -69,7 +69,13 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   aus der Liste von beer-db.org (die Seite lädt per „Mehr laden“ 7.985 Zeilen, davon nur 6.579 verschiedene – Fehler beim Nachladen auf der Seite selbst; die Suche dort ist ebenfalls
   unbrauchbar; ~1.400 Biere von beer-db.org fehlen deshalb noch) plus Brauereiliste (1.168, mit Adresse). Den API-Schlüssel der Seite auszulesen hat die Rechteprüfung abgelehnt.
   Abgleich (Skripte nur im Scratchpad): Brauerei-Kennwörter + Namenskern (Jaccard, Teilmenge bei gleichem Alkohol, alkoholfrei ≠ normal), 2.115 vorhanden, 4.464 neu.
-  Sorte aus dem Namen abgeleitet (Vokabular aus `biere.json`), Stufe wie `scraper.kategorie` (Brauerei-Stufe über sicher erkannte vorhandene Biere derselben Brauerei).
+  Sorte aus dem Namen abgeleitet (Vokabular aus `biere.json`). Stufe zuerst wie `scraper.kategorie` (Brauerei-Stufe), am selben Tag auf Wunsch des Nutzers
+  neu Bier für Bier nach Erhältlichkeit (Beispiel des Nutzers: Sternburg Export häufig, Sternburg Diesel selten): 306 Biere großer Marken (Brauerei-Stufe ≤ 2) plus
+  falsch zugeordnete Gasthausbrauereien (s Antla, Brauhaus am Lohberg Wismar, Kommunbräu, Wagner Kemmern) einzeln von Claude geschätzt; sonst Brauerei-Grundstufe
+  (Minimum der Hauptsorten; 13 Brauereien korrigiert) und +1 (max. 5) für Nebensorten Bock/Doppelbock/Weizenbock/Festbier/Ale/Pale Ale/Stout/Porter/Rauchbier
+  oder Sonder-/Saisonwort im Namen (Märzen bewusst NICHT, in Franken/Bayern Alltagsbier). Ergebnis 20/113/737/2.190/1.404 (vorher 66/224/595/2.729/850), 946 geändert,
+  nur `kategorie_*` geändert. Skript lag nur im Scratchpad; Übersicht `scraper/stufen_vorschlag_beerdb.csv`. Kein Cache-Marken-Wechsel nötig (nur Umstufungen).
+  Keines der Biere steht auf einer Spezialkarte. Spieler, die heute schon BM-1…-Biere eingetragen haben, bekommen rückwirkend andere Punkte.
   Nutzer wollte ALLE, auch 1.418 ohne Alkoholgehalt (zählen in der Alkohol-Auswertung nicht). Keine Beschreibungen/Zutaten. bierentdecker.com und bierverkostung.de verbieten Scraping → nicht nutzen.
   Getestet: Node-Tests (59, neuer Test der echten Datei: alle gültig, fortlaufende IDs, keine Warnung), Kopie ohne Schlüssel im eingebauten Browser (10.840 Biere, Suche, Eintragen „Kummert - Helles“, Zaubertrank, keine Konsolenfehler).
   NICHT getestet: iPhone/Safari, echtes Firebase (Regeln gedanklich: ID passt), Service-Worker-Wechsel v12 → v13, Ladezeit mit zusätzlichen 2,5 MB.
@@ -111,6 +117,22 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
 - Sicherung des Stands vor dem Umbau: damals nur im Scratchpad der Sitzung. Inzwischen ist das Projekt ein Git-Repository (Branch `main`); der Nutzer committet selbst.
 
 ## Spezialkarten (19.11.2026)
+
+- **Neuverteilung (24.11.2026, Wunsch des Nutzers; GILT VOR allen älteren Bierzahlen und Stufen unten):** Ziel „nicht jede Woche ein Spezialbier, aber nicht unmöglich“,
+  Standardbiere (Beispiele des Nutzers: Oettinger Export, Berliner Kindl Jubiläums Pilsener, ein Klassiker) gehören auf keine Spezialkarte. Daher Stufe 1 und 2 nirgends,
+  einzige Ausnahme STERNI (Sternburg - Export, am selben Tag eigens gewünscht; dem Nutzer zur Entscheidung gestellt). Quoten ≈ 15 % der Spezialitäten, 12 % der Zaubertränke/Heiligtümer
+  (Schätzung: bei typischem Trinkverhalten jedes 15.–20. neue Bier eine Spezialkarte). Ergebnis 0/0/394/551/368 (+ STERNI), 1.314 Biere.
+  Legenden: nur noch Biere ab Stufe 3, aufgefüllt mit Kultbieren (Berlin: Kindl Bock dunkel, Bürgerbräu Rotkehlchen, Schoppe Molle, Brewbaker und Schneeeule Berliner Weisse;
+  Bayern: Aventinus, Aventinus Eisbock, Celebrator, Schlenkerla Urbock, Spezial Rauchbier, Ettaler Curator, Fässla Bambergator; NRW: Füchschen, Schumacher, Schlüssel, Päffgen,
+  Original Pinkus, Uerige Sticke, Mühlen Kölsch; SH: Dithmarscher Urbock), je 3–9 Biere. Zufallskarten 58 (25 Stufe 4 + 33 Stufe 5), Sonderedition/Mischa/Rollmops/Penner 30 (Stufe 3),
+  Rosemary/Killer 124 (28 + 96), FCKAFD 69. Gezogen mit `random.Random("<id>-2026-11-24-verteilung")` in Dateireihenfolge: erst passende bisherige Biere der Karte behalten
+  (bei Überzahl per `sample` gekürzt), dann aus allen freien Bieren der Stufe aufgefüllt, auch `BM-` aus `biere_beerdb.json` (783 geblieben, 412 entfallen, 516 neu, 15 Karte gewechselt);
+  nicht neu würfeln. Skript nur im Scratchpad. Der Test der echten Datei führt jetzt `biere_beerdb.json` mit zusammen (sonst Warnungen für unbekannte IDs).
+  Geprüft im eingebauten Browser mit Kopie ohne Schlüssel (Aventinus → Bayern Legende, Apostelbräu Schwarzer Hafer → Sanchi, keine Konsolenfehler). NICHT getestet: iPhone/Safari, echte App mit Anmeldung.
+  **Aufstockung am selben Abend (Wunsch: „Verhältnis lassen, je Karte 25 dazu, außer STERNI und Legenden“; auch `hh-rakete` ausgenommen, gehört zu den Legenden):**
+  25 Biere je Karte im Stufen-Verhältnis der Karte (gerundet, Rest auf die seltenste Stufe), gezogen mit `random.Random("<id>-2026-11-24-plus25").sample` aus den freien Bieren
+  der Stufe, in Dateireihenfolge; nicht neu würfeln. Jetzt: Zufallskarten 83 (36 Stufe 4 + 47 Stufe 5), Sonderedition/Mischa/Rollmops/Penner 55, Rosemary/Killer 149 (34 + 115),
+  FCKAFD 94 (vorher 69). Ergebnis 0/0/631/735/522 (+ STERNI) = 24,8 / 15,9 / 17,0 %, 1.889 Biere. Die Zahlen oben sind damit überholt.
 
 - `Datensammlung/spezialkarten.json` (Format und Regeln in der README): Liste `{ id, titel, design, punkte?, biere[] }`. Der Nutzer pflegt sie selbst.
   Verarbeitung in `GAME.cleanSpecials` / `applySpecials` (innerhalb von `mergeBeers`, 6. Parameter). Jedes Bier bekommt `label` (Band-Text), `look`

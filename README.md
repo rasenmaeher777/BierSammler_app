@@ -155,8 +155,13 @@ Quellenangabe; die steht im Impressum und in jedem Eintrag im Feld `quelle` (wir
   Eigene Nachträge in `biere_manuell.json` deshalb immer unter `BM-100001` halten.
 - Gleiches Format wie `biere.json`, Angaben: Name („Marke - Bier“), Brauerei mit Adresse und Bundesland, Alkoholgehalt (bei 1.418 Bieren unbekannt),
   Füllmenge (oft unbekannt). Keine Beschreibung und keine Zutaten. Die Sorte ist aus dem Biernamen abgeleitet (sonst „Bier“).
-- Kategorie wie beim Scraper: Brauerei schon bekannt → deren Stufe, sonst Zaubertrank, Gasthausbrauerei oder Ausland (auch Österreich) → Heiligtum,
-  Sonder-/Saisonbiere eine Stufe höher. Ergebnis: 66 / 224 / 595 / 2.729 / 850 (Stufe 1–5).
+- Kategorie nach Erhältlichkeit Bier für Bier (Neueinordnung 24.11.2026, Schätzung): Die 306 Biere großer Marken (Brauerei-Stufe 1–2) und einiger
+  falsch zugeordneter Gasthausbrauereien sind einzeln eingestuft (z. B. Veltins Pilsener Alkoholfrei Standardgebräu, Grevensteiner Bockbier Spezialität).
+  Alle anderen: Grundstufe der Brauerei für die Hauptsorten (für 13 Brauereien korrigiert, z. B. Darguner, Gilde, Herrenhäuser → Klassiker),
+  Nebensorten (Bock, Doppelbock, Weizenbock, Festbier, Ale, Pale Ale, Stout, Porter, Rauchbier) sowie Sonder- und Saisonbiere eine Stufe höher (höchstens Heiligtum).
+  Ergebnis: 20 / 113 / 737 / 2.190 / 1.404 (Stufe 1–5, vorher 66 / 224 / 595 / 2.729 / 850). Übersicht mit Begründung:
+  `Datensammlung/scraper/stufen_vorschlag_beerdb.csv` (wird nicht gelesen). Einzelne Biere umstufen: `kategorie_stufe` und `kategorie_name`
+  direkt in `biere_beerdb.json` ändern (es gibt kein Skript, das die Datei neu erzeugt).
 - Der Abgleich lief über Brauerei, Name und Alkoholgehalt; einzelne Doppelungen mit `biere.json` sind möglich. Beim Durchsehen falsche Angaben
   in `biere_korrekturen.json` berichtigen (gilt auch für diese IDs).
 - Die Datei ist nicht von einem Skript im Projekt erzeugt; ein neuer Scraper-Lauf lässt sie unberührt.
@@ -320,6 +325,7 @@ Die Einordnung ist eine Schätzung (große Marken Bier für Bier, sonst je Braue
 - `stufen_brauereien.json`: Brauerei → Stufe. Neue Biere aus einem späteren Scraper-Lauf bekommen darüber ihre Stufe
   (Sonder-/limitierte Editionen und Saisonbiere eine Stufe höher). Unbekannte Brauerei: ausländisch oder Gasthausbrauerei → Heiligtum, sonst Zaubertrank.
 - `stufen_vorschlag.csv`: alle Biere mit neuer und alter Stufe und Begründung, zum Durchsehen in Numbers oder Excel (wird nicht gelesen).
+- `stufen_vorschlag_beerdb.csv`: dasselbe für die Biere aus `biere_beerdb.json` (die Stufen stehen dort direkt in der Datei).
 
 Biere aus `biere_manuell.json` tragen ihre Stufe selbst. Jede Umstufung ändert die Punkte aller Spieler, die das Bier schon haben, rückwirkend.
 Cache: Die Marke `?stufen=…` in `js/app.js` (`STUFEN_MARKE`) und `sw.js` (`DATA_FILES`) nur dann erhöhen, wenn sich
@@ -344,6 +350,22 @@ Anzahl oder Bedeutung der Stufen ändert; einzelne Umstufungen erscheinen wie al
   Browser-Konsole ignoriert; fehlt die Datei, gibt es keine Spezialkarten.
 - Ändert man `punkte`, `bonus` oder die Biere einer Karte, verschieben sich die Punkte aller Spieler, die diese Biere getrunken haben, rückwirkend.
 - Neue Datei oder neue Bier-IDs brauchen keine neue `CACHE_VERSION`; sie erscheinen wie alle Bierdaten ab dem übernächsten Start.
+
+**Verteilung seit 24.11.2026** (gilt vor allen Angaben unten zu Bierzahlen und Stufen): Standardgebräu und Klassiker stehen auf keiner
+Spezialkarte mehr, weil sie zu leicht zu finden sind (einzige Ausnahme: STERNI). Nach der Aufstockung (+25 Biere je Karte außer STERNI und Legenden,
+im Stufen-Verhältnis der Karte) liegen auf Spezialkarten rund 25 % aller Spezialitäten, 16 % der Zaubertränke und 17 % der Heiligtümer, zusammen 1.889 von 10.840 Bieren
+(erste Fassung am selben Tag: 15 / 12 / 12 %, 1.314 Biere). Wer vor allem bekannte Biere trinkt, findet damit etwa bei jedem 10. bis 12. neuen Bier eine Spezialkarte. Die Legenden enthalten nur noch Kultbiere ab Spezialität, also Biere, die man suchen muss (3 bis 9 je Land, z. B. Aventinus und Schlenkerla
+in Bayern, Uerige und Füchschen in NRW, Berliner Weisse von Brewbaker und Schneeeule in Berlin). Je Karte:
+
+| Karten | Biere je Karte |
+| --- | --- |
+| elf Zufallskarten (Sanchi … Raddelfuß) | 83: 36 Zaubertrank + 47 Heiligtum |
+| Sonderedition 10–60, Mischa, Rollmops, Penner | 55 Spezialität |
+| Rosemary, Killer | 149: 34 Spezialität + 115 Zaubertrank |
+| FCKAFD | 94 Zaubertrank |
+
+Biere, die schon auf einer Karte standen und weiter passten, sind dort geblieben (783). 412 sind entfallen, 516 kamen dazu, auch aus `biere_beerdb.json`.
+Für Spieler, die betroffene Biere schon haben, ändern sich Aussehen und Punkte rückwirkend.
 
 Vorhandene Karten (Stand 19.11.2026): die **Legenden** der Bundesländer (je 5 bis 10 bekannte Biere des Landes, Berlin 4; Titel „BW Legende“, „Bayern Legende“,
 „Märkische Legende“ (Brandenburg), „Bremer Legende“, „Hamburger Legende“, „Hessen Legende“, „MV Legende“, „Nieders. Legende“, „NRW Legende“, „RLP Legende“,

@@ -583,49 +583,51 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
 });
 
-test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten (Stufe 2 bis 5) und 9 Spezialität-Karten mit je 40 Bieren, Rosemary und Killer mit je 100 (Spezialität + Zaubertrank), alle 1 Punkt extra', () => {
+test('Spezialkarten: echte Dateien (Verteilung vom 24.11.2026) – kein Standardgebräu/Klassiker außer STERNI, Legenden ab Spezialität, 11 Zufallskarten (36 Zaubertrank + 47 Heiligtum), 9 Spezialität-Karten (je 55), Rosemary und Killer (34 + 115), FCKAFD (94), Zufallskarten 1 Punkt extra', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
-  const r = G.mergeBeers(rd('biere.json'), rd('biere_manuell.json'), rd('kategorien.json'), (t) => warns.push(t), rd('biere_korrekturen.json'), rd('spezialkarten.json'));
+  const r = G.mergeBeers(rd('biere.json'), rd('biere_manuell.json'), rd('kategorien.json'), (t) => warns.push(t), rd('biere_korrekturen.json'), rd('spezialkarten.json'), rd('biere_beerdb.json'));
   assert.strictEqual(warns.length, 0, warns.join(' | '));
   const by = {}; for (const b of r.list) if (b.spezial) (by[b.spezial.id] = by[b.spezial.id] || []).push(b);
-  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 4 bis 10 Biere (Berlin 4, die übrigen 5 bis 10)
+  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 3 bis 10 Biere, seit 24.11.2026 nur noch ab Spezialität (Stufe 3)
   const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
   assert.strictEqual(legenden.length, 16);
-  for (const k of legenden) assert.ok(by[k].length >= (k === 'legende' ? 4 : 5) && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
+  for (const k of legenden) assert.ok(by[k].length >= 3 && by[k].length <= 10 && by[k].every((b) => b.stufe >= 3), `${k}: ${by[k].length} Biere`);
+  // Kein Standardgebräu und kein Klassiker auf Spezialkarten, einzige Ausnahme STERNI (Sternburg - Export)
+  assert.deepStrictEqual(r.list.filter((b) => b.spezial && b.stufe <= 2).map((b) => b.id), ['BS-000887']);
   const zufall = [['aussenseiter', 'Außenseiter', 'sp-weltall'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'],
     ['raddelfuss', 'Raddelfuß', 'sp-raddel'], ['regenbogen', 'Spezial-Edition 04', 'sp-regenbogen'], ['sanchi', 'Sanchi', 'sp-sanchi'], ['schwarzweiss', 'Schwarze Nachtigal', 'sp-noir'],
     ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
-  // Sonderedition 10 bis 60 (20.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
+  // Sonderedition 10 bis 60 (20.11.2026): je 55 Biere (seit 24.11.2026, vorher 40, kurz 30), nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
   const sonder = [10, 20, 30, 40, 50, 60].map((n) => [`sonderedition-${n}`, `Sonderedition ${n}`, `sp-se sp-se${n}`]);
-  // Mischa, Rollmops, Penner (22.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
+  // Mischa, Rollmops, Penner (22.11.2026): je 55 Biere (vorher 40, kurz 30), nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
   sonder.push(['mischa', 'Mischa', 'sp-mischa'], ['rollmops', 'Rollmops', 'sp-rollmops'], ['penner', 'Penner', 'sp-penner']);
-  // Rosemary und Killer (24.11.2026): je 100 Biere, 50 Spezialität (Stufe 3) und 50 Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
+  // Rosemary und Killer (24.11.2026): je 149 Biere, 34 Spezialität (Stufe 3) und 115 Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
   const gross = [['rosemary', 'Rosemary', 'sp-rosemary'], ['killer', 'Killer', 'sp-killer']];
   for (const [k, titel, look] of gross) {
     const proStufe = {}; for (const b of by[k]) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
-    assert.deepStrictEqual(proStufe, { 3: 50, 4: 50 }, k);
-    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
+    assert.deepStrictEqual(proStufe, { 3: 34, 4: 115 }, k);
+    assert.ok(by[k].every((b) => b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
   }
-  // FCKAFD (24.11.2026): 69 Biere, nur Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
-  assert.strictEqual(by.fckafd.length, 69);
-  assert.ok(by.fckafd.every((b) => b.id.startsWith('BS-') && b.stufe === 4 && b.label === 'FCKAFD' && b.look === 'sp-fckafd' && G.beerPoints(b) === G.pointsFor(4) + 10), 'FCKAFD: Stufe, Titel, Aussehen, Punkte');
+  // FCKAFD (24.11.2026): 94 Biere (vorher 69), nur Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
+  assert.strictEqual(by.fckafd.length, 94);
+  assert.ok(by.fckafd.every((b) => b.stufe === 4 && b.label === 'FCKAFD' && b.look === 'sp-fckafd' && G.beerPoints(b) === G.pointsFor(4) + 10), 'FCKAFD: Stufe, Titel, Aussehen, Punkte');
   assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0]), ...sonder.map((z) => z[0]), ...gross.map((z) => z[0]), 'fckafd'].sort());
   for (const [k, titel, look] of sonder) {
-    assert.strictEqual(by[k].length, 40, k);
-    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.stufe === 3 && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(3) + 10), `${titel}: Stufe, Titel, Aussehen, Punkte`);
+    assert.strictEqual(by[k].length, 55, k);
+    assert.ok(by[k].every((b) => b.stufe === 3 && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(3) + 10), `${titel}: Stufe, Titel, Aussehen, Punkte`);
   }
   // Astra - Rakete: eigene Karte, sieht aus wie die Hamburger Legende, bringt aber feste 1,0 statt 1,3 (Stufe bleibt Spezialität)
   assert.deepStrictEqual(by['hh-rakete'].map((b) => b.id), ['BS-004132']);
   const rakete = r.map.get('BS-004132');
   assert.deepStrictEqual([rakete.label, rakete.look, rakete.spezial.design, rakete.stufe, G.beerPoints(rakete)], ['Hamburger Legende', 'k1 sp-icon', 'anker', 3, 10]);
   assert.ok(!by['legende-hh'].some((b) => b.id === 'BS-004132'));
-  // Zufallskarten: je 40 Biere, gleichmäßig mit leichter Tendenz zu den selteneren (9 / 10 / 10 / 11), kein Standardgebräu, Punkte der Stufe + 1,0
+  // Zufallskarten: je 83 Biere, nur Zaubertrank (36) und Heiligtum (47), Punkte der Stufe + 1,0
   for (const [k, titel, look] of zufall) {
     const proStufe = {}; for (const b of by[k]) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
-    assert.deepStrictEqual(proStufe, { 2: 9, 3: 10, 4: 10, 5: 11 }, k);
-    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
+    assert.deepStrictEqual(proStufe, { 4: 36, 5: 47 }, k);
+    assert.ok(by[k].every((b) => b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
   }
   // Länder-Legenden: Titel „… Legende“ (kurz genug fürs Band), Standardgebräu-Look, eigenes Wahrzeichen; Punkte nur die der Stufe (kein Bonus)
   const titel = legenden.map((k) => by[k][0].label);
@@ -633,7 +635,8 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   assert.strictEqual(new Set(legenden.map((k) => by[k][0].spezial.design)).size, 16, 'jedes Land hat sein eigenes Symbol');
   for (const k of legenden) assert.ok(by[k].every((b) => (b.look === 'k1 sp-baer' || b.look === 'k1 sp-icon') && G.beerPoints(b) === G.pointsFor(b.stufe)));
   assert.ok(legenden.filter((k) => k !== 'legende').every((k) => G.LEGEND_ICONS.includes(by[k][0].spezial.design)));
-  assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000882', 'BS-000885', 'BS-001490', 'BS-002764']);
+  assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000822', 'BS-000885', 'BS-000896', 'BS-004351', 'BS-004422', 'BS-004895']);
+  assert.strictEqual(r.map.get('BS-002764').spezial, null); // Berliner Kindl Jubiläums Pilsener: Klassiker, keine Spezialkarte mehr
   assert.ok(by.legende.every((b) => b.label === 'Berliner Legende'));
   // STERNI (früher Bierball-Bier, id bierball): nur noch Sternburg - Export (Oettinger - Export am 24.11.2026 entfernt), Standardgebräu, feste 1,0 Punkte
   assert.deepStrictEqual(by.bierball.map((b) => b.id), ['BS-000887']);
