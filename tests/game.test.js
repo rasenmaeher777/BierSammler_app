@@ -565,7 +565,7 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
 });
 
-test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten (Stufe 2 bis 5) und 6 Sondereditionen (Spezialität) mit je 40 Bieren und 1 Punkt extra', () => {
+test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskarten (Stufe 2 bis 5) und 9 Spezialität-Karten mit je 40 Bieren, Rosemary und Killer mit je 100 (Spezialität + Zaubertrank), alle 1 Punkt extra', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
@@ -583,7 +583,17 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   const sonder = [10, 20, 30, 40, 50, 60].map((n) => [`sonderedition-${n}`, `Sonderedition ${n}`, `sp-se sp-se${n}`]);
   // Mischa, Rollmops, Penner (22.11.2026): je 40 Biere, nur Spezialität (Stufe 3), eigenes Design, Punkte der Stufe + 1,0
   sonder.push(['mischa', 'Mischa', 'sp-mischa'], ['rollmops', 'Rollmops', 'sp-rollmops'], ['penner', 'Penner', 'sp-penner']);
-  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0]), ...sonder.map((z) => z[0])].sort());
+  // Rosemary und Killer (24.11.2026): je 100 Biere, 50 Spezialität (Stufe 3) und 50 Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
+  const gross = [['rosemary', 'Rosemary', 'sp-rosemary'], ['killer', 'Killer', 'sp-killer']];
+  for (const [k, titel, look] of gross) {
+    const proStufe = {}; for (const b of by[k]) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
+    assert.deepStrictEqual(proStufe, { 3: 50, 4: 50 }, k);
+    assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(b.stufe) + 10), `${titel}: Titel, Aussehen, Punkte`);
+  }
+  // FCKAFD (24.11.2026): 69 Biere, nur Zaubertrank (Stufe 4), eigenes Design, Punkte der Stufe + 1,0
+  assert.strictEqual(by.fckafd.length, 69);
+  assert.ok(by.fckafd.every((b) => b.id.startsWith('BS-') && b.stufe === 4 && b.label === 'FCKAFD' && b.look === 'sp-fckafd' && G.beerPoints(b) === G.pointsFor(4) + 10), 'FCKAFD: Stufe, Titel, Aussehen, Punkte');
+  assert.deepStrictEqual(Object.keys(by).filter((k) => !legenden.includes(k)).sort(), ['bierball', 'hh-rakete', ...zufall.map((z) => z[0]), ...sonder.map((z) => z[0]), ...gross.map((z) => z[0]), 'fckafd'].sort());
   for (const [k, titel, look] of sonder) {
     assert.strictEqual(by[k].length, 40, k);
     assert.ok(by[k].every((b) => b.id.startsWith('BS-') && b.stufe === 3 && b.label === titel && b.look === look && G.beerPoints(b) === G.pointsFor(3) + 10), `${titel}: Stufe, Titel, Aussehen, Punkte`);
@@ -607,8 +617,10 @@ test('Spezialkarten: echte Dateien – Legenden und Bierball fest, 11 Zufallskar
   assert.ok(legenden.filter((k) => k !== 'legende').every((k) => G.LEGEND_ICONS.includes(by[k][0].spezial.design)));
   assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000882', 'BS-000885', 'BS-001490', 'BS-002764']);
   assert.ok(by.legende.every((b) => b.label === 'Berliner Legende'));
-  // Bierball-Bier: Sternburg - Export und Oettinger - Export, beide Standardgebräu, feste 1,0 Punkte
-  assert.deepStrictEqual(by.bierball.map((b) => b.id).sort(), ['BS-000057', 'BS-000887']);
+  // STERNI (früher Bierball-Bier, id bierball): nur noch Sternburg - Export (Oettinger - Export am 24.11.2026 entfernt), Standardgebräu, feste 1,0 Punkte
+  assert.deepStrictEqual(by.bierball.map((b) => b.id), ['BS-000887']);
+  assert.ok(by.bierball.every((b) => b.label === 'STERNI' && b.look === 'k1 sp-sticker'));
+  assert.strictEqual(r.map.get('BS-000057').spezial, null);
   assert.strictEqual(r.map.get('BS-000887').kategorie, 'Standardgebräu'); assert.strictEqual(r.map.get('BS-000887').stufe, 1);
   assert.strictEqual(G.beerPoints(r.map.get('BS-000887')), 10); assert.strictEqual(G.beerPoints(r.map.get('BS-000057')), 10);
 });

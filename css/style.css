@@ -706,19 +706,32 @@ button.bcard:active { transform: scale(0.98); }
 .bear.t5 .body { fill: #A3AEBD; stroke: #4A5563; stroke-width: 0.8; }
 .bear.g .body { stroke: var(--gold-d); stroke-width: 0.8; }
 
-/* sticker (Bierball-Bier): wie Standardgebräu, dazu ein „BB“-Stempel in gedecktem Marineblau auf der linken oberen Ecke des Zierrahmens.
-   Flach, ohne Glanz und Schatten; der Kartengrund als Rand schneidet ihn aus dem Rahmen heraus, ein feiner Innenring
-   in Cremeweiß nimmt das Zierlinien-Motiv der Karte auf (Creme auf Marine 8,6 : 1). Liegt direkt in der Karte (nicht im
-   Inhalt), damit er über dem Zierrahmen (z-index 3) steht. */
-.sticker {
-  position: absolute; top: 33px; left: 3px; z-index: 5;
-  display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%;
-  border: 2px solid var(--surface); background: #2A4F85; color: #FFF6E0;
-  box-shadow: inset 0 0 0 2px #2A4F85, inset 0 0 0 3px rgb(255 246 224 / 0.75);
-  font: 800 11px/1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; letter-spacing: 0.03em;
-  transform: rotate(-8deg); pointer-events: none;
+/* sticker (Spezialkarte „STERNI“, früher „Bierball-Bier“ mit „BB“-Stempel): wie Standardgebräu, dazu das Sternburg-Zeichen 1 : 1 nach Vorlage
+   (roter Kreis, feiner weißer Innenring, weißer Stern; SVG STERNI in js/app.js) auf der linken oberen Ecke des Zierrahmens. Flach, nicht gedreht,
+   ohne Rand und Schatten, damit es genau wie das Original aussieht. Liegt direkt in der Karte (nicht im Inhalt), damit es über dem Zierrahmen (z-index 3) steht. */
+/* Sitzt INNERHALB des Zierrahmens (Rahmen: 7 px unter dem Band, 6 px vom Rand, Ecke 14 px), genau gegenüber dem Lvl-Schild (13 px Abstand), und lässt die Linie frei */
+.sticker { position: absolute; top: 44px; left: 13px; z-index: 5; width: 40px; height: 40px; pointer-events: none; }
+.sticker .sterni { display: block; width: 100%; height: 100%; }
+.card-view .sticker { top: 45px; left: 14px; width: 50px; height: 50px; }
+@media (max-width: 359px) { .grid .sticker { width: 34px; height: 34px; } }
+/* STERNI: nahezu weißer Grund, alles Farbige in einem etwas gedämpften Rot (#BE3B38, das Logo selbst bleibt #D41F1F): Band mit weißem Titel und feiner weißer Unterlinie (wie der Logo-Innenring),
+   Rand, Zierrahmen, Level-Schein, Flasche (weißes Etikett), Lvl-Schild (rot, weiße Schrift). Schrift dunkel. Feste Farben, gleich in hell und dunkel;
+   --k/--on-k auch auf der Klasse selbst, damit der Farbstreifen in „Sammlung verwalten“ mitzieht. */
+.sp-sticker { --k: #BE3B38; --on-k: #FFFFFF; }
+.bcard.sp-sticker {
+  --surface: #FFFCFB; --surface-2: #F8E6E4; --text: #2A1414; --muted: #6E4A48; --kt: #BE3B38; --bk: #BE3B38; --glow: rgb(190 59 56 / 0.35);
+  border-color: #BE3B38; background: #FFFCFB;
 }
-.card-view .sticker { top: 35px; left: 3px; width: 38px; height: 38px; font-size: 13px; }
+.sp-sticker .mat { background: none; } /* kein Tönungsverlauf: der Grund bleibt nahezu weiß */
+.sp-sticker .mat::after { opacity: 0.18; }
+.sp-sticker .band .kat { color: #FFFFFF; font-weight: 850; letter-spacing: 0.06em; background: #BE3B38; box-shadow: inset 0 -1.5px 0 #FFFFFF; }
+.sp-sticker .count { background: #BE3B38; color: #FFFFFF; }
+.sp-sticker .chips span { background: #F8E6E4; color: #5A1414; }
+.sp-sticker .origin .o { background: #BE3B38; color: #FFFFFF; }
+.sp-sticker .bottle:not(.g):not(.t5) .body { fill: #BE3B38; stroke: #7C2422; }
+.sp-sticker .bottle:not(.g) .cap { fill: #7C2422; }
+.sp-sticker .bottle .label { fill: #FFFFFF; opacity: 1; }
+.sp-sticker .bottle { --spark: #BE3B38; }
 
 /* sanchi: eigenständiges Design ohne Verwandtschaft zu den Kategorie-Karten: nachtviolett mit abstrakten Kreisen und Bändern
    in Gelb, Koralle, Türkis und Violett, Schrägband mit Verlauf statt des geraden Balkens, gestrichelter Innenrahmen,
@@ -1434,6 +1447,144 @@ button.bcard:active { transform: scale(0.98); }
 .sp-penner .bottle .shade { opacity: 0.3; }
 .sp-penner .bottle { --spark: #E8C93A; }
 
+/* ---------- Rosemary und Killer (Designs sp-rosemary, sp-killer; 24.11.2026) ----------
+   Zwei Karten, die den normalen Kartenaufbau behalten (Band, Zierrahmen mit Ecken, Flasche, Herkunftsbox; Muster über --pat wie bei den Kategorien),
+   aber eigene Farben, Schrift und ein kleines Motiv bekommen. Alle Farben fest (gleich in hell und dunkel);
+   --k/--on-k stehen auf der Klasse selbst, weil auch die Zeilen in „Sammlung verwalten“ die Klasse tragen (Farbstreifen links). */
+
+/* Rosemary – romantisch: Rosé-Papier mit feinem Herzmuster, weinrotes Band in kursiver Serifenschrift zwischen zwei kleinen Herzen,
+   ein gezeichneter Rosmarinzweig mit Blüten oben links (der Platz oben rechts gehört dem Lvl-Schild). Schrift Weinrot auf Rosé (über 10 : 1). */
+.sp-rosemary {
+  --k: #8E2A4A; --on-k: #FFF4F0;
+  --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M6 10.5C3.2 8.4 1.2 6.7 1.2 4.6A2.4 2.4 0 0 1 6 3.6A2.4 2.4 0 0 1 10.8 4.6C10.8 6.7 8.8 8.4 6 10.5Z' transform='translate(1 1) scale(.75)'/%3E%3Cpath d='M6 10.5C3.2 8.4 1.2 6.7 1.2 4.6A2.4 2.4 0 0 1 6 3.6A2.4 2.4 0 0 1 10.8 4.6C10.8 6.7 8.8 8.4 6 10.5Z' transform='translate(15 15) scale(.75)'/%3E%3C/svg%3E"); --pat-s: 28px 28px;
+}
+.bcard.sp-rosemary {
+  --surface: #FCEDEB; --surface-2: rgb(255 255 255 / 0.65); --text: #4A1426; --muted: #84475A; --kt: #C25B78; --bk: #8E2A4A; --glow: rgb(226 120 150 / 0.45);
+  border: 2px solid #D9A3AE; border-radius: 16px; background: #FCEDEB;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.sp-rosemary .mat {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='66' viewBox='0 0 50 66'%3E%3Cpath d='M8 62C12 44 22 24 42 6' fill='none' stroke='%234B6B46' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M9.1 57.5L16.8 54.6M9.1 57.5L3.9 50.8M10.5 53.0L18.0 50.5M10.5 53.0L5.8 46.3M12.1 48.4L19.5 46.4M12.1 48.4L7.9 41.7M14.0 43.8L21.2 42.3M14.0 43.8L10.3 37.2M16.2 39.1L23.1 38.0M16.2 39.1L13.0 32.6M18.7 34.5L25.4 33.8M18.7 34.5L16.0 28.1M21.6 29.8L27.9 29.5M21.6 29.8L19.2 23.6M24.7 25.1L30.8 25.2M24.7 25.1L22.8 19.1M28.3 20.5L34.0 20.9M28.3 20.5L26.7 14.7M32.1 15.9L37.5 16.5M32.1 15.9L30.9 10.3M36.4 11.4L41.4 12.2M36.4 11.4L35.5 6.0' fill='none' stroke='%23698F60' stroke-width='2.5' stroke-linecap='round'/%3E%3Cg fill='%23A9A3D9'%3E%3Ccircle cx='30' cy='17' r='2'/%3E%3Ccircle cx='20' cy='31' r='1.7'/%3E%3Ccircle cx='44' cy='5' r='1.6'/%3E%3C/g%3E%3C/svg%3E") 10px 41px / 44px auto no-repeat,
+    radial-gradient(ellipse 90% 45% at 50% 0, rgb(255 255 255 / 0.75), transparent 70%),
+    linear-gradient(180deg, #FDF4F2, #F7DCDD);
+}
+.sp-rosemary .mat::before { opacity: 0.13; }
+.sp-rosemary .mat::after { opacity: 0.22; }
+.sp-rosemary .band { box-shadow: 0 1px 0 rgb(74 20 38 / 0.2), 0 2px 6px rgb(142 42 74 / 0.2); }
+.sp-rosemary .band .kat {
+  background: linear-gradient(180deg, #9C3456, #7E2140); color: #FFF4F0;
+  box-shadow: inset 0 1.5px 0 rgb(255 220 228 / 0.35), inset 0 -1.5px 0 rgb(255 220 228 / 0.25);
+  font: italic 700 15px/30px Georgia, "Times New Roman", serif; letter-spacing: 0.03em;
+}
+.sp-rosemary .band .kat::before, .sp-rosemary .band .kat::after {
+  content: "\2665"; content: "\2665" / ""; display: inline-block; margin: 0 7px; font: normal 8px/1 -apple-system, sans-serif; color: #F4B3C2; vertical-align: 2px;
+}
+.bcard.sp-rosemary .title { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-weight: 700; letter-spacing: 0; }
+.sp-rosemary .count { background: #8E2A4A; color: #FFF4F0; }
+.sp-rosemary .chips span { background: rgb(255 255 255 / 0.65); border: 1px solid rgb(142 42 74 / 0.3); color: #5E1A30; }
+.sp-rosemary .origin .o { background: #8E2A4A; color: #FFF4F0; border-radius: 999px; padding: 1px 8px; box-shadow: none; }
+.sp-rosemary .bottle:not(.g) .body { fill: #EAA3B4; stroke: #7A2440; }
+.sp-rosemary .bottle:not(.g) .cap { fill: #8E2A4A; }
+.sp-rosemary .bottle .label { fill: #FFF4F0; opacity: 1; }
+.sp-rosemary .bottle .hop { fill: #8E2A4A; }
+.sp-rosemary .bottle { --spark: #D9577A; }
+/* Schmale Smartphones (Karten unter 150 px): Herzen weglassen, damit „Rosemary“ ganz ins Band passt */
+@media (max-width: 359px) {
+  .sp-rosemary .band .kat { padding: 0 6px; font-size: 14px; }
+  .sp-rosemary .band .kat::before, .sp-rosemary .band .kat::after { display: none; }
+  .card-view .sp-rosemary .band .kat::before, .card-view .sp-rosemary .band .kat::after { display: inline-block; }
+}
+
+/* Killer – unheimlich: fast schwarz, eine schwache rote Lampe von oben, an den Rändern dunkel, eingeritzte Strichlisten als Muster.
+   Dunkelrotes Band mit Tropfkante, Schrift in gesperrten Versalien, die ab und zu flackert (bei „weniger Bewegung“ ruhig).
+   Schrift Knochenweiß auf Schwarz (über 14 : 1). */
+.sp-killer {
+  --k: #8B1218; --on-k: #F3E9E2;
+  --pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M6 6.5L5.4 19M10 6L9.8 19.4M14.2 6.4L13.6 18.8M18.4 6.2L18.6 19.2M3 15.6L21.4 9.4'/%3E%3Cpath d='M38 33L37.2 45.6M42.2 32.6L41.8 46M46.4 33.2L46 45.4M35.6 42.4L49 36.2'/%3E%3C/g%3E%3C/svg%3E"); --pat-s: 64px 56px;
+}
+.bcard.sp-killer {
+  --surface: #141012; --surface-2: rgb(255 255 255 / 0.08); --text: #EDE6DF; --muted: #BBAAA4; --kt: #A3161E; --bk: #5E0A0F; --glow: rgb(170 20 30 / 0.5);
+  border: 2px solid #2A0B0E; border-radius: 10px; background: #141012;
+  box-shadow: 0 0 0 1px #000, 0 3px 12px rgb(0 0 0 / 0.45);
+}
+.sp-killer .mat {
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 18%, rgb(130 18 26 / 0.42), transparent 72%),
+    radial-gradient(ellipse 120% 80% at 50% 45%, transparent 55%, rgb(0 0 0 / 0.75)),
+    #141012;
+}
+.sp-killer .mat::before { opacity: 0.3; }
+.sp-killer .mat::after { opacity: 0.5; }
+.bcard.sp-killer::before { background: rgb(163 22 30 / 0.55); }
+.sp-killer .band { box-shadow: none; }
+.sp-killer .band::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 12px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 14' preserveAspectRatio='none'%3E%3Cpath d='M0 0H170V2.5C160 3 158 4 157 7.5C156 11 151 11 151 7C151 4 146 3 130 3C118 3 116 4 115.5 9.5C115 13.5 109.5 13.5 109.5 9C109.5 4 104 3 88 3C70 3 66 3.5 65.5 5.5C65 8 60 8 60 5.5C60 3.5 52 3 40 3C26 3 23 4 22.5 11C22 15 16.5 15 16.5 10.5C16.5 4.5 12 3 0 2.5Z' fill='%234A070B'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+}
+.sp-killer .band .kat {
+  background: linear-gradient(180deg, #6A0C12, #4A070B); color: #EDE6DF;
+  font: 700 12.5px/30px Georgia, "Times New Roman", serif; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0.32em;
+  animation: killer-flicker 7s linear infinite;
+}
+@keyframes killer-flicker {
+  0%, 88%, 90.5%, 93%, 100% { color: #EDE6DF; text-shadow: 0 0 6px rgb(255 120 120 / 0.35); }
+  89%, 92% { color: #7E6A68; text-shadow: none; }
+}
+.bcard.sp-killer .title { font-family: Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: 0.01em; }
+.bcard.sp-killer .title, .bcard.sp-killer .brand, .bcard.sp-killer .sorte { text-shadow: 0 1px 2px #000, 0 0 8px rgb(0 0 0 / 0.8); }
+.sp-killer .count { background: #8B1218; color: #F3E9E2; }
+.sp-killer .chips span { background: rgb(0 0 0 / 0.4); border: 1px solid rgb(163 22 30 / 0.65); color: #EDE6DF; }
+.sp-killer .origin .o { background: #000; color: #D9CFC8; box-shadow: 0 0 0 1px #5E0A0F; }
+.sp-killer .bottle:not(.g) .body { fill: #2C2225; stroke: #A3161E; }
+.sp-killer .bottle:not(.g) .cap { fill: #8B1218; }
+.sp-killer .bottle .label { fill: #D9CFC8; opacity: 0.9; }
+.sp-killer .bottle .hop { fill: #8B1218; }
+.sp-killer .bottle .hop-scales { stroke: #D9CFC8; }
+.sp-killer .bottle { --spark: #E0303A; }
+
+/* FCKAFD (Design sp-fckafd; 24.11.2026, nach Bildvorlage des Nutzers, überarbeitet: „unverkennbar, deutlich anders als alle anderen Karten“).
+   Die Karte IST das Logo: Schwarz, oben zwei rote Balken mit „FCK / AFD“ in großen weißen Blockbuchstaben dazwischen. Das Logo ist ein SVG
+   (viewBox 100 × 69, Buchstaben als Formen statt Schrift, damit es überall gleich aussieht) auf .mat und skaliert mit der Kartenbreite;
+   es ersetzt Band und Flasche. Das Band bleibt für Screenreader im Dokument, ist aber unsichtbar (der Titel „FCKAFD“ steckt im Logo).
+   Der Inhalt beginnt per padding-top in Prozent (bezieht sich auf die Kartenbreite) direkt unter dem unteren Balken.
+   Das Lvl-Schild sitzt als schwarzes Etikett auf dem rechten Ende des unteren Balkens (Position in cqw, Karte ist Container).
+   Keine Rahmen, keine Muster, keine Ecken; alles darunter schlicht in Weiß/Grau. Alle Farben fest. */
+.sp-fckafd { --k: #D7261E; --on-k: #FFFFFF; }
+.bcard.sp-fckafd {
+  --surface: #0B0B0B; --surface-2: rgb(255 255 255 / 0.1); --text: #FFFFFF; --muted: #CFCFCF; --kt: #D7261E; --bk: #D7261E; --glow: rgb(215 38 30 / 0.45);
+  container-type: inline-size;
+  border: 0; border-radius: 4px; background: #0B0B0B;
+  box-shadow: 0 0 0 1px #000, 0 3px 10px var(--shadow);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.sp-fckafd .mat { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 69'%3E%3Crect x='6' y='5' width='88' height='7' fill='%23D7261E'/%3E%3Crect x='6' y='59.5' width='88' height='7' fill='%23D7261E'/%3E%3Cg transform='translate(0 15.2) scale(1 1.12)'%3E%3Cpath d='M15.50 0.00h6.20v17.00h-6.20zM15.50 0.00h19.00v5.00h-19.00zM15.50 7.40h16.00v4.60h-16.00zM61.50 0.00h6.20v17.00h-6.20zM67.20 8.20L77.30 0.00L84.80 0.00L68.90 12.40zM70.90 6.60L84.80 17.00L77.60 17.00L67.10 10.60z' fill='%23fff'/%3E%3Cpath d='M54.24 4.35A8.40 6.20 0 1 0 54.24 12.65' fill='none' stroke='%23fff' stroke-width='6.2'/%3E%3C/g%3E%3Cg transform='translate(0 36.6) scale(1 1.12)'%3E%3Cpath d='M42.00 0.00h6.20v17.00h-6.20zM42.00 0.00h19.00v5.00h-19.00zM42.00 7.40h16.00v4.60h-16.00z' fill='%23fff'/%3E%3Cpath d='M15.00 17.00L23.50 0.00L31.50 0.00L40.00 17.00L33.50 17.00L31.50 13.00L23.50 13.00L21.50 17.00zM25.50 9.00L29.50 9.00L27.50 5.00z' fill='%23fff' fill-rule='evenodd'/%3E%3Cpath d='M66.10 3.10H73.00A8.90 5.40 0 0 1 73.00 13.90H66.10Z' fill='none' stroke='%23fff' stroke-width='6.2'/%3E%3C/g%3E%3C/svg%3E") top center / 100% auto no-repeat, #0B0B0B; }
+.sp-fckafd .mat::before { display: none; }
+.sp-fckafd .mat::after { opacity: 0.12; }
+.bcard.sp-fckafd::before { display: none; }
+.sp-fckafd .band { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sp-fckafd .bottle { display: none; }
+.sp-fckafd .bcard-body { padding: calc(70% + 5px) 8px 6px; }
+.bcard.sp-fckafd .bcard-body { background: none; animation: none; } /* kein Level-Schein (er läge über dem Logo); Lvl 40 zeigt der leuchtende Kartenrand */
+.sp-fckafd .bcard-body::before, .sp-fckafd .bcard-body::after { display: none; }
+.sp-fckafd .count {
+  top: calc(63cqw - 9px); right: 4cqw; padding: 0 6px; border: 1.5px solid #FFFFFF; border-radius: 0; background: #0B0B0B; color: #FFFFFF;
+  font: 900 11px/15px "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: none;
+}
+.bcard.sp-fckafd .title { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: 0; line-height: 1.1; }
+.bcard.sp-fckafd .title, .bcard.sp-fckafd .brand, .bcard.sp-fckafd .sorte { text-shadow: none; }
+.bcard.sp-fckafd .brand, .bcard.sp-fckafd .sorte { color: #CFCFCF; font-weight: 700; }
+.sp-fckafd .chips span { background: #FFFFFF; border: 0; border-radius: 0; color: #0B0B0B; font-weight: 900; }
+.sp-fckafd .origin::before, .sp-fckafd .origin::after { background: rgb(255 255 255 / 0.35); }
+.sp-fckafd .origin .o {
+  padding: 0 4px; border: 1px solid rgb(255 255 255 / 0.55); border-radius: 0; background: transparent; color: #FFFFFF; box-shadow: none;
+  font: 800 10.5px/16px "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: 0.01em; text-transform: uppercase;
+}
+@media (max-width: 359px) {
+  .sp-fckafd .origin .o { padding: 0 3px; font-size: 9.5px; letter-spacing: 0.01em; }
+  .grid .bcard.sp-fckafd .title { font-size: 14.5px; } /* fette Versalien: sonst bricht z. B. „GRÜNDERBIER“ mitten im Wort */
+}
+
 /* ---------- Hinzufügen ---------- */
 /* Auf dem Smartphone volle Höhe, damit die Trefferliste beim Tippen nicht springt */
 #add[open] { height: 92vh; height: 92dvh; }
@@ -1651,6 +1802,7 @@ button.bcard:active { transform: scale(0.98); }
   .sp-koenig .mat::after { animation: none; }
   .sp-weltall .band .kat { animation: none; background-position: 50% 0, 0 0; }
   .sp-weltall .mat::before, .sp-weltall .mat::after { animation: none; }
+  .sp-killer .band .kat { animation: none; }
   .flip-inner { transform: none !important; }
   .flip .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
   .flip .face.front { transform: none; opacity: 0; }

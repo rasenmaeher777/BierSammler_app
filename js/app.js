@@ -270,6 +270,10 @@
   // „Unbekanntes Bier“ (BM-000008 in Datensammlung/biere_manuell.json) hat sonst keine Angaben; ein großes Fragezeichen unter dem Alkoholgehalt
   // füllt den Platz, damit die Karte so hoch ist wie Karten mit Marke, Sorte und Herkunft (Höhe in css/style.css, .mystery)
   const UNKNOWN_BEER_ID = 'BM-000008';
+  // Sticker der Spezialkarte „STERNI“ (Design sticker): das Sternburg-Zeichen, vermessen nach der Vorlage des Nutzers (447 px):
+  // roter Kreis (212, 31, 31), weißer Ring bei 94,7–97,6 % des Radius, weißer Stern mit Spitzen bei 87 % und Innenecken bei 33 % des Radius, Mitte 1 % unter der Kreismitte
+  // (Werte per Pixelvergleich mit der Vorlage eingestellt; Abweichung nur noch an den weichen Kanten des Fotos)
+  const STERNI = '<svg class="sterni" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="#D41F1F"/><circle cx="50" cy="50" r="48.07" fill="none" stroke="#FFFFFF" stroke-width="1.45"/><path d="M50.00 7.50L59.70 37.65L91.37 37.56L65.69 56.10L75.57 86.19L50.00 67.50L24.43 86.19L34.31 56.10L8.63 37.56L40.30 37.65Z" fill="#FFFFFF"/></svg>';
   function originOf(b) {
     const co = b.company || {};
     return co.land && co.land !== 'Deutschland' ? co.land : (co.region || '');
@@ -293,7 +297,7 @@
         ${b.id === UNKNOWN_BEER_ID ? '<span class="mystery" aria-hidden="true">?</span>' : ''}
       </span>
       <span class="origin">${origin ? `<span class="o" title="${esc(origin)}">${esc(ORIGIN_SHORT[origin] || origin)}</span>` : ''}</span>
-      ${b.spezial && b.spezial.design === 'sticker' ? '<span class="sticker" aria-hidden="true">BB</span>' : ''}`;
+      ${b.spezial && b.spezial.design === 'sticker' ? `<span class="sticker" aria-hidden="true">${STERNI}</span>` : ''}`;
   }
   const cardHtml = (c) => `<div class="bcard ${c.beer.look}">${cardInner(c)}</div>`;
   // Karte im Raster der Startseite: Knopf, der die große Kartenansicht öffnet

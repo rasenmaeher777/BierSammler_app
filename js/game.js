@@ -117,7 +117,7 @@
 
   /* Jede Spezialkarte hat einen Titel (steht im Band statt der Kategorie), ein Aussehen und eine Liste von Bier-IDs:
        baer     wie Standardgebräu, aber statt der Flasche der Berliner Bär
-       sticker  wie Standardgebräu, mit rundem blauem „BB“-Sticker
+       sticker  wie Standardgebräu, mit dem Sternburg-Zeichen (roter Kreis, weißer Stern) als Sticker (Karte „STERNI“)
        sanchi   eigenständiges Design (nachtviolett)
        noir     eigenständiges Design in Schwarz-Weiß (Comic-Raster)
        regenbogen  eigenständiges Design mit Regenbogen und Glitzer
@@ -132,6 +132,9 @@
        mischa    eigenständiges Zeichentrick-Design: ein kleiner Junge im Comic-Stil auf blauem Himmel mit Wolken und Wiese
        rollmops  eigenständiges Design: Sonnenaufgang über dem Meer mit einer Bockwurst auf dem Wasser
        penner    eigenständiges Design: schmutzige Karte, überall Müll (Dosen, Papierknäuel, Kippen, Bananenschale)
+       rosemary  romantisches Design: Rosé mit feinem Herzmuster, weinrotes Band in Schreibschrift, Rosmarinzweig
+       killer    unheimliches Design: fast schwarz mit roter Lampe, Strichlisten, Band mit Tropfkante und flackernder Schrift
+       fckafd    die Karte ist das „FCK AFD“-Logo: Schwarz, zwei rote Balken mit „FCK / AFD“ in weißen Blockbuchstaben statt Band und Flasche
        Legenden der Bundesländer: wie Standardgebräu, aber statt der Flasche ein Wahrzeichen des Landes (ICONS in js/app.js):
        kuckucksuhr (BW), brezel (Bayern), gurke (Brandenburg), schluessel (Bremen), anker (Hamburg), bembel (Hessen),
        leuchtturm (MV), schaf (Niedersachsen), dom (NRW), traube (RLP), hammer (Saarland), schwibbogen (Sachsen),
@@ -145,7 +148,7 @@
     raddelfuss: 'sp-raddel',
     'sonderedition-10': 'sp-se sp-se10', 'sonderedition-20': 'sp-se sp-se20', 'sonderedition-30': 'sp-se sp-se30',
     'sonderedition-40': 'sp-se sp-se40', 'sonderedition-50': 'sp-se sp-se50', 'sonderedition-60': 'sp-se sp-se60',
-    mischa: 'sp-mischa', rollmops: 'sp-rollmops', penner: 'sp-penner' };
+    mischa: 'sp-mischa', rollmops: 'sp-rollmops', penner: 'sp-penner', rosemary: 'sp-rosemary', killer: 'sp-killer', fckafd: 'sp-fckafd' };
   for (const icon of LEGEND_ICONS) SPECIAL_DESIGNS[icon] = 'k1 sp-icon';
   const DESIGNS = Object.keys(SPECIAL_DESIGNS);
 

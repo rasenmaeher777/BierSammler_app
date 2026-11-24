@@ -189,6 +189,45 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   (`.origin` 8 px Rand, `.o` 8 px Innenabstand), damit „Meckl.-Vorpommern“ bei 166 px ganz passt. Penner unverändert. Geprüft im eingebauten Browser mit Kopie ohne Schlüssel
   (375 px hell, 320 px dunkel, Raster und große Ansicht, Lvl 1/8/10/25/40, Karte ohne Herkunft per DOM nachgestellt). Bei 320 px kürzen alle Karten „Baden-Württemberg“ (wie Sanchi, schon vorher so).
   NICHT getestet: iPhone/Safari.
+- **Rosemary und Killer (24.11.2026, Wunsch des Nutzers: romantisch bzw. unheimlich, keine aufwendigen Grafiken, nicht KI-generiert wirkend, stimmiges Layout,
+  anders als die übrigen Karten, aber kein totaler Neuentwurf):** zwei Karten (ids/Designs `rosemary`, `killer`, Titel „Rosemary“/„Killer“, `"bonus": 1.0`, ans Ende der Datei)
+  mit je 100 Bieren: 50 Spezialität (Stufe 3) + 50 Zaubertrank (Stufe 4). Gezogen mit `r = random.Random("<id>-2026-11-24")`, erst `r.sample(pool3, 50)`, dann `r.sample(pool4, 50)`,
+  Pools = freie `BS`-Biere nach ID sortiert (Stufe laut `mergeBeers` inkl. Korrekturen), Reihenfolge Rosemary, Killer; vorher frei 1.281 / 2.329, danach 1.181 / 2.229; nicht neu würfeln.
+  Die 50/50-Aufteilung hat der Nutzer nicht vorgegeben („aus Spezialität und Zaubertrank“), sie ist die gewählte Lesart.
+  Klassen `sp-rosemary`, `sp-killer` (CSS-Abschnitt „Rosemary und Killer“ nach Penner), kein JS außer `SPECIAL_DESIGNS`. Beide behalten den normalen Kartenaufbau
+  (Band 30 px, Zierrahmen mit Ecken in `--kt`, Muster über `--pat` auf `.mat::before`, Flasche, Herkunftsbox) und sind so hoch wie die übrigen Karten (249 px bei 166 px Breite).
+  Rosemary: Rosé-Papier, Herzmuster (Kachel 28 px), Rosmarinzweig als kleines SVG oben links (Platz rechts gehört dem Lvl-Schild), weinrotes Band in Georgia kursiv mit „♥“ als
+  `::before/::after` (`content: "♥" / ""`), unter 360 px ohne Herzen (außer in der großen Ansicht), Titel Georgia kursiv. Killer: fast schwarz, rote Lampe als Verlauf von oben, Vignette,
+  eingeritzte Strichlisten als Muster (Kachel 64 × 56), dunkelrotes Band in gesperrten Georgia-Versalien mit Tropfkante (`.band::after`, SVG auf Kartenbreite gestreckt) und
+  Flackern der Schrift (`@keyframes killer-flicker`, 7 s; bei „weniger Bewegung“ aus). Alle Farben fest. Keine neue `CACHE_VERSION`.
+  Test der echten Datei erweitert (je 100, 50/50 nach Stufe, Titel, Aussehen, Punkte Stufe + 1,0). Geprüft im eingebauten Browser mit Kopie ohne Schlüssel
+  (375 px hell, 320 px dunkel, Lvl 1/3/8/10/25/40, große Ansicht, Band- und Herkunftsbreite gemessen). Hinweis: Die Kopie las zuerst die alte `spezialkarten.json`
+  aus dem Service-Worker-Cache; Spieler bekommen die neuen Karten wie alle Datenänderungen erst nach dem übernächsten Start.
+  NICHT getestet: iPhone/Safari (`content` mit Alternativtext, Georgia, Tropfkante), echte App mit Anmeldung.
+- **FCKAFD (24.11.2026, Wunsch des Nutzers mit Bildvorlage):** Karte id/Design `fckafd`, Titel „FCKAFD“, `"bonus": 1.0`, ans Ende der Datei, 69 Biere NUR Zaubertrank (Stufe 4),
+  gezogen mit `random.Random("fckafd-2026-11-24").sample(pool4, 69)` (sortiert) aus den nach ID sortierten freien `BS`-Zaubertränken (2.229 frei, danach 2.160); nicht neu würfeln.
+  Klasse `sp-fckafd` (CSS-Abschnitt nach Rosemary/Killer). **Überarbeitet am selben Tag** (Wunsch: „unverkennbar, deutlich anders als alle anderen Karten“): Die Karte IST das Logo.
+  Ein SVG (viewBox 100 × 69, `top center / 100% auto` auf `.mat`): zwei rote Balken (y 5 und 59,5, je 7 hoch, x 6–94), dazwischen „FCK“/„AFD“ als gezeichnete Blockbuchstaben
+  (Formen statt Schrift, überall gleich; A mit Loch per evenodd in eigenem Pfad, C und D als dicke Kontur, Zeilen mit `scale(1 1.12)` gestreckt). Erzeugt mit `logo.py` im Scratchpad;
+  bei Änderungen die Data-URI im CSS ersetzen. Band und Flasche sind ausgeblendet (Band nur noch für Screenreader, sichtbar weg per `clip-path`), Inhalt beginnt mit
+  `padding-top: calc(70% + 5px)` (Prozent = Kartenbreite) unter dem Logo. Lvl-Schild als schwarzes Etikett mit weißem Rand auf dem rechten Ende des unteren Balkens
+  (`container-type: inline-size` auf der Karte, `top: calc(63cqw - 9px)`). Kein Level-Schein/Strahlen (lägen über dem Logo); Lvl 40 erkennt man am Leuchtrand und bunten Schild.
+  Darunter schlicht: Titel in fetten Helvetica-Versalien (unter 360 px 14,5 px, sonst bricht „GRÜNDERBIER“), weiße Chips mit schwarzer Schrift, Herkunft als weiß umrandeter Kasten.
+  Höhe 242 px bei 166 px Breite (wie die übrigen). Test der echten Datei erweitert (69, Stufe 4, Punkte 1,5 + 1,0).
+  Geprüft im eingebauten Browser mit Kopie ohne Schlüssel (375 px hell, 320 px dunkel, große Ansicht, Lvl 1/4/12/40). Bei 320 px wird „Baden-Württemberg“ gekürzt (wie bei allen Karten).
+  NICHT getestet: iPhone/Safari (Container-Einheiten `cqw` ab Safari 16; ohne sie sitzt das Lvl-Schild oben rechts auf dem oberen Balken).
+- **STERNI statt Bierball-Bier (24.11.2026, Wunsch des Nutzers mit Bildvorlage):** Karte `bierball` (id und Design `sticker` unverändert) heißt jetzt „STERNI“,
+  `BS-000057` Oettinger - Export ist entfernt (jetzt normales Standardgebräu, 1,0 Punkte wie vorher), es bleibt nur `BS-000887` Sternburg - Export (feste 1,0).
+  Der „BB“-Stempel ist durch das Sternburg-Zeichen ersetzt, „1 zu 1, nicht nur ähnlich“: SVG-Konstante `STERNI` in `js/app.js` (viewBox 100, roter Kreis `#D41F1F` = Mittel der
+  roten Pixel der Vorlage, weißer Ring r 48,07 / Breite 1,45 = 94,7–97,6 % des Radius, regelmäßiger Stern Spitzen r 43,5, Innenecken r 16,5, Mitte (50, 51)).
+  Ring gemessen, Stern per Pixelvergleich mit der Vorlage im Browser-Canvas eingestellt (Rest 5,7 % der Sternfläche = weiche Kanten des Fotos; die Vorlage ist
+  leicht gestaucht, 415 × 433 px, gezeichnet ist ein echter Kreis). CSS `.sticker`: flach, nicht gedreht, ohne Rand. Nachgebessert (Wunsch: größer, mittiger, Rahmenlinie frei): 40 px (große Ansicht 50 px, unter 360 px 34 px),
+  `top: 44px; left: 13px` = innerhalb des Zierrahmens, gegenüber dem Lvl-Schild; Abstand zur Flasche 15 px (320 px: 7 px). Bandtitel „STERNI“ im Logo-Rot `#D41F1F`
+  (`.sp-sticker .band .kat`). Danach kurz Rosétöne, dann ganz rot; ENDGÜLTIG (Wunsch: Titel weiß, Farben „richtiges Rot wie im Logo“, Hintergrund nahezu weiß):
+  Grund `#FFFCFB` (ohne Tönungsverlauf), Schrift dunkel `#2A1414`; alles Farbige `#D41F1F`: Band mit weißem Titel und feiner weißer Unterlinie (Logo-Innenring), Rand,
+  Zierrahmen und Level-Schein (`--kt`), Flasche (weißes Etikett, Kappe `#8E1010`), Lvl-Schild und Herkunft (weiße Schrift); Chips `#F8E6E4`. Feste Farben, auch im dunklen Theme
+  bleibt die Karte weiß (wie Schwarze Nachtigal). Kontrast weißer Titel auf Rot ca. 5,2 : 1.
+  Test angepasst (nur Sternburg, Titel STERNI, Oettinger ohne Spezialkarte).
 - **Punkte je Bier in der Kartenansicht (19.11.2026):** neben „Gesammelte Punkte“ eine Pille `.per-beer` mit „+1,5“ (= `GAME.beerPoints`), für jede Karte;
   Spielanleitung erwähnt, dass Sonderkarten einen Punkt mehr bringen.
 - Getestet (Umbau): Node-Tests (48), eingebauter Browser mit Kopie ohne Schlüssel (375 px hell/dunkel): Raddelfuß-, Sanchi-, Spezial-Rot-, Heiligtum-, Zaubertrank-Karten,
