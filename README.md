@@ -354,8 +354,8 @@ Anzahl oder Bedeutung der Stufen ändert; einzelne Umstufungen erscheinen wie al
 **Verteilung seit 24.11.2026** (gilt vor allen Angaben unten zu Bierzahlen und Stufen): Standardgebräu und Klassiker stehen auf keiner
 Spezialkarte mehr, weil sie zu leicht zu finden sind (einzige Ausnahme: STERNI). Nach der Aufstockung (+25 Biere je Karte außer STERNI und Legenden,
 im Stufen-Verhältnis der Karte) liegen auf Spezialkarten rund 25 % aller Spezialitäten, 16 % der Zaubertränke und 17 % der Heiligtümer, zusammen 1.889 von 10.840 Bieren
-(erste Fassung am selben Tag: 15 / 12 / 12 %, 1.314 Biere). Wer vor allem bekannte Biere trinkt, findet damit etwa bei jedem 10. bis 12. neuen Bier eine Spezialkarte. Die Legenden enthalten nur noch Kultbiere ab Spezialität, also Biere, die man suchen muss (3 bis 9 je Land, z. B. Aventinus und Schlenkerla
-in Bayern, Uerige und Füchschen in NRW, Berliner Weisse von Brewbaker und Schneeeule in Berlin). Je Karte:
+(erste Fassung am selben Tag: 15 / 12 / 12 %, 1.314 Biere). Wer vor allem bekannte Biere trinkt, findet damit etwa bei jedem 10. bis 12. neuen Bier eine Spezialkarte. Ausnahmen sind STERNI und die Legenden: Sie zeigen seit 25.11.2026 wieder die bekanntesten Biere jedes Bundeslands (5 bis 10 je Land, jede
+Kategorie, z. B. in Berlin Kindl Jubiläums Pilsener, Berliner Pilsner, Schultheiss und Kindl Weisse). Damit liegen 1.944 Biere auf Spezialkarten. Je Karte:
 
 | Karten | Biere je Karte |
 | --- | --- |

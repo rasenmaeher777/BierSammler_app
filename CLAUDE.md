@@ -103,7 +103,11 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
 
 - Fünf Stufen nach Erhältlichkeit (Wunsch des Nutzers: Seltenheit soll „jagbar“ sein statt Zufall): 1 Standardgebräu (in fast jedem Supermarkt),
   2 Klassiker (Supermarkt, aber nur regional oder nicht überall), 3 Spezialität (Getränkemarkt/Kneipe), 4 Zaubertrank (selten), 5 Heiligtum (kaum im Handel).
-  Punkte 10, 12, 13, 15, 25 (Zehntel; vom Nutzer so festgelegt). Zahlen in `biere.json`: 107 / 333 / 1.810 / 2.447 / 1.671 (+ Kosmonaut 2× Stufe 1, 2× Stufe 2).
+  Punkte 10, 12, 13, 15, 25 (Zehntel; vom Nutzer so festgelegt). Zahlen in `biere.json`: 122 / 324 / 1.804 / 2.447 / 1.671 (seit 25.11.2026; vorher 107 / 333 / 1.810).
+  Nachbesserung 25.11.2026 (Wunsch des Nutzers: Kindl Jubi „bekommt man in jedem Supermarkt“): 15 Biere 2 → 1 (Kindl Jubiläums Pilsener, Berliner Pilsner, Schultheiss Pilsener,
+  Kindl Weisse samt Waldmeister/Himbeere, Augustiner Helles und Edelstoff, Jever Fun, Oettinger Urtyp/Kristall-Weizen/Natur Radler, Grevensteiner Original, Hansa Export,
+  Benediktiner Weissbier naturtrüb) und 6 Biere 3 → 2 (Beck's Pale Ale/1873 Pils/Amber Lager, Hacker-Pschorr Münchener Gold/Anno 1417, Löwenbräu Münchner Hell), in `stufen_zuordnung.json`,
+  danach `scraper.py --nur-export` (nur `kategorie_*` in `biere.json`/`biere.csv` geändert); in `biere_beerdb.json` Berliner Radler Naturtrüb (`BM-100264`) 3 → 2. Maßstab bleibt Claudes Schätzung.
   Die Verteilung kippt bewusst nach oben: Die Datenbank (bier-universum.de) besteht überwiegend aus kleinen bayerischen/BW-Brauereien und Importen.
 - Raddelfuß ist KEINE Kategorie mehr, sondern eine Zufalls-Spezialkarte (Design `raddelfuss`, Klasse `sp-raddel`, siehe Spezialkarten).
   CSS dafür umbenannt: alte `.k4`/`--k4`/`--on-k4` (Raddelfuß) → `.sp-raddel`/`--rd`/`--on-rd`; alte `k5` → `k4` (Zaubertrank), alte `k6` → `k5` (Heiligtum), ebenso `--foil-k…`.
@@ -138,6 +142,11 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   25 Biere je Karte im Stufen-Verhältnis der Karte (gerundet, Rest auf die seltenste Stufe), gezogen mit `random.Random("<id>-2026-11-24-plus25").sample` aus den freien Bieren
   der Stufe, in Dateireihenfolge; nicht neu würfeln. Jetzt: Zufallskarten 83 (36 Stufe 4 + 47 Stufe 5), Sonderedition/Mischa/Rollmops/Penner 55, Rosemary/Killer 149 (34 + 115),
   FCKAFD 94 (vorher 69). Ergebnis 0/0/631/735/522 (+ STERNI) = 24,8 / 15,9 / 17,0 %, 1.889 Biere. Die Zahlen oben sind damit überholt.
+- **Legenden wieder = bekannteste Biere (25.11.2026, Wunsch des Nutzers: „die bekanntesten Biere jedes Bundeslands, 5–10 Stück“, Beispiel Berlin: Kindl Jubi, Berliner Pilsner, Schultheiss):**
+  Die Regel „ab Stufe 3“ gilt für Legenden NICHT mehr; ausgenommen von „kein Standardgebräu/Klassiker“ sind STERNI und alle Legenden. Alle 15 Länder-Legenden wieder wie im Commit `cc397e1`
+  (ursprüngliche Auswahl vom 19.11.2026); Berlin = die vier ursprünglichen plus Kindl Weisse (`BS-000169`), Kindl Weisse Waldmeister (`BS-000943`), Bürgerbräu Rotkehlchen (`BS-000822`) = 7.
+  Die gestern eingefügten Kultbiere (Aventinus usw.) sind wieder frei. Zufallskarten behalten ihre Zusammensetzung je Stufe; Biere mit geänderter Stufe ersetzt mit
+  `random.Random("<id>-2026-11-25-legenden").sample` (nur 1 Ersetzung). Ergebnis auf Spezialkarten 28/49/621/728/518 (Stufe 1/2 nur Legenden + STERNI), 1.944 Biere.
 
 - `Datensammlung/spezialkarten.json` (Format und Regeln in der README): Liste `{ id, titel, design, punkte?, biere[] }`. Der Nutzer pflegt sie selbst.
   Verarbeitung in `GAME.cleanSpecials` / `applySpecials` (innerhalb von `mergeBeers`, 6. Parameter). Jedes Bier bekommt `label` (Band-Text), `look`

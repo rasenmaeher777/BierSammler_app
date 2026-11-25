@@ -214,8 +214,8 @@
       "Hopfen"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000010",
@@ -238,8 +238,8 @@
       "Hopfen"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000011",
@@ -438,8 +438,8 @@
       "Hefe"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-000019",
@@ -463,8 +463,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-000020",
@@ -1454,8 +1454,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000059",
@@ -1505,8 +1505,8 @@
       "Hefe"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000061",
@@ -4297,8 +4297,8 @@
       "Hefe"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000170",
@@ -20047,8 +20047,8 @@
       "Gärungskohlensäure"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000793",
@@ -22301,8 +22301,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000883",
@@ -23825,8 +23825,8 @@
       "Getränkesirup mit Waldmeistergeschmack"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-000944",
@@ -37880,8 +37880,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-001491",
@@ -38703,8 +38703,8 @@
       "Aspartam (enthält eine Phenylalaninquelle), Acesulfam-K, Saccharin-Natrium, natürliche Aromen, Farbstoffe E 150 D, E 122 und E 131)"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-001523",
@@ -70493,8 +70493,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-002765",
@@ -83871,8 +83871,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-003290",
@@ -92289,8 +92289,8 @@
       "Hefe"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-003622",
@@ -95449,8 +95449,8 @@
       "Hopfen"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-003747",
@@ -95473,8 +95473,8 @@
       "Hopfen"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-003748",
@@ -95497,8 +95497,8 @@
       "Hopfen"
     ],
     "flaschengroesse": 0.33,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-003749",
@@ -97873,8 +97873,8 @@
       "Hefe"
     ],
     "flaschengroesse": 0.55,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-003842",
@@ -148952,8 +148952,8 @@
       "Hopfenextrakt"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Spezialität",
-    "kategorie_stufe": 3
+    "kategorie_name": "Klassiker",
+    "kategorie_stufe": 2
   },
   {
     "id": "BS-005834",
@@ -151224,8 +151224,8 @@
       "Zucker"
     ],
     "flaschengroesse": 0.5,
-    "kategorie_name": "Klassiker",
-    "kategorie_stufe": 2
+    "kategorie_name": "Standardgebräu",
+    "kategorie_stufe": 1
   },
   {
     "id": "BS-005922",

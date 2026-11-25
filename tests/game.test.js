@@ -583,19 +583,19 @@ test('Spezialkarten: mergeBeers legt Titel, Aussehen und Punkte auf die Biere (S
   assert.strictEqual(plain.map.get('BS-000002').label, 'Klassiker'); assert.strictEqual(G.beerPoints(plain.map.get('BS-000002')), 12);
 });
 
-test('Spezialkarten: echte Dateien (Verteilung vom 24.11.2026) – kein Standardgebräu/Klassiker außer STERNI, Legenden ab Spezialität, 11 Zufallskarten (36 Zaubertrank + 47 Heiligtum), 9 Spezialität-Karten (je 55), Rosemary und Killer (34 + 115), FCKAFD (94), Zufallskarten 1 Punkt extra', () => {
+test('Spezialkarten: echte Dateien (Verteilung vom 24.11.2026) – kein Standardgebräu/Klassiker außer STERNI und Legenden, Legenden = bekannteste Biere (5 bis 10), 11 Zufallskarten (36 Zaubertrank + 47 Heiligtum), 9 Spezialität-Karten (je 55), Rosemary und Killer (34 + 115), FCKAFD (94), Zufallskarten 1 Punkt extra', () => {
   const dir = path.join(__dirname, '..', 'Datensammlung');
   const rd = (f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const warns = [];
   const r = G.mergeBeers(rd('biere.json'), rd('biere_manuell.json'), rd('kategorien.json'), (t) => warns.push(t), rd('biere_korrekturen.json'), rd('spezialkarten.json'), rd('biere_beerdb.json'));
   assert.strictEqual(warns.length, 0, warns.join(' | '));
   const by = {}; for (const b of r.list) if (b.spezial) (by[b.spezial.id] = by[b.spezial.id] || []).push(b);
-  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 3 bis 10 Biere, seit 24.11.2026 nur noch ab Spezialität (Stufe 3)
+  // 16 Legenden (Berlin + 15 weitere Bundesländer), je 5 bis 10 der bekanntesten Biere des Landes (seit 25.11.2026 wieder jede Stufe)
   const legenden = Object.keys(by).filter((k) => k === 'legende' || k.startsWith('legende-'));
   assert.strictEqual(legenden.length, 16);
-  for (const k of legenden) assert.ok(by[k].length >= 3 && by[k].length <= 10 && by[k].every((b) => b.stufe >= 3), `${k}: ${by[k].length} Biere`);
-  // Kein Standardgebräu und kein Klassiker auf Spezialkarten, einzige Ausnahme STERNI (Sternburg - Export)
-  assert.deepStrictEqual(r.list.filter((b) => b.spezial && b.stufe <= 2).map((b) => b.id), ['BS-000887']);
+  for (const k of legenden) assert.ok(by[k].length >= 5 && by[k].length <= 10, `${k}: ${by[k].length} Biere`);
+  // Kein Standardgebräu und kein Klassiker auf Spezialkarten, Ausnahmen nur STERNI (Sternburg - Export) und die Legenden
+  assert.deepStrictEqual(r.list.filter((b) => b.spezial && b.stufe <= 2 && !legenden.includes(b.spezial.id)).map((b) => b.id), ['BS-000887']);
   const zufall = [['aussenseiter', 'Außenseiter', 'sp-weltall'], ['bierkoenig', 'Bierkönig', 'sp-koenig'], ['heiliger-hopfen', 'Heiliger Hopfen', 'sp-hopfen'],
     ['raddelfuss', 'Raddelfuß', 'sp-raddel'], ['regenbogen', 'Spezial-Edition 04', 'sp-regenbogen'], ['sanchi', 'Sanchi', 'sp-sanchi'], ['schwarzweiss', 'Schwarze Nachtigal', 'sp-noir'],
     ['spezial-orange', 'Spezial Orange', 'sp-mono sp-orange'], ['spezial-rosa', 'Spezial Rosa', 'sp-mono sp-rosa'], ['spezial-rot', 'Spezial Rot', 'sp-mono sp-rot'], ['spezial-tuerkis', 'Spezial Türkis', 'sp-mono sp-tuerkis']];
@@ -635,8 +635,8 @@ test('Spezialkarten: echte Dateien (Verteilung vom 24.11.2026) – kein Standard
   assert.strictEqual(new Set(legenden.map((k) => by[k][0].spezial.design)).size, 16, 'jedes Land hat sein eigenes Symbol');
   for (const k of legenden) assert.ok(by[k].every((b) => (b.look === 'k1 sp-baer' || b.look === 'k1 sp-icon') && G.beerPoints(b) === G.pointsFor(b.stufe)));
   assert.ok(legenden.filter((k) => k !== 'legende').every((k) => G.LEGEND_ICONS.includes(by[k][0].spezial.design)));
-  assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000822', 'BS-000885', 'BS-000896', 'BS-004351', 'BS-004422', 'BS-004895']);
-  assert.strictEqual(r.map.get('BS-002764').spezial, null); // Berliner Kindl Jubiläums Pilsener: Klassiker, keine Spezialkarte mehr
+  assert.deepStrictEqual(by.legende.map((b) => b.id).sort(), ['BS-000169', 'BS-000822', 'BS-000882', 'BS-000885', 'BS-000943', 'BS-001490', 'BS-002764']);
+  assert.strictEqual(r.map.get('BS-002764').stufe, 1); // Berliner Kindl Jubiläums Pilsener: Standardgebräu (seit 25.11.2026), Berliner Legende
   assert.ok(by.legende.every((b) => b.label === 'Berliner Legende'));
   // STERNI (früher Bierball-Bier, id bierball): nur noch Sternburg - Export (Oettinger - Export am 24.11.2026 entfernt), Standardgebräu, feste 1,0 Punkte
   assert.deepStrictEqual(by.bierball.map((b) => b.id), ['BS-000887']);
@@ -780,10 +780,11 @@ test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
   const r = G.mergeBeers(main, [], kat, (t) => warns.push(t), fixes);
   assert.strictEqual(warns.length, 0, warns.slice(0, 3).join(' | '));
   assert.strictEqual(r.list.length, 6368);
-  // Fünf Kategorien nach Erhältlichkeit; Zahl der Biere je Stufe (Einordnung vom 19.11.2026, scraper/stufen_zuordnung.json)
+  // Fünf Kategorien nach Erhältlichkeit; Zahl der Biere je Stufe (Einordnung vom 19.11.2026, nachgebessert am 25.11.2026, scraper/stufen_zuordnung.json)
   assert.deepStrictEqual(kat.map((k) => [k.stufe, k.name]), [[1, 'Standardgebräu'], [2, 'Klassiker'], [3, 'Spezialität'], [4, 'Zaubertrank'], [5, 'Heiligtum']]);
   const proStufe = {}; for (const b of r.list) proStufe[b.stufe] = (proStufe[b.stufe] || 0) + 1;
-  assert.deepStrictEqual(proStufe, { 1: 107, 2: 333, 3: 1810, 4: 2447, 5: 1671 });
+  assert.deepStrictEqual(proStufe, { 1: 122, 2: 324, 3: 1804, 4: 2447, 5: 1671 });
+  assert.strictEqual(r.map.get('BS-002764').stufe, 1); // Berliner Kindl - Jubiläums Pilsener Premium: in fast jedem Supermarkt
   const zuordnung = JSON.parse(fs.readFileSync(path.join(dir, 'scraper', 'stufen_zuordnung.json'), 'utf8'));
   assert.ok(r.list.every((b) => zuordnung[b.id] === b.stufe), 'biere.json passt zu stufen_zuordnung.json');
   const sternburg = r.map.get('BS-000887');
