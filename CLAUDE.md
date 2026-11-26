@@ -598,6 +598,9 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
   setzt `theme-color` passend (`THEME_COLORS_DIM`/`_DIM2`, ein `MutationObserver` auf das Attribut `open`). Vorher blieb die Statusleiste beim
   Abdunkeln hell. Die Farben sind `--bg` unter `--backdrop` vorgerechnet: Ändert sich eine davon, beide neu rechnen (CSS und JS).
   Geprüft mit Chrome headless (Pixel hell/dunkel, ohne Fenster, eins, zwei übereinander: gleich bis auf ≤ 3/255). NICHT auf dem iPhone geprüft.
+  Übergang (26.11.2026, Wunsch des Nutzers wegen sichtbarem Versatz): Beim Öffnen dunkeln Leiste (`transition` 0,3 s) und Abdunkelung (`@keyframes backdrop-in`
+  ab durchsichtig) gleich lang und mit gleicher Kurve ab; die Mischfarbe der Abdunkelung über `--bg` verläuft dabei rechnerisch genau wie die Leistenfarbe. Beim Schließen
+  sofort (die Abdunkelung verschwindet sofort). Bei „weniger Bewegung“ ohne Übergang. Endzustand per Pixel geprüft; Zwischenbilder ließen sich headless nicht aufnehmen.
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
   feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
   Chromium (auch der eingebaute Browser) zeigt den Fehler nicht; nachstellbar mit `.sheet-body { flex-basis: 0px }`.
