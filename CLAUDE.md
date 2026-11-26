@@ -593,6 +593,11 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 - KOPF-DECKEL: `.top-cap` (in `index.html`, `impressum.html`, `datenschutz.html`) ist eine feste, deckende Leiste so hoch wie
   die Statusleiste plus 12 px (iOS prüft knapp darunter; `.top` beginnt deshalb 12 px tiefer). Sie soll verhindern die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
   durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
+  Offene Fenster (26.11.2026, später): Die Abdunkelung `dialog.sheet::backdrop` beginnt erst UNTER der Leiste (`top`), die Leiste nimmt
+  `--cap-dim` an (bei zwei Fenstern übereinander `--cap-dim2`, Selektor `dialog.sheet[open] ~ dialog.sheet[open]`), und `applyTheme` in `js/app.js`
+  setzt `theme-color` passend (`THEME_COLORS_DIM`/`_DIM2`, ein `MutationObserver` auf das Attribut `open`). Vorher blieb die Statusleiste beim
+  Abdunkeln hell. Die Farben sind `--bg` unter `--backdrop` vorgerechnet: Ändert sich eine davon, beide neu rechnen (CSS und JS).
+  Geprüft mit Chrome headless (Pixel hell/dunkel, ohne Fenster, eins, zwei übereinander: gleich bis auf ≤ 3/255). NICHT auf dem iPhone geprüft.
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
   feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
   Chromium (auch der eingebaute Browser) zeigt den Fehler nicht; nachstellbar mit `.sheet-body { flex-basis: 0px }`.

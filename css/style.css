@@ -20,6 +20,8 @@
   --on-danger: #FFFFFF;
   --shadow: rgb(70 50 20 / 0.16);
   --backdrop: rgb(40 30 20 / 0.5);
+  --cap-dim: #918A81;      /* KOPF-DECKEL bei offenem Fenster: --bg unter --backdrop, deckend vorgerechnet */
+  --cap-dim2: #5C544A;     /* … bei zwei Fenstern übereinander (doppelte Abdunkelung) */
   --radius: 16px;
 
   /* Kategorie-Farben (1 Standardgebräu … 5 Heiligtum) und die Schrift darauf; --rd gehört zur Spezialkarte Raddelfuß */
@@ -58,6 +60,8 @@
     --on-danger: #15130F;
     --shadow: rgb(0 0 0 / 0.5);
     --backdrop: rgb(0 0 0 / 0.62);
+    --cap-dim: #080706;
+    --cap-dim2: #030302;
     --k1: #A39A8B; --on-k1: #15130F;
     --k2: #79B886; --on-k2: #15130F;
     --k3: #78ACDC; --on-k3: #15130F;
@@ -86,6 +90,8 @@
   --on-danger: #15130F;
   --shadow: rgb(0 0 0 / 0.5);
   --backdrop: rgb(0 0 0 / 0.62);
+  --cap-dim: #080706;
+  --cap-dim2: #030302;
   --k1: #A39A8B; --on-k1: #15130F;
   --k2: #79B886; --on-k2: #15130F;
   --k3: #78ACDC; --on-k3: #15130F;
@@ -188,6 +194,11 @@ button { cursor: pointer; }
    beginnt 12 px tiefer, damit die Leiste nichts verdeckt. Ohne Statusleisten-Bereich (Browser-Tab) bleibt es bei 14 px. */
 .top-cap { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: calc(env(safe-area-inset-top) + 12px); background: var(--bg); }
 .top { padding-top: max(14px, calc(env(safe-area-inset-top) + 12px)); }
+/* Offenes Fenster: Die Abdunkelung (::backdrop) beginnt unter der Leiste, und die Leiste nimmt selbst die abgedunkelte Farbe an.
+   So bleibt sie das oberste deckende Element am Rand (keine Unschärfe) und iOS färbt die Statusleiste mit. Läge die
+   Abdunkelung darüber, bliebe die Statusleiste hell (iOS übernimmt die Farbe der Leiste, nicht die der Abdunkelung). */
+html:has(dialog.sheet[open]) .top-cap { background: var(--cap-dim); }
+html:has(dialog.sheet[open] ~ dialog.sheet[open]) .top-cap { background: var(--cap-dim2); } /* z. B. Karte über Statistiken, Rückfrage über Kartenansicht */
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { min-width: 0; }
 .brand h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; }
@@ -260,7 +271,7 @@ dialog.sheet {
   overflow: hidden;
 }
 dialog.sheet[open] { display: flex; flex-direction: column; }
-dialog.sheet::backdrop { background: var(--backdrop); }
+dialog.sheet::backdrop { top: calc(env(safe-area-inset-top) + 12px); background: var(--backdrop); } /* top: KOPF-DECKEL */
 .sheet-head {
   display: flex; align-items: center; gap: 12px;
   padding: 16px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
