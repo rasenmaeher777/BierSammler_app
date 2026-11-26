@@ -44,6 +44,7 @@ Reines HTML, CSS und JavaScript – kein Framework, kein Build-Schritt, keine np
 | `Datensammlung/kategorien.json` | Die fünf Kategorien |
 | `Datensammlung/spezialkarten.json` | Spezialkarten: eigener Titel im Band, eigenes Aussehen und optional eigene Punkte oder Extrapunkte für einzelne Biere (siehe Abschnitt „Spezialkarten“) |
 | `Datensammlung/nachrichten.json` | Glückskeks-Sprüche nach dem Bestätigen eines Biers: Liste von `{ "id": 1, "nachricht": "…" }` (ID eindeutig, Ganzzahl oder Text). Jeder Spruch erscheint auf einem Gerät nur einmal, danach beginnt die Liste von vorn. Neue Sprüche einfach anhängen; `CACHE_VERSION` ist dafür nicht nötig |
+| `Datensammlung/challenges.json` | Liste aller Challenges (siehe Abschnitt „Challenges“) |
 | `Datensammlung/karte/` | Kartendaten für die Standort-Karte (`welt.json`, `deutschland.json`, `berlin.json`) und `bauen.py`, das sie aus den Grenzdaten erzeugt (Quellen und Lizenzen im Kopf des Skripts) |
 | `Datensammlung/scraper/` | Scraper für die Bierdatenbank (eigene README) |
 | `tests/game.test.js` | Tests der Spiellogik: `node tests/game.test.js` |
@@ -228,6 +229,9 @@ Für normale Änderungen an vorhandenen Dateien ist das **nicht** nötig. Alte C
 - Punkte, Level, Sammlung und Statistiken werden immer aus den Einträgen berechnet. Wird ein Eintrag gelöscht,
   sinken Punkte und notfalls das Level.
 - Kein Nachtragen: Es zählt der Zeitpunkt des Bestätigens.
+- **Challenges:** Tipp auf den Level-Ring öffnet das Fenster „Challenges“ mit immer zwei Challenges: der Wochen-Challenge (wechselt jeden Sonntag
+  um 0:00 Uhr, geschafft oder nicht) und einer Challenge ohne Frist (wechselt erst, wenn sie geschafft ist). Geschaffte Challenges bringen Punkte
+  fürs Level und die Rangliste. Wird ein Eintrag gelöscht, mit dem eine Challenge geschafft wurde, ist sie wieder offen. Details im Abschnitt „Challenges“.
 - **Neigungssensor:** Einstellungen → Neigung → „Neigungssensor aktivieren“. Der Glanz der Karten in der großen Ansicht folgt dann dem geneigten Telefon.
   Auf dem iPhone fragt iOS nur auf einen Tipp hin nach; der Knopf ist dafür gedacht, falls die Nachfrage beim Antippen einer Karte nicht erschien (z. B. in der
   installierten Web-App). Er hebt eine frühere Ablehnung auf und meldet, ob wirklich Messwerte ankommen. Wurde abgelehnt, hilft auf dem iPhone meist: Web-App
@@ -379,3 +383,42 @@ Seit dem 20.11.2026 gibt es außerdem die Reihe **Sonderedition 10, 20, 30, 40, 
 10 Bauhaus (Creme, rote Scheibe mit der Zahl), 20 Neon (Schwarz und Limette), 30 Risographie (Papier mit Pink und Blau übereinander gedruckt),
 40 Höhenlinien (Nachtblau und Sand, der Gipfel liegt hinter der Flasche), 50 Terrazzo (heller Stein mit bunten Splittern), 60 Art déco (Petrol und Kupfer mit Strahlenfächer).
 Ihre Biere stammen nur aus der Kategorie **Spezialität**, zufällig gezogen aus den Spezialitäten, die noch auf keiner anderen Karte standen, ohne Doppelungen.
+
+## Challenges
+
+Die Liste steht in `Datensammlung/challenges.json`, eine Challenge je Zeile. Gleichzeitig gibt es immer genau zwei:
+
+- **Wochen-Challenge** (`"art": "W"`): gilt von Sonntag 0:00 Uhr bis Samstag 24:00 Uhr (Ortszeit) und wechselt dann, egal ob geschafft.
+  Alle Spieler haben in einer Woche dieselbe. Ausgewählt wird fest aus der Kalenderwoche (kein Zufall beim Öffnen); eine Challenge kommt
+  frühestens nach der halben Listenlänge wieder dran (bei 15 Wochen-Challenges also nicht innerhalb von 7 Wochen).
+- **Challenge ohne Frist** (`"art": "N"`): bleibt, bis sie geschafft ist, dann kommt sofort die nächste, **in der Reihenfolge der Datei**. Nach der letzten
+  beginnt die Liste von vorn. Für die neue Challenge zählen nur Biere, die danach eingetragen werden.
+
+Alles wird aus den Einträgen berechnet, nichts gespeichert: Wird ein Eintrag gelöscht, mit dem eine Challenge geschafft wurde, ist sie wieder offen und die Punkte sind weg.
+Gezählt wird ab Sonntag, 22.11.2026 (`CHALLENGE_START` in `js/game.js`).
+
+Felder einer Challenge:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `id` | eindeutiger Name, nie ändern |
+| `art` | `"W"` (Woche) oder `"N"` (ohne Frist) |
+| `punkte` | 0,1 bis 4,0 (auf Zehntel) |
+| `text` | angezeigter Text, höchstens 80 Zeichen |
+| `typ` | `"biere"` (mindestens `ziel` passende Biere), `"gleiches"` (`ziel`-mal dasselbe Bier), `"punkte"` (mindestens `ziel` Punkte aus Bieren in der Woche, z. B. `5.0`), `"keins"` (kein Bier in der Woche, nur W, zählt erst nach Wochenende), `"benutzername"` (einen Benutzernamen haben, nur N) |
+| `ziel` | Anzahl (Standard 1) bzw. Punkte bei `"punkte"` |
+| `ab` | optional, Datum `"JJJJ-MM-TT"`: erst ab dieser Woche dabei |
+
+Filter (optional, alle müssen passen): `"neu": true` (erstes Trinken dieses Biers überhaupt), `"stufe": 1…5`, `"spezial": true` (Bier auf einer Spezialkarte),
+`"region": "Hamburg"` (Bundesland laut Bierdatenbank), `"land": "Polen"`, `"ausland": true` (Land bekannt und nicht Deutschland), `"alkUeber": 5.2`
+(mehr als), `"alkUnter": 4.0` (weniger als; Biere ohne Alkoholangabe zählen nicht), `"sorten": ["Helles", …]` (eine der Sorten).
+
+**Neue Challenges hinzufügen:** Eine Zeile mit neuer `id` anhängen. Bei einer Wochen-Challenge `"ab"` auf den nächsten Sonntag setzen, sonst ändern sich
+schon vergangene Wochen (und damit Punkte). Neue Challenges ohne Frist ans Ende hängen. Bestehende Challenges nicht ändern oder löschen: Punkte von Spielern,
+die sie schon geschafft haben, würden sich rückwirkend ändern. Eine neue **Art** von Bedingung (etwa „4 Biere an einem Tag“) braucht eine Änderung am Code.
+Die Datei kommt wie die Bierdaten zuerst aus dem Cache: Änderungen erscheinen ab dem übernächsten Start der App.
+
+Die Benutzernamen-Challenge steht vorn: Wer schon einen Namen hat, bekommt den Punkt sofort gutgeschrieben, ohne dass sie erscheint. Im lokalen Modus (ohne Anmeldung) entfällt sie.
+
+**Nach dem Update:** Zuerst die neue `firestore.rules` in der Firebase-Konsole veröffentlichen, dann die App. Die Regeln lassen jetzt mehr Punkte zu
+(Spielraum für Challenge-Punkte); mit den alten Regeln könnten Ranglisten-Einträge mit vielen Challenge-Punkten abgelehnt werden.

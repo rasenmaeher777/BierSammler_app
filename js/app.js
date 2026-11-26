@@ -33,6 +33,7 @@
     korrekturen: 'Datensammlung/biere_korrekturen.json',
     nachrichten: 'Datensammlung/nachrichten.json', // Glückskeks-Sprüche nach dem Bestätigen eines Biers
     spezial: 'Datensammlung/spezialkarten.json' + STUFEN_MARKE, // Spezialkarten: eigener Titel, Aussehen und ggf. Punkte/Extrapunkte für einzelne Biere
+    challenges: 'Datensammlung/challenges.json', // CHALLENGES: Wochen-Challenges (W) und Challenges ohne Frist (N), siehe GAME.challengeState
   };
   const LS_MESSAGES = 'biersammler-messages-v1'; // JSON-Liste der schon gezeigten Spruch-IDs (je Gerät)
   const LS_MORE = 'biersammler-more-v1';   // „Alle weiteren Karten“ aufgeklappt
@@ -69,13 +70,22 @@
 
   // Bierdatenbank aus biere.json und biere_manuell.json plus biere_korrekturen.json (zusammengeführt in js/game.js)
   // kat: je Stufe { name, total } (Name der Kategorie und Anzahl Biere), gefüllt in loadBeers
-  const db = { list: [], map: new Map(), index: [], messages: [], kat: {}, ready: false, error: false };
+  const db = { list: [], map: new Map(), index: [], messages: [], challenges: [], kat: {}, ready: false, error: false };
   // Aus dem Protokoll berechnet; wird vor jedem Zeichnen neu bestimmt, nie gespeichert
   let drinks = [];
   let summary = G.summarize([], db.map);
+  let chal = G.challengeState([], db.map, [], Date.now(), null);
+  /* CHALLENGES: Gibt es einen Benutzernamen? null = im lokalen Modus gibt es keine (die Benutzernamen-Challenge entfällt).
+     Solange das Profil noch nicht geladen ist, gilt „kein Name“: die Punkte kommen dann einen Moment später dazu, statt kurz zu viel anzuzeigen. */
+  const hasName = () => (STORE.mode === 'local' ? null : !!(STORE.profileReady() && STORE.profile().username));
+  const chalOf = (list, now = Date.now()) => G.challengeState(list, db.map, db.challenges, now, hasName());
   function recompute() {
     drinks = db.ready ? G.normalizeDrinks(STORE.drinks(), db.map) : [];
     summary = G.summarize(drinks, db.map);
+    // Challenge-Punkte zählen zu Punkten, Level und Rangliste; summary.beerSum = nur die Punkte aus Bieren
+    chal = chalOf(drinks);
+    summary.beerSum = summary.sum;
+    summary.sum += chal.points;
   }
   const cardOf = (beerId) => summary.cards.find((c) => c.beer.id === beerId) || null;
 
@@ -89,8 +99,9 @@
     };
     const optional = (url, empty = []) => get(url).catch((err) => { console.warn(`${url} nicht lesbar, wird ignoriert:`, err.message); return empty; });
     try {
-      const [main, manual, kategorien, korrekturen, nachrichten, spezial, beerdb] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {}), optional(BEER_FILES.nachrichten), optional(BEER_FILES.spezial), optional(BEER_FILES.beerdb)]);
+      const [main, manual, kategorien, korrekturen, nachrichten, spezial, beerdb, challenges] = await Promise.all([get(BEER_FILES.main), optional(BEER_FILES.manual), optional(BEER_FILES.kategorien), optional(BEER_FILES.korrekturen, {}), optional(BEER_FILES.nachrichten), optional(BEER_FILES.spezial), optional(BEER_FILES.beerdb), optional(BEER_FILES.challenges)]);
       db.messages = G.cleanMessages(nachrichten, (text) => console.warn(text));
+      db.challenges = G.cleanChallenges(challenges, (text) => console.warn(text));
       const r = G.mergeBeers(main, manual, kategorien, (text) => console.warn(text), korrekturen, spezial, beerdb);
       db.list = r.list;
       db.map = r.map;
@@ -314,8 +325,8 @@
     const sum = summary.sum;
     const lvl = G.level(sum);
     const el = $('#level');
-    el.setAttribute('aria-label', `Level ${lvl}, ${G.fmt1(G.ringTenths(sum))} von ${G.LEVEL_POINTS / 10} Punkten`);
-    el.title = `Level ${lvl} · ${G.fmtRing(sum)}`;
+    el.setAttribute('aria-label', `Level ${lvl}, ${G.fmt1(G.ringTenths(sum))} von ${G.LEVEL_POINTS / 10} Punkten. Challenges öffnen`);
+    el.title = `Level ${lvl} · ${G.fmtRing(sum)} · Challenges`;
     el.innerHTML = `<svg viewBox="0 0 56 56" aria-hidden="true"><circle class="track" cx="28" cy="28" r="${RING_R}"/>`
       + `<circle class="fill" cx="28" cy="28" r="${RING_R}" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="${(RING_C * (1 - G.ring(sum))).toFixed(2)}"${sum % G.LEVEL_POINTS ? '' : ' style="stroke:none"'}/></svg>`
       + `<span class="num" aria-hidden="true">${lvl}</span>`;
@@ -408,7 +419,21 @@
     if (mapCtl) mapCtl.update(G.placeGroups(drinks)); // STANDORT-KARTE
     if (rankDlg.open) paintRanking();
     if (setDlg.open) paintSettings();
+    if (chalDlg.open) paintChallenges();
+    scheduleWeekChange();
   }
+
+  /* CHALLENGES: Um Sonntag 0:00 Uhr wechselt die Wochen-Challenge; ist die App dann offen, neu zeichnen.
+     Timer laufen im Hintergrund (iPhone) nicht zuverlässig, deshalb zusätzlich beim Zurückkehren in die App. */
+  let weekTimer = null;
+  function scheduleWeekChange() {
+    clearTimeout(weekTimer);
+    const now = Date.now();
+    const start = G.challengeWeekStart(now);
+    const next = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7).getTime();
+    weekTimer = setTimeout(render, Math.min(next - now + 1000, 2 ** 31 - 1));
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && db.ready) render(); });
 
   /* ---------- 4. Dialoge ---------- */
 
@@ -476,6 +501,7 @@
             <p class="gain">+${G.fmt1(r.gain)} Punkte</p>
             ${r.levelUp ? `<p class="levelup">Level ${r.level} erreicht!</p>` : ''}
             ${r.isNew ? `<p class="new">Neu in deiner Sammlung · davon +${G.fmt1(G.NEW_CARD_BONUS)} Bonus</p>` : ''}
+            ${r.won.map((d) => `<p class="chal-won">Challenge geschafft: ${esc(d.ch.text)} · davon +${G.fmt1(d.ch.punkte)}</p>`).join('')}
           </div>
           ${r.fortune ? `<p class="fortune">${esc(r.fortune)}</p>` : ''}
           <div class="actions"><button class="btn primary" type="button" data-close>Fertig</button></div>`
@@ -537,10 +563,13 @@
       const before = summary.sum;
       const old = cardOf(beer.id);
       // Erstes Trinken dieses Biers: zusätzlich der Bonus für die neue Karte
-      const gain = G.beerPoints(beer) + (old ? 0 : G.NEW_CARD_BONUS);
+      const at = Date.now();
+      // CHALLENGES: Welche Challenges schließt genau dieser Eintrag ab? (Stand mit dem neuen Eintrag berechnen, bevor er gespeichert ist)
+      const won = chalOf(drinks.concat({ id: '~neu', beerId: beer.id, at }), at).done.filter((d) => d.at === at);
+      const gain = G.beerPoints(beer) + (old ? 0 : G.NEW_CARD_BONUS) + won.reduce((s, d) => s + d.ch.punkte, 0);
       // Zeitpunkt = Geräteuhr beim Bestätigen. Nicht auf den Server warten: Die Anzeige kommt aus dem lokalen Stand.
-      STORE.add(beer.id, Date.now(), KARTE.place()); // STANDORT-KARTE: place() ist null, wenn aus oder kein Standort da
-      this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune() };
+      STORE.add(beer.id, at, KARTE.place()); // STANDORT-KARTE: place() ist null, wenn aus oder kein Standort da
+      this.result = { gain, isNew: !old, count: (old ? old.count : 0) + 1, level: G.level(before + gain), levelUp: G.level(before + gain) > G.level(before), fortune: nextFortune(), won };
       this.step = 'done';
       this.paint();
     },
@@ -887,6 +916,88 @@
   }
   statsDlg.addEventListener('close', () => { if (!statsDlg.open) statsDlg.innerHTML = ''; });
 
+  /* CHALLENGES: Fenster hinter dem Level-Ring. Zwei Challenges gleichzeitig: die Wochen-Challenge (wechselt Sonntag 0:00 Uhr) und eine ohne Frist
+     (wechselt erst, wenn sie geschafft ist). Alles aus GAME.challengeState (aus dem Protokoll berechnet, nichts gespeichert). */
+  const chalDlg = $('#challenges');
+  function openChallenges() {
+    paintChallenges();
+    chalDlg.showModal();
+    $('.sheet-body', chalDlg).scrollTop = 0;
+  }
+  // Fortschritt als Text und Anteil (0 … 1)
+  function chalProgress(ch, progress, extra = {}) {
+    if (ch.typ === 'keins') {
+      return extra.failed
+        ? { text: `Nicht mehr zu schaffen: ${plural(extra.count, 'Bier', 'Biere')} diese Woche`, part: 0 }
+        : { text: 'Bisher kein Bier diese Woche – zählt, wenn es bis Sonntag 0:00 Uhr so bleibt', part: 0 };
+    }
+    if (ch.typ === 'benutzername') return { text: 'Wähle ihn in den Einstellungen.', part: 0 };
+    const part = progress / ch.ziel;
+    if (ch.typ === 'punkte') return { text: `${G.fmt1(progress)} / ${G.fmt1(ch.ziel)} Punkte`, part };
+    if (ch.typ === 'gleiches') return { text: `${G.fmtInt(progress)} / ${G.fmtInt(ch.ziel)}-mal dasselbe Bier`, part };
+    return { text: ch.ziel === 1 ? 'Noch offen' : `${G.fmtInt(progress)} / ${G.fmtInt(ch.ziel)} Biere`, part };
+  }
+  // Symbole der Challenge-Karten (Strichzeichnung wie die übrigen Symbole, Klasse .ico)
+  const CHAL_ICONS = {
+    week: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    open: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8"/></svg>',
+    done: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2 8.8-9.4"/></svg>',
+    clock: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  };
+  // „in 2 Tagen“, „in 1 Tag“, „in 5 Stunden“, „in 1 Stunde“
+  function untilText(ms) {
+    const days = Math.floor(ms / 86400000);
+    if (days >= 1) return `in ${G.fmtInt(days)} ${days === 1 ? 'Tag' : 'Tagen'}`;
+    const hours = Math.max(1, Math.ceil(ms / 3600000));
+    return `in ${G.fmtInt(hours)} ${hours === 1 ? 'Stunde' : 'Stunden'}`;
+  }
+  /* Eine Challenge-Karte: Symbol, (bei der Wochen-Challenge) Bezeichnung, Text, Punkte; darunter Fortschritt und ggf. die Zeit bis zum Wechsel.
+     kind = Bezeichnung über dem Text oder '' (ohne), icon = Schlüssel in CHAL_ICONS, time = Text rechts unter dem Balken oder ''. */
+  function chalCard({ kind, icon, ch, state, time = '' }) {
+    const done = !!state.done;
+    const pr = done ? { text: 'Geschafft', part: 1 } : chalProgress(ch, state.progress, state);
+    const btn = ch.typ === 'benutzername' && !done ? '<button class="btn" type="button" data-act="settings">Zu den Einstellungen</button>' : '';
+    return `<section class="chal${done ? ' done' : ''}${state.failed ? ' failed' : ''}" aria-label="${esc(kind || 'Challenge')}">
+        <div class="chal-head">
+          <span class="chal-ico">${CHAL_ICONS[done ? 'done' : icon]}</span>
+          <div class="chal-main">
+            ${kind ? `<span class="chal-kind">${esc(kind)}</span>` : ''}
+            <p class="chal-text">${esc(ch.text)}</p>
+          </div>
+          <span class="chal-pts"><b>+${G.fmt1(ch.punkte)}</b><small>${ch.punkte === 10 ? 'Punkt' : 'Punkte'}</small></span>
+        </div>
+        <div class="chal-bar" aria-hidden="true"><span style="width:${(100 * Math.min(1, pr.part)).toFixed(1)}%"></span></div>
+        <div class="chal-meta">
+          <span class="chal-state">${esc(pr.text)}${done ? '<span class="sr-only"> (abgehakt)</span>' : ''}</span>
+          ${time ? `<span class="chal-time">${CHAL_ICONS.clock}${esc(time)}</span>` : ''}
+        </div>
+        ${btn}
+      </section>`;
+  }
+  function paintChallenges() {
+    const scroll = $('.sheet-body', chalDlg)?.scrollTop || 0;
+    const head = '<div class="sheet-head"><h2>Challenges</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>';
+    let body;
+    if (!db.ready) {
+      body = '<div class="loading" role="status"><span class="spinner"></span>Biere werden geladen …</div>';
+    } else if (!db.challenges.length) {
+      body = '<p class="note center">Die Challenges konnten nicht geladen werden. Prüfe die Verbindung und lade die Seite neu.</p>';
+    } else {
+      const w = chal.week;
+      const o = chal.open;
+      body = `<div class="chal-list">
+          ${w ? chalCard({ kind: 'Wochen-Challenge', icon: 'week', ch: w.ch, state: w, time: `nächste Challenge ${untilText(w.end - Date.now())}` })
+            : '<p class="note center">Diese Woche gibt es keine Wochen-Challenge.</p>'}
+          ${o ? chalCard({ kind: '', icon: 'open', ch: o.ch, state: o }) : ''}
+        </div>
+        <p class="note chal-note">Challenge-Punkte zählen fürs Level und für die Rangliste. Löschst du einen Eintrag, mit dem du eine Challenge geschafft hast,
+          ist sie wieder offen und die Punkte sind weg.</p>`;
+    }
+    chalDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
+    $('.sheet-body', chalDlg).scrollTop = scroll;
+  }
+  chalDlg.addEventListener('close', () => { if (!chalDlg.open) chalDlg.innerHTML = ''; });
+
   /* STANDORT-KARTE: Karte aller Orte, an denen Biere eingetragen wurden (Zeichnen und Bedienung in js/karte.js).
      Die Punkte kommen aus GAME.placeGroups; beim Antippen eines Punktes zeigt describeDrink je Eintrag Bier und Zeit. */
   const mapDlg = $('#karte');
@@ -1220,34 +1331,52 @@
         steht in seiner Kartenansicht neben den gesammelten Punkten (z. B. „+1,5“); die gesammelten Punkte enthalten den Bonus für die neue Karte.</p>
       <p><b>Level:</b> 10 Punkte ergeben ein Level. Du startest bei Level 1; Punkte über 10 werden ins nächste Level mitgenommen.
         Der Ring oben rechts zeigt den Fortschritt im aktuellen Level. Löschst du Einträge, sinken die Punkte und notfalls auch das Level.</p>
+      <p><b>Challenges:</b> Tippe auf den Level-Ring. Dort warten immer zwei Challenges: eine Wochen-Challenge, die jeden Sonntag um 0:00 Uhr wechselt
+        (geschafft oder nicht), und eine Challenge ohne Frist, die erst wechselt, wenn du sie geschafft hast. Geschaffte Challenges bringen Extrapunkte fürs Level.
+        Löschst du einen Eintrag, mit dem du eine Challenge geschafft hast, ist sie wieder offen und die Punkte sind weg.</p>
       <p><b>Kein Nachtragen:</b> Ein Bier zählt mit dem Zeitpunkt, an dem du es bestätigst. Ein Datum lässt sich nicht auswählen.</p>`;
   }
 
   // Letzten Eintrag oder alle Einträge eines Biers löschen, jeweils nach Bestätigung mit Anzahl
+  /* CHALLENGES: Was ändert sich an den Challenges, wenn diese Einträge wegfallen? Gibt { lost (Zehntel), html (Satz für die Rückfrage) } zurück.
+     Eine damit geschaffte Challenge ist danach wieder offen (alles wird aus dem Protokoll berechnet); lost kann auch 0 sein. */
+  function chalLoss(ids) {
+    const drop = new Set(ids);
+    const after = chalOf(drinks.filter((d) => !drop.has(d.id)));
+    const lost = chal.points - after.points;
+    const n = chal.done.length - after.done.length;
+    const html = lost > 0 ? ` Dadurch ${n > 1 ? `zählen ${n} geschaffte Challenges` : 'zählt eine geschaffte Challenge'} nicht mehr (−${fmtPoints(lost)}).`
+      : lost < 0 ? ` Dafür gilt eine Challenge als geschafft (+${fmtPoints(-lost)}).` : '';
+    return { lost, html };
+  }
+  const chalToast = (text, lost) => toast(lost > 0 ? `${text} · Challenge wieder offen (−${G.fmt1(lost)})` : text);
+
   async function deleteFromCard(id, all) {
     const c = cardOf(id);
     if (!c) return;
     const name = `„${esc(c.beer.name)}“`;
     const p = G.beerPoints(c.beer);
     if (all) {
+      const loss = chalLoss(c.drinks);
       const ok = await confirmBox({
         title: 'Karte löschen?',
         html: `${name}: ${c.count === 1 ? 'Der einzige Eintrag wird' : `Alle ${c.count} Einträge werden`} gelöscht (−${fmtPoints(c.points)}, samt Bonus für die neue Karte).
-          Die Karte verschwindet aus deiner Sammlung. Das lässt sich nicht rückgängig machen.`,
+          Die Karte verschwindet aus deiner Sammlung. Das lässt sich nicht rückgängig machen.${loss.html}`,
         ok: c.count === 1 ? 'Karte löschen' : `${c.count} Einträge löschen`,
       });
       const now = cardOf(id); // kann sich in der Zwischenzeit (Sync) geändert haben
-      if (ok && now) { STORE.remove(now.drinks); toast('Karte gelöscht'); }
+      if (ok && now) { const lost = chalLoss(now.drinks).lost; STORE.remove(now.drinks); chalToast('Karte gelöscht', lost); }
     } else {
+      const loss = chalLoss([c.drinks[c.drinks.length - 1]]);
       const ok = await confirmBox({
         title: 'Letzten Eintrag löschen?',
         html: `${name}: Der zuletzt eingetragene von ${c.count} ${c.count === 1 ? 'Eintrag' : 'Einträgen'} wird gelöscht (−${fmtPoints(c.count === 1 ? c.points : p)}${c.count === 1 ? ', samt Bonus für die neue Karte' : ''}).
-          ${c.count === 1 ? 'Danach verschwindet die Karte aus deiner Sammlung.' : `Danach steht die Karte auf Lvl ${c.count - 1}.`}`,
+          ${c.count === 1 ? 'Danach verschwindet die Karte aus deiner Sammlung.' : `Danach steht die Karte auf Lvl ${c.count - 1}.`}${loss.html}`,
         ok: '1 Eintrag löschen',
       });
       const now = cardOf(id);
       // Einträge sind nach Zeit sortiert: der letzte ist der jüngste
-      if (ok && now) { STORE.remove([now.drinks[now.drinks.length - 1]]); toast('Eintrag gelöscht'); }
+      if (ok && now) { const last = [now.drinks[now.drinks.length - 1]]; const lost = chalLoss(last).lost; STORE.remove(last); chalToast('Eintrag gelöscht', lost); }
     }
   }
 
@@ -1276,9 +1405,12 @@
     const btn = $('button[type="submit"]', form);
     btn.disabled = true;
     say('Wird gespeichert …');
+    // CHALLENGES: War die Benutzernamen-Challenge gerade dran, gilt sie mit dem ersten Namen als geschafft
+    const nameChal = chal.open && chal.open.ch.typ === 'benutzername' ? chal.open.ch : null;
     try {
       await STORE.setUsername(name);
       say(`Gespeichert: @${name}`, 'ok');
+      if (nameChal) toast(`Challenge geschafft: ${nameChal.text} · +${G.fmt1(nameChal.punkte)}`);
     } catch (err) {
       const text = {
         taken: 'Dieser Name ist schon vergeben. Bitte wähle einen anderen.',
@@ -1531,6 +1663,7 @@
     }
     else if (act === 'reload') location.reload();
     else if (act === 'stats') openStats();
+    else if (act === 'challenges') openChallenges(); // CHALLENGES: Tipp auf den Level-Ring
     else if (act === 'map') openMap(); // STANDORT-KARTE
     else if (act === 'ranking') openRanking();
     else if (act === 'info') openInfo(); // INFO-FENSTER

@@ -45,7 +45,8 @@
         <h1>Bier Sammler</h1>
         <p id="who" class="who">Anonym</p>
       </div>
-      <div id="level" class="level" role="img" aria-label="Level 1, 0,0 von 10 Punkten"></div>
+      <!-- CHALLENGES: Der Level-Ring ist ein Knopf und öffnet das Fenster „Challenges“ -->
+      <button id="level" class="level" type="button" data-act="challenges" aria-label="Level 1, 0,0 von 10 Punkten. Challenges öffnen"></button>
     </div>
     <div class="wrap tools">
       <button class="btn" type="button" data-act="stats">Statistiken</button>
@@ -70,6 +71,7 @@
   <dialog id="add" class="sheet" aria-label="Bier hinzufügen"></dialog>
   <dialog id="card" class="sheet" aria-label="Kartenansicht"></dialog>
   <dialog id="stats" class="sheet" aria-label="Statistiken"></dialog>
+  <dialog id="challenges" class="sheet" aria-label="Challenges"></dialog><!-- CHALLENGES -->
   <dialog id="ranking" class="sheet" aria-label="Platzierung"></dialog>
   <dialog id="karte" class="sheet" aria-label="Karte der Orte"></dialog><!-- STANDORT-KARTE -->
   <dialog id="info" class="sheet" aria-label="Bierwissen"></dialog><!-- INFO-FENSTER -->

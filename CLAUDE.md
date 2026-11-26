@@ -453,6 +453,30 @@ Alles trägt die Markierung `ALKOHOL-AUSWERTUNG` (`js/game.js`, `js/app.js`, `js
   passt, wenn eine seiner beiden Formen in einer der beiden Formen des Suchtexts (Name + Firmenname) steht.
   So bleiben auch Zwischenstände beim Tippen erhalten („brau“ → „Brauerei“). Wortanfänge zuerst, höchstens 10 Treffer.
 
+## Challenges (26.11.2026)
+
+- Wunsch des Nutzers: Tipp auf den Level-Ring öffnet ein Fenster mit 2 gleichzeitigen Challenges: eine Wochen-Challenge (W, wechselt Sonntag 0:00 Uhr Ortszeit, geschafft
+  oder nicht; „Sonntags um 0:00 Uhr“ wörtlich genommen = Beginn des Sonntags, Wochen hier also Sonntag–Samstag, anders als die Statistik-Wochen ab Montag) und eine ohne Frist
+  (N, wechselt sofort, wenn geschafft). Rücknahme: Löschen des abschließenden Eintrags macht die Challenge wieder offen. Liste (26 Stück) vom Nutzer, in `Datensammlung/challenges.json`;
+  Texte nur in Groß-/Kleinschreibung und Tippfehlern angepasst („Mecklenburg-Vorpommern“, „Baden-Württemberg“, „Hamburg“). Format in der README („Challenges“).
+- Logik in `js/game.js` (`cleanChallenges`, `challengeState`, `weekPicks`), wie alles NUR aus dem Protokoll berechnet. Ab `CHALLENGE_START` = So 22.11.2026 0:00 Ortszeit.
+  W: alle Spieler gleich, Auswahl = kleinster `hash32(WEEK_SALT + Woche + ":" + id)` unter den in den letzten ⌊n/2⌋ Wochen nicht gezogenen. `WEEK_SALT = 'bs3:'` gewählt, damit
+  die laufende erste Woche „Trinke ein Helles“ ist statt „kein Bier“ (wäre sofort verloren gewesen); NIE ändern. N: Kette in Dateireihenfolge, die nächste zählt erst Einträge
+  NACH dem abschließenden (ein Eintrag schließt höchstens eine N ab); nach der letzten von vorn. Benutzernamen-Challenge: nur 1. Durchgang; mit Namen sofort gutgeschrieben
+  (sonst gingen die Punkte beim Anlegen des Namens wieder verloren, weil nichts gespeichert wird; dem Nutzer gesagt), ohne Namen blockiert sie die Kette, lokal entfällt sie.
+  „Entdecke“/„Finde“ = `neu` (erstes Trinken überhaupt, auch vor dem Start), „Trinke“ = jedes Trinken. Einträge in der Zukunft (Geräteuhr) zählen nicht.
+- Punkte: `summary.sum` in `js/app.js` enthält die Challenge-Punkte (`summary.beerSum` ohne); Level, Ring, Rangliste und Statistik folgen. Höchstens 4,0 je Challenge
+  (`CHALLENGE_MAX_POINTS`). Rangliste: Obergrenze + `challengeAllowance` = (count + 2) × 40 + 40 je Woche seit 21.11.2026 0:00 UTC (`1795219200000`), gleich in
+  `firestore.rules` (ohne Division). Regeln vor der App veröffentlichen. Kein neues Feld in `leaderboard`.
+- Oberfläche: `#level` ist jetzt ein `<button data-act="challenges">`, Dialog `#challenges`; beim Eintragen zeigt die Aufdeck-Ansicht „Challenge geschafft …“ (Punkte im „+x Punkte“
+  enthalten), beim Löschen nennt die Rückfrage verlorene Challenge-Punkte und der Hinweis „Challenge wieder offen“. Timer + `visibilitychange` zeichnen beim Wochenwechsel neu.
+  Spielanleitung hat einen Absatz „Challenges“. `CACHE_VERSION` `v14` (neue Datei in `DATA_FILES`).
+- Fenster überarbeitet (26.11.2026, Wunsch des Nutzers: „professioneller“): Karten mit rundem Symbol (Kalender = Woche, Zielscheibe = ohne Frist, Häkchen = geschafft),
+  Punkte-Plakette rechts („+1,0 / Punkt“), schmaler Balken, darunter Stand und bei der Woche „nächste Challenge in 2 Tagen“ (unter einem Tag in Stunden, `untilText`).
+  Auf Wunsch entfernt: Bezeichnung „Challenge ohne Frist“ samt Satz „Bleibt, bis …“, Abschnitt „Bisher geschafft“ (Überschrift, Zählung, Liste der letzten 5), langer Satz zum Wochenwechsel.
+- Getestet: Node-Tests (72, davon 13 neu), eingebauter Browser mit Kopie ohne Schlüssel (375 px, hell und dunkel): Fenster, Eintragen schließt Hamburg ab (+5,5, Level 2),
+  Löschen nimmt es zurück, Helles-Woche als geschafft. NICHT getestet: iPhone/Safari, echtes Firebase (Regeln, Benutzernamen-Challenge mit Konto), Wochenwechsel live.
+
 ## Datenmodell und Sync (`js/store.js`)
 
 ```

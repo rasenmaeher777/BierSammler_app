@@ -709,6 +709,251 @@
   // Anzeigeform darf Groß/klein mischen; eindeutig ist die kleingeschriebene Form (usernameKey)
   const usernameKey = (name) => (typeof name === 'string' && USERNAME_RE.test(name) ? name.toLowerCase() : null);
 
+  /* ---------- Challenges ---------- */
+
+  /* Zwei Challenges gleichzeitig (Liste: Datensammlung/challenges.json, geprüft von cleanChallenges):
+       W  Wochen-Challenge: wechselt jeden Sonntag um 0:00 Uhr Ortszeit, egal ob geschafft oder nicht. Alle Spieler haben in einer
+          Woche dieselbe (Auswahl aus der Kalenderwoche berechnet, kein Zufall zur Laufzeit). Geschafft = abgehakt bis Wochenende.
+       N  Challenge ohne Frist: bleibt, bis sie geschafft ist, und wird dann sofort durch die nächste ersetzt (Reihenfolge der Datei;
+          nach der letzten beginnt die Liste von vorn, die Benutzernamen-Challenge kommt nur einmal).
+     Wie alles andere wird der Stand NUR aus dem Protokoll berechnet, nie gespeichert. Wird ein Eintrag gelöscht, ist eine damit
+     geschaffte Challenge also von selbst wieder offen (und die Punkte sind weg).
+     Es zählen nur Einträge ab CHALLENGE_START. Eine N-Challenge zählt nur Einträge NACH dem Eintrag, der die vorige abgeschlossen hat
+     (ein Eintrag schließt höchstens eine N-Challenge ab). W und N zählen unabhängig: ein Eintrag kann beide voranbringen.
+     „neu“ = das erste Trinken dieses Biers überhaupt (auch vor CHALLENGE_START getrunkene Biere sind nicht mehr neu). */
+  const CHALLENGE_START = new Date(2026, 10, 22).getTime(); // Sonntag, 22.11.2026, 0:00 Ortszeit: erste Wochen-Challenge
+  const CHALLENGE_MAX_POINTS = 40;  // höchstens 4,0 Punkte je Challenge (Grenze der Rangliste und der Firestore-Regeln)
+  const WEEK_MS = 7 * 86400000;
+  // Fester Startwert der Wochen-Auswahl. NIE ändern: sonst bekämen alle vergangenen Wochen eine andere Challenge (Punkte ändern sich rückwirkend).
+  // „bs3:“ gewählt, damit die erste Woche (22.11.2026) nicht „kein Bier“ ist (die Woche lief schon; es wäre sofort verloren gewesen).
+  const WEEK_SALT = 'bs3:';
+  const CHALLENGE_TYPES = ['biere', 'gleiches', 'punkte', 'keins', 'benutzername'];
+  const CHALLENGE_FIELDS = ['id', 'art', 'text', 'punkte', 'typ', 'ziel', 'ab', 'neu', 'stufe', 'spezial', 'region', 'land', 'ausland', 'alkUeber', 'alkUnter', 'sorten'];
+
+  // Sonntag 0:00 Ortszeit der Challenge-Woche, in der ms liegt (Sonntag bis Samstag)
+  function challengeWeekStart(ms) {
+    const d = new Date(ms);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+  }
+  const challengeWeekKey = (ms) => dayNumber(challengeWeekStart(ms));
+
+  // FNV-1a (32 Bit): gleichmäßige, feste „Zufallszahl“ aus einem Text, für die Auswahl der Wochen-Challenge
+  function hash32(s) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return h;
+  }
+
+  /* Rohdaten aus challenges.json prüfen. Ungültige Einträge fallen mit Warnung weg. Ergebnis je Challenge:
+     { id, art: 'W' | 'N', text, punkte (Zehntel), typ, ziel (Anzahl bzw. Zehntel bei typ „punkte“), ab (Tag-Nummer des Sonntags oder null), filter }
+     Typen: biere (mindestens ziel passende Biere), gleiches (ziel-mal dasselbe passende Bier), punkte (mindestens ziel Punkte aus Bieren,
+     ohne Challenge-Punkte), keins (kein einziges Bier in der Woche, nur W), benutzername (einen Benutzernamen haben, nur N).
+     Filter (alle optional, werden mit UND verknüpft): neu, stufe, spezial, region, land, ausland, alkUeber, alkUnter, sorten. */
+  function cleanChallenges(raw, warn = () => {}) {
+    if (raw == null) return [];
+    if (!Array.isArray(raw)) { warn('challenges.json: keine Liste, wird ignoriert'); return []; }
+    const out = [];
+    const seen = new Set();
+    raw.forEach((r, i) => {
+      const where = `challenges.json: Eintrag ${i + 1}`;
+      const bad = (why) => warn(`${where} (${r && r.id}): ${why}, wird ignoriert`);
+      if (!r || typeof r !== 'object' || Array.isArray(r)) { bad('kein Objekt'); return; }
+      const id = typeof r.id === 'string' ? r.id.trim() : '';
+      const text = str(r.text);
+      if (!id) { bad('id fehlt'); return; }
+      if (seen.has(id)) { bad('doppelte id'); return; }
+      if (r.art !== 'W' && r.art !== 'N') { bad('art muss "W" oder "N" sein'); return; }
+      if (!text || text.length > 80) { bad('text fehlt oder ist länger als 80 Zeichen'); return; }
+      if (!CHALLENGE_TYPES.includes(r.typ)) { bad(`unbekannter typ (erlaubt: ${CHALLENGE_TYPES.join(', ')})`); return; }
+      if (r.typ === 'keins' && r.art !== 'W') { bad('typ "keins" gibt es nur als Wochen-Challenge'); return; }
+      if (r.typ === 'benutzername' && r.art !== 'N') { bad('typ "benutzername" gibt es nur als N-Challenge'); return; }
+      const unknown = Object.keys(r).filter((k) => !CHALLENGE_FIELDS.includes(k));
+      if (unknown.length) { bad(`unbekannte Felder: ${unknown.join(', ')}`); return; }
+      const punkte = tenths(r.punkte, 1, CHALLENGE_MAX_POINTS);
+      if (punkte === null) { bad(`punkte ungültig (0,1 bis ${fmt1(CHALLENGE_MAX_POINTS)}, in Zehnteln)`); return; }
+      let ziel = 1;
+      if (r.typ === 'punkte') {
+        ziel = tenths(r.ziel, 1, 100000);
+        if (ziel === null) { bad('ziel (Punkte) ungültig'); return; }
+      } else if (r.ziel != null) {
+        if (!Number.isInteger(r.ziel) || r.ziel < 1 || r.ziel > 1000) { bad('ziel muss eine ganze Zahl ab 1 sein'); return; }
+        ziel = r.ziel;
+      }
+      let ab = null;
+      if (r.ab != null) {
+        const m = typeof r.ab === 'string' && /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.ab);
+        const d = m && new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        if (!d || d.getMonth() !== Number(m[2]) - 1) { bad('ab muss ein Datum "JJJJ-MM-TT" sein'); return; }
+        ab = challengeWeekKey(d.getTime());
+      }
+      const f = {};
+      const bool = (k) => { if (r[k] != null) { if (typeof r[k] !== 'boolean') throw new Error(`${k} muss true oder false sein`); f[k] = r[k]; } };
+      const text1 = (k) => { if (r[k] != null) { if (!str(r[k])) throw new Error(`${k} muss ein Text sein`); f[k] = str(r[k]); } };
+      const num = (k) => { if (r[k] != null) { if (typeof r[k] !== 'number' || !Number.isFinite(r[k])) throw new Error(`${k} muss eine Zahl sein`); f[k] = r[k]; } };
+      try {
+        bool('neu'); bool('spezial'); bool('ausland');
+        text1('region'); text1('land');
+        num('alkUeber'); num('alkUnter');
+        if (r.stufe != null) { if (!STUFEN.includes(r.stufe)) throw new Error(`stufe muss ${STUFEN.join(', ')} sein`); f.stufe = r.stufe; }
+        if (r.sorten != null) { const l = strList(r.sorten); if (!Array.isArray(r.sorten) || !l.length) throw new Error('sorten muss eine Liste von Texten sein'); f.sorten = l; }
+      } catch (err) { bad(err.message); return; }
+      if ((r.typ === 'keins' || r.typ === 'benutzername') && Object.keys(f).length) { bad(`typ "${r.typ}" kennt keine Filter`); return; }
+      seen.add(id);
+      out.push({ id, art: r.art, text, punkte, typ: r.typ, ziel, ab, filter: f });
+    });
+    return out;
+  }
+
+  // Passt ein Eintrag (Bier, erstes Trinken ja/nein) zum Filter einer Challenge?
+  function challengeMatch(f, beer, isNew) {
+    if (f.neu && !isNew) return false;
+    if (f.stufe != null && beer.stufe !== f.stufe) return false;
+    if (f.spezial && !beer.spezial) return false;
+    if (f.region != null && beer.company.region !== f.region) return false;
+    if (f.land != null && beer.company.land !== f.land) return false;
+    if (f.ausland && !(beer.company.land && beer.company.land !== 'Deutschland')) return false;
+    if (f.alkUeber != null && !(typeof beer.alc === 'number' && beer.alc > f.alkUeber)) return false;
+    if (f.alkUnter != null && !(typeof beer.alc === 'number' && beer.alc < f.alkUnter)) return false;
+    if (f.sorten && !beer.sorten.some((s) => f.sorten.includes(s))) return false;
+    return true;
+  }
+
+  // Zähler für den Fortschritt einer Challenge über eine Folge von Einträgen; progress() ist auf ziel gedeckelt
+  function challengeCounter(ch) {
+    let n = 0;
+    const per = new Map();
+    return {
+      add(e) {
+        if (!challengeMatch(ch.filter, e.beer, e.isNew)) return;
+        if (ch.typ === 'biere') n++;
+        else if (ch.typ === 'punkte') n += e.points;
+        else if (ch.typ === 'gleiches') { const c = (per.get(e.beer.id) || 0) + 1; per.set(e.beer.id, c); if (c > n) n = c; }
+      },
+      progress: () => Math.min(n, ch.ziel),
+      done: () => n >= ch.ziel,
+    };
+  }
+
+  // Wochen-Challenges der Wochen ab CHALLENGE_START bis zur Woche von now: [{ key, start (Date), ch }]
+  // Je Woche gewinnt die Challenge mit dem kleinsten hash32("<Woche>:<id>") unter denen, die in den letzten
+  // (Anzahl ÷ 2) Wochen nicht dran waren; so wechseln sie sich ab, ohne eine feste Reihenfolge.
+  // Eine neue Challenge (mit „ab“ in der Zukunft) verändert deshalb keine vergangene Woche.
+  function weekPicks(list, now) {
+    const pool = list.filter((c) => c.art === 'W');
+    const out = [];
+    const first = challengeWeekStart(CHALLENGE_START);
+    const lastKey = challengeWeekKey(now);
+    for (let i = 0; ; i++) {
+      const start = new Date(first.getFullYear(), first.getMonth(), first.getDate() + 7 * i);
+      const key = dayNumber(start);
+      if (key > lastKey) break;
+      const avail = pool.filter((c) => c.ab === null || c.ab <= key);
+      const back = Math.floor(avail.length / 2);
+      const recent = new Set(back ? out.slice(-back).map((p) => p.ch && p.ch.id) : []);
+      let best = null; let bestH = 0;
+      for (const c of avail) {
+        if (recent.has(c.id)) continue;
+        const h = hash32(`${WEEK_SALT}${key}:${c.id}`);
+        if (!best || h < bestH || (h === bestH && c.id < best.id)) { best = c; bestH = h; }
+      }
+      out.push({ key, start, ch: best });
+    }
+    return out;
+  }
+
+  /* Stand der Challenges, aus dem Protokoll berechnet.
+     drinks: bereinigte Einträge (GAME.normalizeDrinks), beerMap: Map(id → Bier), list: GAME.cleanChallenges(…), now: ms,
+     hasName: true/false = Konto mit/ohne Benutzernamen, null = es gibt keine Benutzernamen (lokaler Modus; die Challenge entfällt).
+     Wer schon einen Namen hat, bekommt die Benutzernamen-Challenge sofort gutgeschrieben (sie erscheint nie).
+     Ergebnis: {
+       week: { ch, start, end, progress, done, failed, count } | null    (aktuelle Wochen-Challenge; failed nur bei „keins“)
+       open: { ch, since, progress } | null                             (aktuelle N-Challenge)
+       done: [{ ch, at, week? }]                                        (alle geschafften, älteste zuerst; at = Zeitpunkt)
+       points: Zehntel aus allen geschafften Challenges }             */
+  function challengeState(drinks, beerMap, list, now, hasName) {
+    const chs = Array.isArray(list) ? list : [];
+    const seenBeer = new Set();
+    const ev = [];
+    for (const d of Array.isArray(drinks) ? drinks : []) {
+      const beer = beerMap.get(d.beerId);
+      if (!beer) continue;
+      const isNew = !seenBeer.has(beer.id);
+      seenBeer.add(beer.id);
+      if (d.at < CHALLENGE_START || d.at > now) continue;
+      ev.push({ id: d.id, at: d.at, beer, isNew, points: beerPoints(beer) + (isNew ? NEW_CARD_BONUS : 0) });
+    }
+    ev.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+    const done = [];
+    let week = null;
+
+    // Wochen-Challenges: jede Woche für sich
+    let j = 0;
+    const picks = now >= CHALLENGE_START ? weekPicks(chs, now) : [];
+    for (const p of picks) {
+      const end = new Date(p.start.getFullYear(), p.start.getMonth(), p.start.getDate() + 7).getTime();
+      const startMs = p.start.getTime();
+      while (j < ev.length && ev[j].at < startMs) j++;
+      const counter = p.ch ? challengeCounter(p.ch) : null;
+      let count = 0; let doneAt = null;
+      for (; j < ev.length && ev[j].at < end; j++) {
+        count++;
+        if (!counter) continue;
+        counter.add(ev[j]);
+        if (doneAt === null && p.ch.typ !== 'keins' && counter.done()) doneAt = ev[j].at;
+      }
+      const isNow = now < end;
+      let failed = false;
+      if (p.ch && p.ch.typ === 'keins') {
+        if (count) failed = true;
+        else if (!isNow) doneAt = end - 1;
+      }
+      if (p.ch && doneAt !== null) done.push({ ch: p.ch, at: doneAt, week: p.key });
+      if (isNow) {
+        week = p.ch ? { ch: p.ch, start: startMs, end, progress: p.ch.typ === 'keins' ? count : counter.progress(), done: doneAt !== null, failed, count } : null;
+      }
+    }
+
+    // N-Challenges: eine Kette; die nächste beginnt nach dem Eintrag, der die vorige abgeschlossen hat
+    const order = chs.filter((c) => c.art === 'N');
+    let open = null;
+    if (order.length && now >= CHALLENGE_START) {
+      let i = 0; let since = CHALLENGE_START; let pos = 0; let round = 0; let skipped = 0;
+      while (skipped < order.length) {
+        const ch = order[pos];
+        const chRound = round; // Durchgang, zu dem diese Challenge gehört (0 = erster)
+        pos++;
+        if (pos === order.length) { pos = 0; round++; }
+        // Benutzernamen-Challenge nur im ersten Durchgang und nur, wenn es Benutzernamen gibt; „ab“ = erst ab dieser Woche
+        const usable = (ch.ab === null || ch.ab <= challengeWeekKey(since)) && !(ch.typ === 'benutzername' && (hasName === null || chRound > 0));
+        if (!usable) { skipped++; continue; }
+        skipped = 0;
+        if (ch.typ === 'benutzername') {
+          if (hasName) { done.push({ ch, at: since }); continue; }
+          open = { ch, since, progress: 0 };
+          break;
+        }
+        const counter = challengeCounter(ch);
+        let at = null;
+        for (; i < ev.length; i++) {
+          counter.add(ev[i]);
+          if (counter.done()) { at = ev[i].at; i++; break; }
+        }
+        if (at === null) { open = { ch, since, progress: counter.progress() }; break; }
+        done.push({ ch, at });
+        since = at;
+      }
+    }
+    done.sort((a, b) => a.at - b.at);
+    return { week, open, done, points: done.reduce((s, d) => s + d.ch.punkte, 0) };
+  }
+
+  // Höchstmögliche Challenge-Punkte (Zehntel), für die Plausibilitätsprüfung der Rangliste (gleiche Rechnung wie firestore.rules):
+  // je Bier höchstens eine N-Challenge, je Woche eine W-Challenge, dazu zwei als Reserve (Benutzername, angebrochene Woche).
+  // Die Wochen werden als (now − CHALLENGE_START) / WEEK_MS gerechnet; die Regeln vergleichen dasselbe ohne Division.
+  // Gezählt ab ALLOWANCE_FROM = 21.11.2026, 0:00 UTC (ein Tag vor CHALLENGE_START, damit keine Zeitzone zu knapp rechnet); dieselbe Zahl steht in firestore.rules.
+  const ALLOWANCE_FROM = 1795219200000;
+  const challengeAllowance = (count, now) => ((count + 2) * CHALLENGE_MAX_POINTS) + Math.max(0, ((now - ALLOWANCE_FROM) * CHALLENGE_MAX_POINTS) / WEEK_MS);
+
   /* ---------- Rangliste ---------- */
 
   const BOARD_SIZE = 15; // so viele Plätze zeigt die Rangliste (zusätzlich der eigene Rang)
@@ -717,15 +962,16 @@
      mit Rängen versehen. Ungültige Zeilen (Name ungültig, Zahlen keine Ganzzahlen oder unmöglich) fallen weg.
      cards = Zahl der verschiedenen Karten; jede bringt einmal NEW_CARD_BONUS, deshalb gehört sie in die Grenzen von sum
      (gleiche Prüfung wie in firestore.rules). Zeilen ohne cards (alte App-Version) fallen ebenfalls weg.
+     sum enthält die Challenge-Punkte; dafür ist nach oben challengeAllowance(count, now) Spielraum (now = jetzt in ms).
      Sortierung: Punkte absteigend, dann Anzahl Biere, dann Name. Gleiche Punkte teilen sich den Platz
      (1, 2, 2, 4 …); der Rang eines Spielers ist 1 + Anzahl der Spieler mit MEHR Punkten. Das Level folgt aus den
      Punkten, die Reihenfolge ist also zugleich die nach Level (bei gleichem Level entscheiden die Punkte). */
-  function rankBoard(rows) {
+  function rankBoard(rows, now = Date.now()) {
     const ok = (r) => r && typeof r.uid === 'string' && usernameKey(r.username)
       && Number.isInteger(r.sum) && Number.isInteger(r.count) && Number.isInteger(r.cards)
       && r.count >= 0 && r.cards >= 0 && r.cards <= r.count && (r.cards > 0 || r.count === 0)
       && r.sum >= r.count * POINTS[1] + r.cards * NEW_CARD_BONUS
-      && r.sum <= r.count * MAX_BEER_POINTS + r.cards * NEW_CARD_BONUS;
+      && r.sum <= r.count * MAX_BEER_POINTS + r.cards * NEW_CARD_BONUS + challengeAllowance(r.count, now);
     const list = (Array.isArray(rows) ? rows : []).filter(ok)
       .sort((a, b) => b.sum - a.sum || b.count - a.count || (usernameKey(a.username) < usernameKey(b.username) ? -1 : 1));
     let rank = 0;
@@ -749,6 +995,7 @@
     WEEKDAYS, stats,
     LABELS, LABEL_LIMITS, BINGE_GRAMS, KG_MIN, KG_MAX, gramsTenths, cleanBody, parseKg, labelFor, fmtPermille, alcoholReport, // ALKOHOL-AUSWERTUNG
     usernameKey,
+    CHALLENGE_START, CHALLENGE_MAX_POINTS, challengeWeekStart, challengeWeekKey, cleanChallenges, challengeMatch, weekPicks, challengeState, challengeAllowance,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.GAME = api;

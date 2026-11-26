@@ -452,7 +452,7 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
     { uid: 'b', username: '<b>hacker</b>', sum: 45, count: 1, cards: 1 }, // Name ungültig
     { uid: 'c', username: 'Hans', sum: 45.5, count: 1, cards: 1 },        // keine Ganzzahl
     { uid: 'd', username: 'Hans', sum: 44, count: 1, cards: 1 },          // weniger als 1,0 je Bier + 3,5 je Karte
-    { uid: 'e', username: 'Hans', sum: 71, count: 1, cards: 1 },          // mehr als 3,5 je Bier + 3,5 je Karte
+    { uid: 'e', username: 'Hans', sum: 191, count: 1, cards: 1 },         // mehr als 3,5 je Bier + 3,5 je Karte + (1 + 2) × 4,0 Challenge-Spielraum (zur Zeit T0)
     { uid: 'f', username: 'Hans', sum: 10, count: -1, cards: 0 },
     { uid: 'g', username: 'Hans', sum: '45', count: 1, cards: 1 },
     { username: 'Hans', sum: 45, count: 1, cards: 1 },                    // ohne uid
@@ -461,11 +461,17 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
     { uid: 'j', username: 'Hans', sum: 20, count: 2, cards: 0 },          // Biere, aber keine Karte
     { uid: 'k', username: 'Hans', sum: 45, count: 1, cards: '1' },
   ];
-  assert.deepStrictEqual(G.rankBoard(bad), []);
+  // T0 = Beginn des Challenge-Spielraums (21.11.2026, 0:00 UTC); dann gibt es noch keine Wochen-Reserve
+  const T0 = 1795219200000;
+  assert.deepStrictEqual(G.rankBoard(bad, T0), []);
   assert.deepStrictEqual(G.rankBoard(undefined), []);
-  // Grenzen genau: 1 × 1,0 + 3,5 und 1 × 3,5 + 3,5
-  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 45, count: 1, cards: 1 }]).length, 1);
-  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 70, count: 1, cards: 1 }]).length, 1);
+  // Grenzen genau: 1 × 1,0 + 3,5 und 1 × 3,5 + 3,5 + (1 + 2) × 4,0 Challenge-Spielraum
+  assert.strictEqual(G.rankBoard([...bad, { uid: 'ok', username: 'Hans', sum: 45, count: 1, cards: 1 }], T0).length, 1);
+  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 70, count: 1, cards: 1 }], T0).length, 1);
+  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 190, count: 1, cards: 1 }], T0).length, 1);
+  // Je Woche kommen 4,0 Punkte Spielraum dazu (eine Wochen-Challenge)
+  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 230, count: 1, cards: 1 }], T0 + 7 * 86400000).length, 1);
+  assert.strictEqual(G.rankBoard([{ uid: 'ok', username: 'Hans', sum: 231, count: 1, cards: 1 }], T0 + 7 * 86400000).length, 0);
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
@@ -807,5 +813,186 @@ test('Echte biere.json: alle 6.368 gültig, Eigenheiten sauber', () => {
   for (const b of r.list) for (const v of [b.title, b.brand, b.kategorie, ...b.sorten]) assert.ok(v && !/^(null|undefined)$/.test(v), b.id);
   console.log(`     Index ${tIndex} ms, Suche ${tSearch} ms, Treffer „münchner hell“: ${hits.length}`);
 });
+
+/* ---------- Challenges ---------- */
+
+{
+  // Kleine Bierdatenbank für die Challenge-Tests
+  const mk = (id, stufe, extra = {}) => ({ id, stufe, sorten: extra.sorten || [], alc: extra.alc ?? 5, spezial: extra.spezial || null, punkte: null, bonus: 0,
+    company: { region: extra.region ?? 'Bayern', land: extra.land ?? 'Deutschland' } });
+  const beers = new Map([
+    ['BS-000001', mk('BS-000001', 1)],
+    ['BS-000002', mk('BS-000002', 4, { region: 'Hamburg', alc: 7.5 })],
+    ['BS-000003', mk('BS-000003', 5, { land: 'Polen', region: null, alc: 3.5 })],
+    ['BS-000004', mk('BS-000004', 2, { sorten: ['Helles'], spezial: { id: 'x', titel: 'X', design: 'baer' } })],
+  ]);
+  const DAY = 86400000;
+  const S = G.CHALLENGE_START; // Sonntag 22.11.2026, 0:00 Ortszeit
+  const at = (days, h = 20) => new Date(new Date(S).getFullYear(), new Date(S).getMonth(), new Date(S).getDate() + days, h).getTime();
+  let n = 0;
+  const dr = (beerId, t) => ({ id: `d${String(++n).padStart(4, '0')}`, beerId, at: t });
+  const raw = [
+    { id: 'n-name', art: 'N', punkte: 1.0, text: 'Name', typ: 'benutzername' },
+    { id: 'n-hh', art: 'N', punkte: 1.0, text: 'Hamburg', typ: 'biere', region: 'Hamburg' },
+    { id: 'n-2', art: 'N', punkte: 2.0, text: 'Zwei Biere', typ: 'biere', ziel: 2 },
+    { id: 'w-3', art: 'W', punkte: 2.0, text: 'Drei Biere', typ: 'biere', ziel: 3 },
+  ];
+  const list = G.cleanChallenges(raw);
+
+  test('Challenges: Woche beginnt Sonntag 0:00 Uhr Ortszeit', () => {
+    assert.strictEqual(new Date(S).getDay(), 0);
+    assert.strictEqual(G.challengeWeekStart(at(6, 23)).getTime(), S);        // Samstag 23 Uhr: noch dieselbe Woche
+    assert.strictEqual(G.challengeWeekStart(at(7, 0)).getTime(), at(7, 0));  // Sonntag 0 Uhr: neue Woche
+    assert.strictEqual(G.challengeWeekKey(at(7, 0)) - G.challengeWeekKey(at(0, 1)), 7);
+  });
+
+  test('Challenges: echte Datei challenges.json ist gültig (26 Stück, 11 N, 15 W)', () => {
+    const warns = [];
+    const real = G.cleanChallenges(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Datensammlung', 'challenges.json'), 'utf8')), (t) => warns.push(t));
+    assert.deepStrictEqual(warns, []);
+    assert.strictEqual(real.length, 26);
+    assert.strictEqual(real.filter((c) => c.art === 'N').length, 11);
+    assert.strictEqual(real.filter((c) => c.art === 'W').length, 15);
+    assert.ok(real.every((c) => c.punkte > 0 && c.punkte <= G.CHALLENGE_MAX_POINTS));
+    assert.strictEqual(real.find((c) => c.id === 'w-biere-10').punkte, 40);
+    assert.strictEqual(real.find((c) => c.id === 'w-punkte-5').ziel, 50);
+    // Erste Woche (22.11.2026) ist „Trinke ein Helles“, nicht „kein Bier“ (fester Startwert der Auswahl)
+    assert.strictEqual(G.weekPicks(real, at(1)).map((p) => p.ch.id).join(), 'w-helles');
+  });
+
+  test('Challenges: ungültige Einträge fallen mit Warnung weg', () => {
+    const warns = [];
+    const out = G.cleanChallenges([
+      { id: 'a', art: 'X', punkte: 1, text: 't', typ: 'biere' },
+      { id: 'b', art: 'W', punkte: 5, text: 't', typ: 'biere' },          // mehr als 4,0
+      { id: 'c', art: 'N', punkte: 1, text: 't', typ: 'keins' },          // keins nur W
+      { id: 'd', art: 'W', punkte: 1, text: 't', typ: 'benutzername' },   // benutzername nur N
+      { id: 'e', art: 'W', punkte: 1, text: 't', typ: 'biere', farbe: 1 }, // unbekanntes Feld
+      { id: 'f', art: 'W', punkte: 1, text: 't', typ: 'biere', ziel: 0 },
+      { id: 'g', art: 'W', punkte: 1, text: 't', typ: 'biere', stufe: 9 },
+      { id: 'h', art: 'W', punkte: 1.05, text: 't', typ: 'biere' },        // keine Zehntel
+      { id: 'ok', art: 'W', punkte: 1, text: 't', typ: 'biere' },
+      { id: 'ok', art: 'W', punkte: 1, text: 't', typ: 'biere' },         // doppelt
+    ], (t) => warns.push(t));
+    assert.deepStrictEqual(out.map((c) => c.id), ['ok']);
+    assert.strictEqual(warns.length, 9);
+    assert.deepStrictEqual(G.cleanChallenges(undefined), []);
+  });
+
+  test('Challenges: Filter (neu, Stufe, Region, Ausland, Land, Alkohol, Sorte, Spezialkarte)', () => {
+    const m = G.challengeMatch;
+    const b2 = beers.get('BS-000002'); const b3 = beers.get('BS-000003'); const b4 = beers.get('BS-000004');
+    assert.ok(m({ neu: true, stufe: 4 }, b2, true)); assert.ok(!m({ neu: true, stufe: 4 }, b2, false));
+    assert.ok(m({ region: 'Hamburg' }, b2, false)); assert.ok(!m({ region: 'Hamburg' }, b3, false));
+    assert.ok(m({ ausland: true }, b3, false)); assert.ok(!m({ ausland: true }, b2, false));
+    assert.ok(m({ land: 'Polen' }, b3, false));
+    assert.ok(m({ alkUeber: 7.0 }, b2, false)); assert.ok(!m({ alkUeber: 7.5 }, b2, false)); // „mehr als“ = echt größer
+    assert.ok(m({ alkUnter: 4.0 }, b3, false)); assert.ok(!m({ alkUnter: 4.0 }, { ...b3, alc: null }, false)); // ohne Angabe zählt nicht
+    assert.ok(m({ sorten: ['Helles'] }, b4, false)); assert.ok(!m({ sorten: ['Helles'] }, b2, false));
+    assert.ok(m({ spezial: true }, b4, false)); assert.ok(!m({ spezial: true }, b2, false));
+  });
+
+  test('Challenges: Wochen-Challenge geschafft, abgehakt, wechselt am Sonntag', () => {
+    const d = [dr('BS-000001', at(1)), dr('BS-000001', at(2)), dr('BS-000001', at(3))];
+    const st = G.challengeState(d, beers, list, at(4), true);
+    assert.strictEqual(st.week.ch.id, 'w-3');
+    assert.ok(st.week.done); assert.strictEqual(st.week.progress, 3);
+    assert.strictEqual(st.week.end, at(7, 0));
+    // Nächste Woche: wieder offen, die Punkte der letzten Woche bleiben
+    const next = G.challengeState(d, beers, list, at(8), true);
+    assert.ok(!next.week.done); assert.strictEqual(next.week.progress, 0);
+    assert.ok(next.done.some((x) => x.ch.id === 'w-3' && x.week === G.challengeWeekKey(S)));
+    // 2 Biere: nicht geschafft
+    assert.ok(!G.challengeState(d.slice(0, 2), beers, list, at(4), true).week.done);
+  });
+
+  test('Challenges: N-Kette – Benutzername sofort, dann der Reihe nach, Folge-Challenge zählt erst danach', () => {
+    const d = [dr('BS-000001', at(1)), dr('BS-000002', at(1, 21)), dr('BS-000001', at(2))];
+    const st = G.challengeState(d, beers, list, at(3), true);
+    // Name schon da → n-name sofort geschafft; Hamburg mit dem 2. Eintrag; „Zwei Biere“ zählt erst ab dem 3. Eintrag
+    assert.deepStrictEqual(st.done.filter((x) => !x.week).map((x) => x.ch.id), ['n-name', 'n-hh']);
+    assert.strictEqual(st.open.ch.id, 'n-2'); assert.strictEqual(st.open.progress, 1);
+    // Punkte: 1,0 (Name) + 1,0 (Hamburg) + 2,0 (Woche, 3 Biere)
+    assert.strictEqual(st.points, 40);
+  });
+
+  test('Challenges: ohne Benutzernamen bleibt die Namens-Challenge offen, im lokalen Modus entfällt sie', () => {
+    const d = [dr('BS-000002', at(1))];
+    const noName = G.challengeState(d, beers, list, at(2), false);
+    assert.strictEqual(noName.open.ch.id, 'n-name'); assert.strictEqual(noName.points, 0);
+    const local = G.challengeState(d, beers, list, at(2), null);
+    assert.deepStrictEqual(local.done.map((x) => x.ch.id), ['n-hh']);
+    assert.strictEqual(local.open.ch.id, 'n-2');
+  });
+
+  test('Challenges: Löschen des abschließenden Eintrags macht die Challenge wieder offen', () => {
+    const d = [dr('BS-000001', at(1)), dr('BS-000001', at(2)), dr('BS-000002', at(3))];
+    const before = G.challengeState(d, beers, list, at(4), true);
+    assert.ok(before.week.done);
+    assert.ok(before.done.some((x) => x.ch.id === 'n-hh'));
+    const after = G.challengeState(d.slice(0, 2), beers, list, at(4), true);
+    assert.ok(!after.week.done);
+    assert.strictEqual(after.open.ch.id, 'n-hh');
+    assert.strictEqual(before.points - after.points, 30); // 2,0 Woche + 1,0 Hamburg
+  });
+
+  test('Challenges: nach der letzten N-Challenge beginnt die Liste von vorn (ohne Benutzername)', () => {
+    const d = [dr('BS-000002', at(1)), dr('BS-000001', at(1, 21)), dr('BS-000001', at(1, 22)), dr('BS-000002', at(2))];
+    const st = G.challengeState(d, beers, list, at(3), true);
+    assert.deepStrictEqual(st.done.filter((x) => !x.week).map((x) => x.ch.id), ['n-name', 'n-hh', 'n-2', 'n-hh']);
+    assert.strictEqual(st.open.ch.id, 'n-2');
+  });
+
+  test('Challenges: „kein Bier“ zählt erst nach Wochenende, ein Bier macht sie unmöglich', () => {
+    const only = G.cleanChallenges([{ id: 'w-keins', art: 'W', punkte: 1.5, text: 'Kein Bier', typ: 'keins' }]);
+    const empty = G.challengeState([], beers, only, at(3), true);
+    assert.ok(!empty.week.done && !empty.week.failed); assert.strictEqual(empty.points, 0);
+    assert.strictEqual(G.challengeState([], beers, only, at(8), true).points, 15);   // Woche vorbei, kein Bier → geschafft
+    const one = G.challengeState([dr('BS-000001', at(2))], beers, only, at(3), true);
+    assert.ok(one.week.failed);
+    assert.strictEqual(G.challengeState([dr('BS-000001', at(2))], beers, only, at(8), true).points, 0);
+  });
+
+  test('Challenges: „gleiches“, „punkte“, „neu“ und Einträge vor dem Start', () => {
+    const l = G.cleanChallenges([
+      { id: 'w-g', art: 'W', punkte: 2, text: 'g', typ: 'gleiches', ziel: 2 },
+    ]);
+    assert.ok(G.challengeState([dr('BS-000001', at(1)), dr('BS-000001', at(2))], beers, l, at(3), true).week.done);
+    assert.ok(!G.challengeState([dr('BS-000001', at(1)), dr('BS-000004', at(2))], beers, l, at(3), true).week.done);
+    const p = G.cleanChallenges([{ id: 'w-p', art: 'W', punkte: 1, text: 'p', typ: 'punkte', ziel: 5.0 }]);
+    // Neues Bier Stufe 1: 1,0 + 3,5 = 4,5 → noch nicht; zweites Trinken +1,0 → 5,5
+    assert.strictEqual(G.challengeState([dr('BS-000001', at(1))], beers, p, at(3), true).week.progress, 45);
+    assert.ok(G.challengeState([dr('BS-000001', at(1)), dr('BS-000001', at(2))], beers, p, at(3), true).week.done);
+    // „Entdecke“: vor dem Start schon getrunken → nicht mehr neu; Einträge vor dem Start zählen nicht
+    const z = G.cleanChallenges([{ id: 'n-z', art: 'N', punkte: 1, text: 'z', typ: 'biere', neu: true, stufe: 4 }]);
+    assert.strictEqual(G.challengeState([dr('BS-000002', S - DAY), dr('BS-000002', at(1))], beers, z, at(2), true).points, 0);
+    assert.strictEqual(G.challengeState([dr('BS-000002', at(1))], beers, z, at(2), true).points, 10);
+  });
+
+  test('Challenges: Wochen-Auswahl ist fest, für alle gleich und wiederholt sich nicht direkt', () => {
+    const real = G.cleanChallenges(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Datensammlung', 'challenges.json'), 'utf8')));
+    const a = G.weekPicks(real, at(400)).map((p) => p.ch.id);
+    const b = G.weekPicks(real, at(400)).map((p) => p.ch.id);
+    assert.deepStrictEqual(a, b);
+    assert.strictEqual(a.length, 58);
+    // innerhalb von 7 Wochen keine Challenge doppelt (15 W-Challenges → die letzten 7 sind gesperrt)
+    for (let i = 0; i < a.length; i++) assert.ok(!a.slice(Math.max(0, i - 7), i).includes(a[i]), `Woche ${i}`);
+    // Eine neue Challenge mit „ab“ ändert vergangene Wochen nicht
+    const more = G.cleanChallenges([...JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Datensammlung', 'challenges.json'), 'utf8')),
+      { id: 'w-neu', art: 'W', punkte: 1, text: 'neu', typ: 'biere', ab: '2027-03-07' }]);
+    const c = G.weekPicks(more, at(400)).map((p) => p.ch.id);
+    const cut = G.weekPicks(real, new Date(2027, 2, 6).getTime()).length;
+    assert.deepStrictEqual(c.slice(0, cut), a.slice(0, cut));
+    assert.ok(c.slice(cut).includes('w-neu'));
+  });
+
+  test('Challenges: Spielraum der Rangliste wächst je Bier und je Woche um 4,0', () => {
+    const T0 = 1795219200000;
+    assert.strictEqual(G.challengeAllowance(0, T0), 80);
+    assert.strictEqual(G.challengeAllowance(3, T0), 200);
+    assert.strictEqual(G.challengeAllowance(0, T0 + 14 * DAY), 160);
+    assert.strictEqual(G.challengeAllowance(0, T0 - DAY), 80);
+  });
+}
 
 console.log(`\n${passed} Tests bestanden${process.exitCode ? ', es gab FEHLER' : ''}.`);

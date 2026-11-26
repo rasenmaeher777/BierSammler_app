@@ -185,7 +185,9 @@ button { cursor: pointer; }
 .who { margin: 2px 0 0; color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Level-Ring: Kreis füllt sich mit dem Fortschritt im Level, Level-Zahl in der Mitte */
-.level { flex-shrink: 0; width: 56px; height: 56px; position: relative; }
+/* CHALLENGES: Der Ring ist ein Knopf (öffnet das Fenster „Challenges“); Knopf-Grundstile zurücksetzen */
+.level { flex-shrink: 0; width: 56px; height: 56px; position: relative; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; font: inherit; cursor: pointer; }
+.level:active { transform: scale(0.96); }
 .level svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .level .track { fill: none; stroke: var(--line); stroke-width: 5; }
 .level .fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
@@ -1891,3 +1893,43 @@ button.bcard:active { transform: scale(0.98); }
 .alc-how { margin: 10px 0 4px; }
 .alc-how > summary { padding: 8px 0; font-weight: 650; cursor: pointer; }
 .alc-how p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+
+/* ---------- Challenges (CHALLENGES) ---------- */
+/* Fenster hinter dem Level-Ring: zwei Karten (Wochen-Challenge, Challenge ohne Frist).
+   Aufbau je Karte: rundes Symbol · Bezeichnung und Text · Punkte-Plakette; darunter Balken, Stand und (Woche) Zeit bis zum Wechsel.
+   Geschafft = grünes Häkchen-Symbol, grüner Balken und Rand. Alle Farben aus den Variablen oben (hell und dunkel). */
+.chal-list { display: grid; gap: 12px; }
+.chal {
+  padding: 16px; border-radius: 18px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  box-shadow: 0 1px 2px var(--shadow);
+}
+.chal.done { border-color: var(--ok); }
+.chal-head { display: flex; align-items: center; gap: 12px; }
+.chal-ico {
+  flex-shrink: 0; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--line);
+}
+.chal-ico .ico { width: 22px; height: 22px; stroke-width: 1.8; }
+.chal.done .chal-ico { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.chal.done .chal-ico .ico { stroke-width: 2.6; }
+.chal-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.chal-kind { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.chal-text { margin: 0; font: 700 17px/1.3 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; overflow-wrap: anywhere; }
+.chal-pts { flex-shrink: 0; display: grid; justify-items: end; line-height: 1.1; }
+.chal-pts b { font: 800 20px/1.1 ui-rounded, "SF Pro Rounded", -apple-system, sans-serif; color: var(--accent); }
+.chal-pts small { font-size: 11px; font-weight: 650; color: var(--muted); }
+.chal.done .chal-pts b { color: var(--ok); }
+.chal-bar { height: 8px; margin-top: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.chal-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.4s ease; }
+.chal.done .chal-bar span { background: var(--ok); }
+.chal-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 8px; font-size: 13px; }
+.chal-state { font-weight: 650; }
+.chal.done .chal-state { color: var(--ok); }
+.chal.failed .chal-state { color: var(--danger); }
+.chal-time { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); white-space: nowrap; }
+.chal-time .ico { width: 15px; height: 15px; }
+.chal .btn { margin-top: 12px; }
+.chal-note { margin: 16px 2px 0; font-size: 13px; }
+.reveal-info .chal-won { margin: 4px 0 0; color: var(--ok); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .chal-bar span { transition: none; } .level:active { transform: none; } }
