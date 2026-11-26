@@ -4,6 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- iOS 26+: Ohne diese Angabe (oder mit "black-translucent") legt iOS in der Home-Bildschirm-App eine Milchglas-Unschärfe über die
+       obersten ca. 100 px. "default" = feste Statusleiste, Seite beginnt darunter. iOS liest die Angabe nur beim Hinzufügen zum
+       Home-Bildschirm: nach einer Änderung die App entfernen und neu hinzufügen (26.11.2026). -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="robots" content="noindex">
   <title>Datenschutz – Bier Sammler</title>
   <script>try { var t = localStorage.getItem('biersammler-theme-v1'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>

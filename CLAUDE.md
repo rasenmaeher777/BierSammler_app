@@ -576,6 +576,9 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
   (das Ereignis kommt verzögert).
 - Smartphone zuerst: 375/390 px prüfen, Eingabefelder 16 px, Safe-Area-Abstände; Kopfleiste und Werkzeugzeile dürfen
   nicht höher werden.
+- Statusleiste: `<meta name="apple-mobile-web-app-status-bar-style" content="default">` in allen drei HTML-Seiten. Fehlt sie oder steht
+  `black-translucent` dort, verschwimmt in iOS 26+ der obere Rand der Home-Bildschirm-App (siehe solectrus/solectrus#5916).
+  iOS liest sie nur beim Hinzufügen zum Home-Bildschirm (26.11.2026).
 - KOPF-DECKEL: `.top-cap` (in `index.html`, `impressum.html`, `datenschutz.html`) ist eine feste, deckende Leiste so hoch wie
   die Statusleiste. Sie verhindert die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
   durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
