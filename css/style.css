@@ -182,9 +182,12 @@ button { cursor: pointer; }
    verschwimmt auch ganz oben Titel und Level-Ring). Die Unschärfe entfällt, wenn am oberen Rand ein festes, volle Breite
    einnehmendes Element mit deckender Hintergrundfarbe liegt (wie die Kopfleisten von Nachrichtenseiten). Darum diese Leiste:
    NICHT pointer-events: none, KEIN backdrop-filter/opacity/Transparenz, sonst greift die Unschärfe wieder (26.11.2026).
-   Außerhalb der Web-App ist safe-area-inset-top 0, die Leiste also unsichtbar. */
-.top-cap { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: env(safe-area-inset-top); background: var(--bg); }
-.top { padding-top: max(14px, env(safe-area-inset-top)); }
+   Außerhalb der Web-App ist safe-area-inset-top 0; die 12 px liegen dann im leeren oberen Rand der Kopfleiste.
+   Die Leiste muss mindestens 8 px UNTER den Statusleisten-Bereich reichen (dort prüft iOS; 4 px reichen laut
+   solectrus/solectrus#5916 nicht, nur so hoch wie die Statusleiste wirkte bei uns nicht). Darum 12 px, und die Kopfleiste
+   beginnt 12 px tiefer, damit die Leiste nichts verdeckt. Ohne Statusleisten-Bereich (Browser-Tab) bleibt es bei 14 px. */
+.top-cap { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: calc(env(safe-area-inset-top) + 12px); background: var(--bg); }
+.top { padding-top: max(14px, calc(env(safe-area-inset-top) + 12px)); }
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { min-width: 0; }
 .brand h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; }
@@ -1773,7 +1776,7 @@ button.bcard:active { transform: scale(0.98); }
 #confirm .sheet-body p { margin: 0; }
 
 /* ---------- Impressum und Datenschutz (Platzhalterseiten) ---------- */
-.legal-page { max-width: 720px; padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: 40px; }
+.legal-page { max-width: 720px; padding-top: max(20px, calc(env(safe-area-inset-top) + 12px)); padding-bottom: 40px; }
 .legal-page a { color: inherit; }
 .legal-page h1 { font-size: 28px; }
 .legal-page h2 { margin-top: 26px; font-size: 18px; }

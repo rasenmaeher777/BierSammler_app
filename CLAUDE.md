@@ -580,7 +580,7 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
   `black-translucent` dort, verschwimmt in iOS 26+ der obere Rand der Home-Bildschirm-App (siehe solectrus/solectrus#5916).
   iOS liest sie nur beim Hinzufügen zum Home-Bildschirm (26.11.2026).
 - KOPF-DECKEL: `.top-cap` (in `index.html`, `impressum.html`, `datenschutz.html`) ist eine feste, deckende Leiste so hoch wie
-  die Statusleiste. Sie verhindert die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
+  die Statusleiste plus 12 px (iOS prüft knapp darunter; `.top` beginnt deshalb 12 px tiefer). Sie soll verhindern die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
   durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
   feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
