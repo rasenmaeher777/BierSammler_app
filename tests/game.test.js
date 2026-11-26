@@ -475,6 +475,23 @@ test('Rangliste: ungültige Zeilen fallen weg', () => {
   assert.strictEqual(G.BOARD_SIZE, 15);
 });
 
+test('Sammlung anderer Spieler: veröffentlichen und als Liste anzeigen', () => {
+  const beer = (id, name) => ({ id, name });
+  const cards = [{ beer: beer('BS-000887', 'Sternburg - Export'), count: 4 }, { beer: beer('BS-001490', 'Berliner - Pilsner'), count: 1 }];
+  const counts = G.collectionCounts(cards);
+  assert.deepStrictEqual(counts, { 'BS-000887': 4, 'BS-001490': 1 });
+  assert.deepStrictEqual(Object.keys(G.collectionCounts([...cards].reverse())), ['BS-000887', 'BS-001490']);
+  assert.deepStrictEqual(G.collectionCounts(undefined), {});
+  const map = new Map([['BS-000887', beer('BS-000887', 'Sternburg - Export')], ['BS-001490', beer('BS-001490', 'Berliner - Pilsner')],
+    ['BM-000005', beer('BM-000005', 'Berliner - Pilsner Mildes Lager')], ['BS-004132', beer('BS-004132', 'Astra - Rakete')], ['BM-000008', beer('BM-000008', 'Unbekanntes Bier')]]);
+  const list = G.collectionList({ 'BS-004132': 1, 'BS-000887': 4, 'BM-000005': 2, 'BS-001490': 1, 'BM-000008': 1,
+    'BS-999999': 3, 'BS-000001': 0, 'BS-000002': 1.5, 'BS-000003': '2' }, map);
+  assert.deepStrictEqual(list.map((r) => `${r.name} ${r.count}x`),
+    ['Sternburg Export 4x', 'Berliner Pilsner Mildes Lager 2x', 'Astra Rakete 1x', 'Berliner Pilsner 1x', 'Unbekanntes Bier 1x']);
+  assert.deepStrictEqual(G.collectionList(null, map), []);
+  assert.deepStrictEqual(G.collectionList([1, 2], map), []);
+});
+
 test('Kartenstufe: Veränderung ab 3, 7, 10, 15, 20, 25, 30, 35 und 40 Mal getrunken', () => {
   const expected = [[0, 0], [1, 0], [2, 0], [3, 1], [6, 1], [7, 2], [9, 2], [10, 3], [14, 3], [15, 4], [19, 4], [20, 5], [24, 5], [25, 6], [29, 6], [30, 7], [34, 7], [35, 8], [39, 8], [40, 9], [41, 9], [500, 9]];
   for (const [count, tier] of expected) assert.strictEqual(G.cardTier(count), tier, `count ${count}`);

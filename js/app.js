@@ -408,6 +408,8 @@
     // Punkte, Anzahl und verschiedene Karten für die Rangliste (erst wenn die Bierdatenbank geladen ist, sonst stünde dort 0).
     // Alle drei aus summary, damit sie zusammenpassen (die Regeln prüfen sum gegen count und cards).
     if (db.ready) STORE.publishScore(summary.sum, summary.count, summary.cards.length);
+    // Sammlung (Bier-ID → Anzahl), damit andere sie in der Platzierung ansehen können
+    if (db.ready) STORE.publishCollection(G.collectionCounts(summary.cards));
     renderHeader();
     renderMain();
     if (keep) {
@@ -1026,9 +1028,11 @@
   /* Platzierung. Die besten GAME.BOARD_SIZE Spieler live aus leaderboard/ (STORE.watchRanking), dazu der eigene Rang,
      falls man nicht darunter ist. Zeilen prüft und sortiert GAME.rankBoard; alle Namen gehen durch esc().
      Den eigenen Rang außerhalb der Besten liefert eine Zählabfrage beim Server (STORE.countAbove); ohne Netz
-     steht dort „–“. Die eigene Zeile zeigt immer die lokal berechneten Werte. */
+     steht dort „–“. Die eigene Zeile zeigt immer die lokal berechneten Werte.
+     Ein Tipp auf einen fremden Namen zeigt im selben Fenster dessen Sammlung (sammlung/<uid>, STORE.loadCollection) als
+     einfache Liste „Name Anzahl x“ (GAME.collectionList); „Zurück“ führt zur Rangliste. */
   const rankDlg = $('#ranking');
-  const rank = { rows: null, fromCache: false, failed: false, own: null, unwatch: null, seq: 0 };
+  const rank = { rows: null, fromCache: false, failed: false, own: null, unwatch: null, seq: 0, view: null, viewSeq: 0 };
 
   function stopRanking() {
     rank.seq++; // laufende Zählabfrage verwerfen
@@ -1036,7 +1040,8 @@
   }
   function openRanking() {
     stopRanking();
-    Object.assign(rank, { rows: null, fromCache: false, failed: false, own: null });
+    Object.assign(rank, { rows: null, fromCache: false, failed: false, own: null, view: null });
+    rank.viewSeq++;
     rank.unwatch = STORE.watchRanking((rows, meta) => {
       rank.rows = G.rankBoard(rows);
       rank.fromCache = !!meta.fromCache;
@@ -1062,12 +1067,43 @@
       () => { if (seq === rank.seq) { rank.own = { state: 'err' }; if (rankDlg.open) paintRanking(); } },
     );
   }
-  function paintRanking() {
-    const scroll = $('.sheet-body', rankDlg)?.scrollTop || 0;
+  // Sammlung eines anderen Spielers öffnen (einmal laden; die Rangliste läuft im Hintergrund weiter)
+  function openPlayer(uid, username) {
+    const seq = ++rank.viewSeq;
+    rank.view = { uid, username, state: 'loading', list: [], back: $('.sheet-body', rankDlg)?.scrollTop || 0 };
+    paintRanking(0);
+    $('[data-rank-back]', rankDlg)?.focus({ preventScroll: true });
+    STORE.loadCollection(uid).then(
+      (beers) => { if (seq === rank.viewSeq) { Object.assign(rank.view, { state: beers ? 'ok' : 'none', list: G.collectionList(beers, db.map) }); paintRanking(0); } },
+      (err) => { console.error('Sammlung konnte nicht geladen werden', err); if (seq === rank.viewSeq) { rank.view.state = 'err'; paintRanking(0); } },
+    );
+  }
+  function closePlayer() {
+    const back = rank.view ? rank.view.back : 0;
+    rank.viewSeq++;
+    const uid = rank.view ? rank.view.uid : '';
+    rank.view = null;
+    paintRanking(back);
+    $(`[data-player="${CSS.escape(uid)}"]`, rankDlg)?.focus({ preventScroll: true });
+  }
+  function playerBody(v) {
+    const back = '<button class="btn rank-back" type="button" data-rank-back>‹ Zurück zur Platzierung</button>';
+    let inner;
+    if (v.state === 'loading') inner = '<div class="loading" role="status"><span class="spinner"></span>Sammlung wird geladen …</div>';
+    else if (v.state === 'err') inner = '<p class="note center">Die Sammlung konnte nicht geladen werden. Prüfe die Verbindung und versuche es noch einmal.</p>';
+    else if (v.state === 'none') inner = `<p class="note center">${esc('@' + v.username)} hat noch keine Sammlung veröffentlicht. Das passiert automatisch, sobald die Person die App in der neuen Version öffnet.</p>`;
+    else if (!v.list.length) inner = '<p class="note center">Noch keine Biere gesammelt.</p>';
+    else inner = `<ul class="player-beers">${v.list.map((r) => `<li><span class="pb-name">${esc(r.name)}</span> <span class="pb-n">${G.fmtInt(r.count)}x</span></li>`).join('')}</ul>`;
+    return `${back}<h3 class="player-name">${esc('@' + v.username)}</h3>${inner}`;
+  }
+  function paintRanking(scrollTo) {
+    const scroll = scrollTo !== undefined ? scrollTo : $('.sheet-body', rankDlg)?.scrollTop || 0;
     const head = '<div class="sheet-head"><h2>Platzierung</h2><button class="close" type="button" data-close aria-label="Schließen">×</button></div>';
     const wait = (text) => `<div class="loading" role="status"><span class="spinner"></span>${text}</div>`;
     let body;
-    if (rank.failed) {
+    if (rank.view) {
+      body = playerBody(rank.view);
+    } else if (rank.failed) {
       body = '<p class="note center">Die Rangliste konnte nicht geladen werden. Prüfe die Verbindung und öffne das Fenster noch einmal.</p>';
     } else if (!rank.rows || (!rank.rows.length && rank.fromCache && navigator.onLine !== false)) {
       body = wait('Rangliste wird geladen …');
@@ -1077,7 +1113,8 @@
       const total = G.fmtInt(db.map.size); // alle Karten der Bierdatenbank
       const row = (r, mine, label = String(r.rank)) => `<tr class="${mine ? 'me' : ''}">
           <td class="pos"><span class="badge${r.rank <= 3 ? ` p${r.rank}` : ''}">${esc(label)}</span></td>
-          <td class="nm">${esc('@' + r.username)}${mine ? ' <span class="you">(du)</span>' : ''}</td>
+          <td class="nm">${mine ? `${esc('@' + r.username)} <span class="you">(du)</span>`
+            : `<button class="player" type="button" data-player="${esc(r.uid)}" data-name="${esc(r.username)}" aria-label="Sammlung von ${esc('@' + r.username)} ansehen">${esc('@' + r.username)}</button>`}</td>
           <td class="num">${G.fmtInt(r.level)}</td>
           <td class="num">${G.fmtInt(r.count)}</td>
           <td class="num cards">${G.fmtInt(r.cards)}</td></tr>`;
@@ -1097,12 +1134,21 @@
           <tbody>${list}${ownRow}</tbody></table>` : '<p class="note center">Noch niemand in der Rangliste.</p>'}
         ${err}
         <p class="note">Es zählt das Level, bei gleichem Level die Punkte. „Karten“ zeigt, wie viele verschiedene Biere jemand von allen ${total} gesammelt hat.
-          Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang.</p>`;
+          Gezeigt werden die besten ${G.BOARD_SIZE} Spieler und dein eigener Rang. Tippe auf einen Namen, um die gesammelten Biere zu sehen.</p>`;
     }
+    // Fokus auf „Zurück“ oder einem Namen über das Neuzeichnen retten (Laden der Sammlung, Live-Änderungen der Rangliste)
+    const act = document.activeElement;
+    const keep = act && rankDlg.contains(act) ? (act.matches('[data-rank-back]') ? '[data-rank-back]' : act.dataset.player ? `[data-player="${CSS.escape(act.dataset.player)}"]` : '') : '';
     rankDlg.innerHTML = `${head}<div class="sheet-body">${body}</div>`;
     $('.sheet-body', rankDlg).scrollTop = scroll;
+    if (keep) $(keep, rankDlg)?.focus({ preventScroll: true });
   }
-  rankDlg.addEventListener('close', () => { if (!rankDlg.open) { stopRanking(); rankDlg.innerHTML = ''; } });
+  rankDlg.addEventListener('close', () => { if (!rankDlg.open) { stopRanking(); rank.viewSeq++; rank.view = null; rankDlg.innerHTML = ''; } });
+  rankDlg.addEventListener('click', (e) => {
+    const p = e.target.closest('[data-player]');
+    if (p) { openPlayer(p.dataset.player, p.dataset.name); return; }
+    if (e.target.closest('[data-rank-back]')) closePlayer();
+  });
 
   /* INFO-FENSTER: „Bierwissen“ – Biersorten, Geschmacksbegriffe und Hintergrundwissen (Inhalt: js/info.js, reiner Text ohne Eingaben) */
   const infoDlg = $('#info');

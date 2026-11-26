@@ -981,9 +981,33 @@
     });
   }
 
+  /* ---------- Sammlung anderer Spieler (sammlung/<uid>: { beers: { "<Bier-ID>": Anzahl } }) ---------- */
+
+  // Eigene Sammlung zum Veröffentlichen: aus summary.cards ein Objekt Bier-ID → Anzahl (Schlüssel sortiert, damit der Vergleich stabil ist)
+  function collectionCounts(cards) {
+    const out = {};
+    (Array.isArray(cards) ? cards : []).map((c) => [c.beer.id, c.count]).sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .forEach(([id, n]) => { out[id] = n; });
+    return out;
+  }
+  // Anzeigename ohne „ - “ zwischen Marke und Sorte: „Sternburg - Export“ → „Sternburg Export“
+  const listName = (beer) => beer.name.replace(' - ', ' ');
+  /* Fremde Sammlung (ungeprüft vom Server) in eine Liste [{ id, name, count }] verwandeln. Unbekannte IDs (z. B. Bier aus einer
+     neueren Datenbank) und ungültige Anzahlen fallen weg. Sortierung: öfter getrunken zuerst, dann Name. */
+  function collectionList(beers, beerMap) {
+    if (!beers || typeof beers !== 'object' || Array.isArray(beers)) return [];
+    const list = [];
+    for (const [id, n] of Object.entries(beers)) {
+      const beer = beerMap.get(id);
+      if (!beer || !Number.isInteger(n) || n < 1) continue;
+      list.push({ id, name: listName(beer), count: n });
+    }
+    return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'de') || (a.id < b.id ? -1 : 1));
+  }
+
   const api = {
     POINTS, STUFEN, MAX_STUFE, MAX_BONUS, MAX_BEER_POINTS, NEW_CARD_BONUS, LEVEL_POINTS, BUNDESLAENDER, ID_RE,
-    BOARD_SIZE, rankBoard,
+    BOARD_SIZE, rankBoard, collectionCounts, collectionList, listName,
     pointsFor, beerPoints, SPECIAL_DESIGNS, LEGEND_ICONS, cleanSpecials, level, ring, ringTenths, toNext,
     fmt1, fmtInt, fmtDec, fmtAlc, fmtLiter, fmtRing,
     splitName, cleanBeer, mergeBeers,

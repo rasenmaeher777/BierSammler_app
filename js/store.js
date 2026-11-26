@@ -13,6 +13,8 @@
                                  gerundet (rund 100 m); beide oder keiner
      usernames/<usernameKey>     { uid }                         (sorgt für eindeutige Namen)
      leaderboard/<uid>           { username, sum, count, cards } (Rangliste; nur mit Benutzernamen, siehe publishScore)
+     sammlung/<uid>              { beers: { "<Bier-ID>": Anzahl } } (gesammelte Biere, für andere in der Platzierung sichtbar;
+                                 nur mit Benutzernamen, siehe publishCollection; ohne Zeitpunkte und Orte)
 
    Schreibvorgänge werden NICHT abgewartet: Ihre Promises erfüllen sich erst nach Bestätigung durch den Server und
    hängen ohne Netz. Die Anzeige kommt sofort aus dem lokalen Snapshot; ohne Netz landen die Schreibvorgänge in der
@@ -37,6 +39,8 @@
      publishScore(sum, count, cards) Punkte (Zehntel), Anzahl Biere und Zahl der verschiedenen Karten für die Rangliste veröffentlichen (gebündelt, im Hintergrund)
      watchRanking(onData, onError)   die besten Plätze live lesen; gibt eine Funktion zum Beenden zurück
      countAbove(sum)    Promise<Anzahl Spieler mit mehr Punkten> (nur mit Server), für den eigenen Rang
+     publishCollection(beers)        eigene Sammlung { Bier-ID: Anzahl } veröffentlichen (gebündelt, im Hintergrund; GAME.collectionCounts)
+     loadCollection(uid)             Promise<{ Bier-ID: Anzahl } | null> (ungeprüft; null = noch nichts veröffentlicht)
      uid()              Kennung des angemeldeten Kontos oder null */
 window.STORE = (() => {
   'use strict';
@@ -55,7 +59,7 @@ window.STORE = (() => {
   const SS_DELETED = 'biersammler-deleted-v1'; // sessionStorage: nach dem Neuladen „Konto gelöscht“ melden
 
   let onChange = () => {};
-  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, profileReady: false, score: null, synced: false };
+  const s = { status: MODE === 'local' ? 'local' : 'loading', error: '', drinks: [], pending: false, profile: {}, profileReady: false, score: null, coll: null, synced: false };
   const emit = () => onChange();
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const fail = (code, message) => Object.assign(new Error(message || code), { code });
@@ -110,6 +114,8 @@ window.STORE = (() => {
     publishScore() {},
     watchRanking(onData, onError) { onError(fail('local')); return () => {}; },
     countAbove() { return Promise.reject(fail('local')); },
+    publishCollection() {},
+    loadCollection() { return Promise.reject(fail('local')); },
     uid() { return null; },
   };
 
@@ -124,6 +130,9 @@ window.STORE = (() => {
   let lastScore = '';     // zuletzt veröffentlichter Stand („Name|Punkte|Anzahl|Karten“)
   let scoreWanted = '';   // Stand, für den gerade ein Timer läuft
   let deleting = false;   // Konto wird gerade gelöscht: nichts mehr in die Rangliste schreiben
+  let collTimer = null;   // gebündeltes Veröffentlichen der Sammlung (sammlung/<uid>)
+  let lastColl = '';      // zuletzt veröffentlichter Stand der Sammlung (JSON)
+  let collWanted = '';    // Stand, für den gerade ein Timer läuft
   const stopListening = () => { unsubs.forEach((u) => u()); unsubs = []; };
   const drinksCol = () => fb.collection(db, 'users', user.uid, 'drinks');
   const failed = (text) => (err) => {
@@ -162,6 +171,10 @@ window.STORE = (() => {
     clearTimeout(scoreTimer);
     lastScore = '';
     scoreWanted = '';
+    s.coll = null;
+    clearTimeout(collTimer);
+    lastColl = '';
+    collWanted = '';
     if (!u) {
       // Gerade abgemeldet (hier oder in einem anderen Tab): Kopie auf diesem Gerät löschen und neu laden.
       // Beim Start ohne Anmeldung bleibt LS_OWNER stehen, damit ein anderes Konto später erkannt wird.
@@ -189,6 +202,7 @@ window.STORE = (() => {
       s.status = 'in';
       emit();
       scheduleScore();
+      scheduleColl();
     }, failed('Einträge konnten nicht geladen werden')));
     unsubs.push(fb.onSnapshot(fb.doc(db, 'users', u.uid), (snap) => {
       const v = (snap.exists() && snap.data()) || {};
@@ -199,6 +213,7 @@ window.STORE = (() => {
       s.profileReady = !snap.metadata.fromCache || snap.exists();
       emit();
       scheduleScore();
+      scheduleColl();
     }, (err) => console.error('Profil konnte nicht geladen werden', err)));
   }
 
@@ -221,6 +236,28 @@ window.STORE = (() => {
     lastScore = key;
     background(fb.setDoc(fb.doc(db, 'leaderboard', user.uid), { username: s.profile.username, sum: s.score.sum, count: s.score.count, cards: s.score.cards }), 'Rangliste veröffentlichen');
   }
+
+  /* Sammlung veröffentlichen: sammlung/<uid> = { beers }. Gleiche Bedingungen wie bei der Rangliste (Benutzername, vom Server
+     bestätigte Einträge), gebündelt und nur bei Änderungen. Ein eigenes Dokument statt eines Felds in leaderboard, damit die
+     Rangliste weiterläuft, falls die Regeln für sammlung noch nicht eingetragen sind (dann scheitert nur dieser Schreibvorgang). */
+  const collKey = () => (s.coll && s.profile.username ? JSON.stringify(s.coll) : '');
+  function scheduleColl() {
+    const key = collKey();
+    if (!user || deleting || !s.synced || !key || key === lastColl || key === collWanted) return;
+    collWanted = key;
+    clearTimeout(collTimer);
+    collTimer = setTimeout(flushColl, SCORE_DELAY);
+  }
+  function flushColl() {
+    collWanted = '';
+    const key = collKey();
+    if (!user || deleting || !s.synced || !key || key === lastColl) return;
+    lastColl = key;
+    background(fb.setDoc(fb.doc(db, 'sammlung', user.uid), { beers: s.coll }), 'Sammlung veröffentlichen');
+  }
+  // Sammlung vom Server entfernen. Einzeln statt im Batch: Fehlen die Regeln für sammlung (alte Regeln), darf das
+  // Zurücksetzen bzw. Löschen des Kontos daran nicht scheitern.
+  const dropColl = (uid) => fb.deleteDoc(fb.doc(db, 'sammlung', uid));
 
   // Löschvorgänge in Batches mit höchstens 500 Vorgängen; extra = zusätzliche Vorgänge für den ersten Batch
   function deleteInBatches(ids, extra = []) {
@@ -296,6 +333,10 @@ window.STORE = (() => {
       clearTimeout(scoreTimer);
       lastScore = '';
       scoreWanted = '';
+      clearTimeout(collTimer);
+      lastColl = '';
+      collWanted = '';
+      background(dropColl(user.uid), 'Sammlung entfernen');
       deleteInBatches(s.drinks.map((d) => d.id), extra);
     },
 
@@ -341,6 +382,18 @@ window.STORE = (() => {
       }, (err) => { console.error('Rangliste konnte nicht geladen werden', err); onError(err); });
     },
 
+    publishCollection(beers) {
+      s.coll = beers && typeof beers === 'object' ? beers : null;
+      scheduleColl();
+    },
+
+    // Sammlung eines anderen Spielers einmal lesen (vom Server, ohne Netz aus dem Zwischenspeicher, sonst Fehler)
+    async loadCollection(uid) {
+      if (!user) throw fail('error', 'nicht angemeldet');
+      const snap = await fb.getDoc(fb.doc(db, 'sammlung', uid));
+      return snap.exists() ? (snap.data() || {}).beers || null : null;
+    },
+
     // Wie viele Spieler haben mehr Punkte? (Zählabfrage direkt beim Server; ohne Netz Fehler.) Rang = Ergebnis + 1.
     async countAbove(sum) {
       const q = fb.query(fb.collection(db, 'leaderboard'), fb.where('sum', '>', sum));
@@ -379,6 +432,10 @@ window.STORE = (() => {
       deleting = true;
       clearTimeout(scoreTimer);
       scoreWanted = '';
+      clearTimeout(collTimer);
+      collWanted = '';
+      // Sammlung zuerst; ein Fehler (z. B. alte Regeln ohne sammlung) hält das Löschen des Kontos nicht auf
+      try { await withTimeout(dropColl(u.uid)); } catch (err) { console.warn('Sammlung konnte nicht entfernt werden', err); }
       try {
         // Alle Einträge vom Server (nicht nur den lokalen Stand) plus noch nicht übertragene lokale
         const [serverDrinks, serverProfile] = await withTimeout(Promise.all([fb.getDocsFromServer(drinksCol()), fb.getDocFromServer(fb.doc(db, 'users', u.uid))]));
@@ -450,6 +507,8 @@ window.STORE = (() => {
     publishScore: (sum, count, cards) => impl.publishScore(sum, count, cards),
     watchRanking: (onData, onError) => impl.watchRanking(onData, onError),
     countAbove: (sum) => impl.countAbove(sum),
+    publishCollection: (beers) => impl.publishCollection(beers),
+    loadCollection: (uid) => impl.loadCollection(uid),
     uid: () => impl.uid(),
   };
 })();

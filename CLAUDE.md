@@ -524,6 +524,16 @@ leaderboard/<uid>            { username, sum, count, cards }   Rangliste: Punkte
 - Getestet mit nachgebildetem Firebase (siehe „Testen“): Veröffentlichen, Namenswechsel, Zurücksetzen, Top 15 + Rang 23,
   Gleichstand, eigener Platz unter den Besten, offline, Ladefehler, ungültige Zeilen, lokaler Modus, 375 px hell/dunkel
   und Desktop. NICHT getestet: echte Regeln/Firestore (Regeln gedanklich geprüft, kein Emulator).
+- **Sammlung fremder Spieler (26.11.2026, Wunsch des Nutzers; Datenschutz laut Nutzer egal, App noch nicht bei Freunden):** Tipp auf einen fremden Namen
+  (`button.player[data-player]`, eigene Zeile nicht tippbar) zeigt im selben Fenster die Liste „Sternburg Export 4x“ (Name = `beer.name` mit erstem „ - “ → Leerzeichen,
+  `GAME.listName`; sortiert nach Anzahl, dann Name; `GAME.collectionList` verwirft unbekannte IDs und ungültige Anzahlen), Knopf „‹ Zurück zur Platzierung“ (`[data-rank-back]`, stellt Scrollstand
+  und Fokus wieder her). Daten: eigenes Dokument `sammlung/<uid>` `{ beers: { "<Bier-ID>": Anzahl } }` (ohne Zeitpunkte/Orte), `render()` → `STORE.publishCollection(GAME.collectionCounts(summary.cards))`,
+  gebündelt wie die Rangliste (nur mit Namen, nach Serverbestätigung, nur bei Änderung); lesen per `STORE.loadCollection(uid)` (einmaliges `getDoc`).
+  Bewusst NICHT als Feld in `leaderboard`: Fehlen die neuen Regeln, scheitert nur dieser Schreibvorgang, die Rangliste läuft weiter. Aus demselben Grund löschen Zurücksetzen
+  und Konto löschen `sammlung/<uid>` einzeln und fehlertolerant (nicht im Batch). Spieler, die die neue Version noch nicht geöffnet haben: „hat noch keine Sammlung veröffentlicht“.
+  Regeln: lesen alle Angemeldeten, schreiben nur Besitzer, nur Feld `beers`, Map mit ≤ 20.000 Einträgen. Keine neue Datei, `CACHE_VERSION` unverändert.
+  Getestet: Node-Tests (73), Kopie ohne Schlüssel mit nachgebildetem STORE (375 px hell: Liste, nichts veröffentlicht, Ladefehler, Zurück/Fokus, Veröffentlichen der eigenen Zählung).
+  NICHT getestet: echtes Firestore samt neuen Regeln, iPhone/Safari, dunkle Darstellung.
 
 ## Firestore-Regeln (`firestore.rules`)
 

@@ -9,10 +9,11 @@ rules_version = '2';
 //                                 (lat/lng: Ort des Eintrags für die Standort-Karte, nur wenn die Person es eingeschaltet hat)
 //   usernames/<usernameKey>      { uid }
 //   leaderboard/<uid>            { username, sum, count, cards }   (Rangliste: Punkte in Zehnteln, Anzahl Biere, verschiedene Karten)
+//   sammlung/<uid>               { beers: { "<Bier-ID>": Anzahl } } (gesammelte Biere; in der Platzierung für andere sichtbar)
 //
 // Grundsatz: Jede Person liest und schreibt nur users/<eigene uid>/**. Ausnahmen sind einzelne Einträge
 // in usernames (lesen für alle Angemeldeten), damit Namen eindeutig bleiben, und die Rangliste leaderboard
-// (lesen für alle Angemeldeten, schreiben nur der Besitzer).
+// (lesen für alle Angemeldeten, schreiben nur der Besitzer), ebenso die Sammlung sammlung.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -134,6 +135,18 @@ service cloud.firestore {
              <= (request.time.toMillis() - 1795219200000) * 40
         && exists(userDoc(uid))
         && getAfter(userDoc(uid)).data.get('username', null) == request.resource.data.username;
+      allow delete: if isOwner(uid);
+    }
+
+    // Sammlung (26.11.2026): welche Biere jemand wie oft getrunken hat, ohne Zeitpunkte und Orte. Die App zeigt sie in der
+    // Platzierung beim Tipp auf einen fremden Namen. Lesen für alle Angemeldeten, schreiben nur der Besitzer. Die Regeln prüfen
+    // nur die Form (eine Zuordnung, höchstens 20.000 Biere); die Anzahlen prüft die App beim Anzeigen (GAME.collectionList).
+    match /sammlung/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['beers'])
+        && request.resource.data.beers is map
+        && request.resource.data.beers.size() <= 20000;
       allow delete: if isOwner(uid);
     }
   }

@@ -1691,6 +1691,16 @@ button.bcard:active { transform: scale(0.98); }
 .rank tr.me td:first-child { border-radius: 10px 0 0 10px; }
 .rank tr.me td:last-child { border-radius: 0 10px 10px 0; }
 .rank tr.gap td { padding: 2px 6px; border: 0; color: var(--muted); text-align: center; letter-spacing: 2px; }
+/* Fremder Name in der Platzierung: tippbar, öffnet die Sammlung */
+.rank .player { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere;
+  cursor: pointer; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+.rank .player:hover { text-decoration-color: currentColor; }
+/* Sammlung eines anderen Spielers: einfache Liste „Name Anzahl x“ */
+.rank-back { margin-bottom: 12px; }
+.player-name { margin: 0 0 8px; font-size: 18px; overflow-wrap: anywhere; }
+.player-beers { margin: 0; padding: 0; list-style: none; }
+.player-beers li { padding: 7px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.player-beers .pb-n { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Platz: Plätze 1 bis 3 als Medaille (feste Farben, dunkle Schrift in beiden Darstellungen gut lesbar) */
 .badge { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 999px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .badge.p1 { background: #E8B93C; color: #2B2620; }
