@@ -89,7 +89,8 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   beschreibung, biersorte, zutaten, alkoholgehalt, flaschengroesse, brauerei_vertrieb (je Unterfeld). NIE id,
   kategorie_stufe, kategorie_name (Punkte/Level). `null` entfernt eine Angabe; falscher Typ, unzulässiges Feld,
   unbekannte ID → Warnung und ignoriert. Fehlt die Datei, startet die App trotzdem. Beim Anlegen wurde `CACHE_VERSION`
-  in `sw.js` auf `v2` erhöht (neue Datei in `DATA_FILES`). Aktuell ist die Datei leer (`{}`); der Nutzer trägt selbst ein.
+  in `sw.js` auf `v2` erhöht (neue Datei in `DATA_FILES`). Inhalt: eine Beschreibung (`BS-000887`, vom Nutzer) und seit 26.11.2026 (Wunsch des Nutzers) `region: "Hamburg"` für die 9 Astra-Biere
+  aus `biere.json` (Vertrieb Bavaria St.-Pauli, dort ohne Region; die 6 Astra-Biere aus beer-db.org hatten Hamburg schon).
 - Die ID ist der Schlüssel für die Spielerdaten: nie ändern oder neu vergeben.
 - `GAME.cleanBeer` macht aus jedem Rohdatensatz ein bereinigtes Objekt: `title`/`brand` (Trennung am ERSTEN „ - “;
   ohne „ - “ ganzer Name als Titel, Firmenname als Marke), `sorten` (Liste, evtl. leer), `alc` (0 = „alkoholfrei“),
@@ -161,7 +162,7 @@ Ladereihenfolge: `firebase-config.js`, `game.js`, `store.js`, `karte.js`, `info.
   Verlauf und Großbuchstaben, gestrichelter Innenrahmen, bunter Verlaufsrahmen, feste Farben in hell und dunkel): 40 zufällig gezogene Standardgebräu-Biere
   (`random.Random("sanchi-2026-11-19").sample`, aus den 3.195 übrigen `BS`-Standardgebräu-Bieren, einmalig gezogen und fest in der Datei; nicht neu würfeln).
 - **Länder-Legenden und zwei Designkarten (19.11.2026, später am Tag):** 15 weitere Legenden (ids `legende-bw|by|bb|hb|hh|he|mv|ni|nw|rp|sl|sn|st|sh|th`), je 5–10 bekannte Biere des
-  Landes (Region laut `biere.json`; Astra hat dort keine Region, steht aber bei Hamburg; Sachsen-Anhalt hat nur 6 passende Biere). Look `k1 sp-icon` (wie Standardgebräu), statt der Flasche ein
+  Landes (Region laut `biere.json`; Astra hatte dort keine Region, seit 26.11.2026 per `biere_korrekturen.json` Hamburg; Sachsen-Anhalt hat nur 6 passende Biere). Look `k1 sp-icon` (wie Standardgebräu), statt der Flasche ein
   Wahrzeichen aus `ICONS` in `js/app.js` (SVG 60 × 86 wie der Bär; `icon()`/`symbol()`/`heroStars()`; Klassen `body`/`limb`/`cut`/`cutline`, CSS `.bear` in `style.css`):
   Kuckucksuhr BW, Brezel Bayern, Spreewaldgurke Brandenburg („Märkische Legende“), Schlüssel Bremen, Anker Hamburg, Bembel Hessen, Leuchtturm MV, Heidschnucke Niedersachsen („Nieders. Legende“),
   Kölner Dom NRW, Weintraube RLP, Schlägel und Eisen Saarland, Schwibbogen Sachsen, Himmelsscheibe von Nebra Sachsen-Anhalt („Anhalt Legende“), Strandkorb SH, Rostbratwurst Thüringen.

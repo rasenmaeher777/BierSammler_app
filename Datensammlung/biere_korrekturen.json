@@ -1,5 +1,50 @@
 {
+  "BS-000120": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-000623": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-000636": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
   "BS-000887": {
     "beschreibung": "süffig, würzig - wer dieses Bier regelmässig trinkt ist mehr als nur swag! Das Bier ist die Nummer 1. für Bierball und eines der besten Weltweit. Der absolute Burner!!!"
+  },
+  "BS-001307": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-002830": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-003589": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-004132": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-004518": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
+  },
+  "BS-006081": {
+    "brauerei_vertrieb": {
+      "region": "Hamburg"
+    }
   }
 }
