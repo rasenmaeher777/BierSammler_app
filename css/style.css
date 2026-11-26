@@ -19,9 +19,10 @@
   --danger: #B3261E;
   --on-danger: #FFFFFF;
   --shadow: rgb(70 50 20 / 0.16);
-  --backdrop: rgb(40 30 20 / 0.5);
-  --cap-dim: #918A81;      /* KOPF-DECKEL bei offenem Fenster: --bg unter --backdrop, deckend vorgerechnet */
-  --cap-dim2: #5C544A;     /* … bei zwei Fenstern übereinander (doppelte Abdunkelung) */
+  /* Fenster heben sich nur per Schatten und feiner Kante ab, OHNE abgedunkelten Hintergrund (sonst müsste sich oben die Statusleiste
+     umfärben, und das macht iOS sichtbar verzögert; siehe KOPF-DECKEL, 26.11.2026) */
+  --sheet-edge: #DCCDB4;
+  --sheet-shadow: rgb(70 50 20 / 0.24);
   --radius: 16px;
 
   /* Kategorie-Farben (1 Standardgebräu … 5 Heiligtum) und die Schrift darauf; --rd gehört zur Spezialkarte Raddelfuß */
@@ -59,9 +60,8 @@
     --danger: #FF8A80;
     --on-danger: #15130F;
     --shadow: rgb(0 0 0 / 0.5);
-    --backdrop: rgb(0 0 0 / 0.62);
-    --cap-dim: #080706;
-    --cap-dim2: #030302;
+    --sheet-edge: #4A4237;
+    --sheet-shadow: rgb(0 0 0 / 0.75);
     --k1: #A39A8B; --on-k1: #15130F;
     --k2: #79B886; --on-k2: #15130F;
     --k3: #78ACDC; --on-k3: #15130F;
@@ -89,9 +89,8 @@
   --danger: #FF8A80;
   --on-danger: #15130F;
   --shadow: rgb(0 0 0 / 0.5);
-  --backdrop: rgb(0 0 0 / 0.62);
-  --cap-dim: #080706;
-  --cap-dim2: #030302;
+  --sheet-edge: #4A4237;
+  --sheet-shadow: rgb(0 0 0 / 0.75);
   --k1: #A39A8B; --on-k1: #15130F;
   --k2: #79B886; --on-k2: #15130F;
   --k3: #78ACDC; --on-k3: #15130F;
@@ -194,21 +193,6 @@ button { cursor: pointer; }
    beginnt 12 px tiefer, damit die Leiste nichts verdeckt. Ohne Statusleisten-Bereich (Browser-Tab) bleibt es bei 14 px. */
 .top-cap { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: calc(env(safe-area-inset-top) + 12px); background: var(--bg); }
 .top { padding-top: max(14px, calc(env(safe-area-inset-top) + 12px)); }
-/* Offenes Fenster: Die Abdunkelung (::backdrop) beginnt unter der Leiste, und die Leiste nimmt selbst die abgedunkelte Farbe an.
-   So bleibt sie das oberste deckende Element am Rand (keine Unschärfe) und iOS färbt die Statusleiste mit. Läge die
-   Abdunkelung darüber, bliebe die Statusleiste hell (iOS übernimmt die Farbe der Leiste, nicht die der Abdunkelung). */
-html:has(dialog.sheet[open]) .top-cap { background: var(--cap-dim); }
-html:has(dialog.sheet[open] ~ dialog.sheet[open]) .top-cap { background: var(--cap-dim2); } /* z. B. Karte über Statistiken, Rückfrage über Kartenansicht */
-/* Fließender Übergang beim ÖFFNEN: Leiste und Abdunkelung dunkeln gemeinsam in 0,3 s ab (iOS färbt die Statusleiste mit eigenem
-   Übergang um; so fällt der Versatz kaum auf). Beim Schließen ist die Abdunkelung sofort weg, deshalb wird die Leiste dann sofort
-   wieder hell (Übergang 0 s; es gilt jeweils der Übergang des Zielzustands). */
-html:has(dialog.sheet[open]) .top-cap { transition: background-color 0.3s ease-out; }
-dialog.sheet[open]::backdrop { animation: backdrop-in 0.3s ease-out; }
-@keyframes backdrop-in { from { background-color: transparent; } }
-@media (prefers-reduced-motion: reduce) {
-  html:has(dialog.sheet[open]) .top-cap { transition: none; }
-  dialog.sheet[open]::backdrop { animation: none; }
-}
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { min-width: 0; }
 .brand h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.01em; }
@@ -277,11 +261,13 @@ dialog.sheet {
   margin: auto 0 0; padding: 0;
   border: 0; border-radius: 22px 22px 0 0;
   background: var(--surface); color: var(--text);
-  box-shadow: 0 -8px 40px var(--shadow);
+  box-shadow: 0 -1px 0 var(--sheet-edge), 0 -10px 44px var(--sheet-shadow);
   overflow: hidden;
 }
 dialog.sheet[open] { display: flex; flex-direction: column; }
-dialog.sheet::backdrop { top: calc(env(safe-area-inset-top) + 12px); background: var(--backdrop); } /* top: KOPF-DECKEL */
+/* Durchsichtig (keine Abdunkelung, siehe --sheet-shadow). Es gibt ihn trotzdem: Tipp daneben schließt das Fenster.
+   top: Er beginnt unter dem KOPF-DECKEL, sonst läge oben ein durchsichtiges Element über der Leiste und iOS zeichnete wieder die Unschärfe. */
+dialog.sheet::backdrop { top: calc(env(safe-area-inset-top) + 12px); background: transparent; }
 .sheet-head {
   display: flex; align-items: center; gap: 12px;
   padding: 16px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
@@ -300,7 +286,7 @@ dialog.sheet::backdrop { top: calc(env(safe-area-inset-top) + 12px); background:
 .sheet.small .sheet-body { text-align: center; }
 .sheet .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }
 @media (min-width: 641px) {
-  dialog.sheet { max-width: 560px; max-height: 86vh; margin: auto; border-radius: 22px; box-shadow: 0 12px 48px var(--shadow); }
+  dialog.sheet { max-width: 560px; max-height: 86vh; margin: auto; border-radius: 22px; box-shadow: 0 0 0 1px var(--sheet-edge), 0 14px 52px var(--sheet-shadow); }
   dialog.sheet.small { max-width: 420px; }
   .sheet-body { padding-bottom: 22px; }
 }

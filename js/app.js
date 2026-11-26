@@ -52,25 +52,15 @@
 
   // Darstellung: 'system' | 'light' | 'dark'. „System“ entfernt das Attribut, dann gilt prefers-color-scheme.
   // Die Farbe der Statusleiste (theme-color) folgt der gewählten Darstellung; bei „System“ gelten wieder die media-Angaben.
-  // KOPF-DECKEL: Ist ein Fenster offen, bekommt die Statusleiste die abgedunkelte Farbe (= --cap-dim in css/style.css), passend zur Abdunkelung darunter.
   const THEME_COLORS = { light: '#FAF6EE', dark: '#15130F' };
-  const THEME_COLORS_DIM = { light: '#918A81', dark: '#080706' };
-  const THEME_COLORS_DIM2 = { light: '#5C544A', dark: '#030302' }; // zwei Fenster übereinander (= --cap-dim2)
-  let themeNow = 'system';
   function applyTheme(theme) {
-    themeNow = theme;
     if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
     else delete document.documentElement.dataset.theme;
-    const open = document.querySelectorAll('dialog.sheet[open]').length;
-    const colors = open >= 2 ? THEME_COLORS_DIM2 : open ? THEME_COLORS_DIM : THEME_COLORS;
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      const own = m.media.includes('dark') ? colors.dark : colors.light;
-      m.content = colors[theme] || own;
+      const own = m.media.includes('dark') ? THEME_COLORS.dark : THEME_COLORS.light;
+      m.content = THEME_COLORS[theme] || own;
     });
   }
-  // Öffnen/Schließen eines Fensters (Attribut „open“) setzt die Farbe der Statusleiste neu
-  new MutationObserver(() => applyTheme(themeNow))
-    .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open'] });
   // ALKOHOL-AUSWERTUNG: Körperdaten lesen/schreiben (immer über GAME.cleanBody geprüft; leer = Schlüssel entfernen)
   const readBody = () => { try { return G.cleanBody(JSON.parse(lsGet(LS_BODY))); } catch { return G.cleanBody(null); } };
   const writeBody = (b) => { const c = G.cleanBody(b); lsSet(LS_BODY, c.sex || c.kg ? JSON.stringify(c) : null); };

@@ -593,14 +593,11 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 - KOPF-DECKEL: `.top-cap` (in `index.html`, `impressum.html`, `datenschutz.html`) ist eine feste, deckende Leiste so hoch wie
   die Statusleiste plus 12 px (iOS prüft knapp darunter; `.top` beginnt deshalb 12 px tiefer). Sie soll verhindern die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
   durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
-  Offene Fenster (26.11.2026, später): Die Abdunkelung `dialog.sheet::backdrop` beginnt erst UNTER der Leiste (`top`), die Leiste nimmt
-  `--cap-dim` an (bei zwei Fenstern übereinander `--cap-dim2`, Selektor `dialog.sheet[open] ~ dialog.sheet[open]`), und `applyTheme` in `js/app.js`
-  setzt `theme-color` passend (`THEME_COLORS_DIM`/`_DIM2`, ein `MutationObserver` auf das Attribut `open`). Vorher blieb die Statusleiste beim
-  Abdunkeln hell. Die Farben sind `--bg` unter `--backdrop` vorgerechnet: Ändert sich eine davon, beide neu rechnen (CSS und JS).
-  Geprüft mit Chrome headless (Pixel hell/dunkel, ohne Fenster, eins, zwei übereinander: gleich bis auf ≤ 3/255). NICHT auf dem iPhone geprüft.
-  Übergang (26.11.2026, Wunsch des Nutzers wegen sichtbarem Versatz): Beim Öffnen dunkeln Leiste (`transition` 0,3 s) und Abdunkelung (`@keyframes backdrop-in`
-  ab durchsichtig) gleich lang und mit gleicher Kurve ab; die Mischfarbe der Abdunkelung über `--bg` verläuft dabei rechnerisch genau wie die Leistenfarbe. Beim Schließen
-  sofort (die Abdunkelung verschwindet sofort). Bei „weniger Bewegung“ ohne Übergang. Endzustand per Pixel geprüft; Zwischenbilder ließen sich headless nicht aufnehmen.
+  Offene Fenster (26.11.2026, Entscheidung des Nutzers): KEINE Abdunkelung des Hintergrunds mehr. Mit Abdunkelung musste sich oben die
+  Statusleiste mitfärben, und iOS tat das sichtbar verzögert (auch mit gleichzeitigem Übergang, besonders beim Schließen). Jetzt heben sich die
+  Fenster nur per Schatten und feiner Kante ab (`--sheet-edge`, `--sheet-shadow` in allen drei Farbblöcken); Leiste und Statusleiste bleiben immer
+  in `--bg`. `dialog.sheet::backdrop` ist durchsichtig, existiert aber weiter (Tipp daneben schließt) und beginnt unter der Leiste (`top`), sonst läge
+  oben ein durchsichtiges Element über der Leiste. NICHT wieder abdunkeln, ohne das Statusleisten-Problem zu lösen.
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
   feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
   Chromium (auch der eingebaute Browser) zeigt den Fehler nicht; nachstellbar mit `.sheet-body { flex-basis: 0px }`.
