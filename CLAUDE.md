@@ -575,8 +575,10 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
 - `close`-Ereignisse von Dialogen nur zum Aufräumen nutzen und prüfen, ob der Dialog inzwischen wieder offen ist
   (das Ereignis kommt verzögert).
 - Smartphone zuerst: 375/390 px prüfen, Eingabefelder 16 px, Safe-Area-Abstände; Kopfleiste und Werkzeugzeile dürfen
-  nicht höher werden. Ausnahme: oben `env(safe-area-inset-top) + 22px` (`.top`, `.legal-page`), weil iOS 26 den oberen Rand
-  von Web-Apps bis etwa 20 px unter die Statusleiste verschwimmen lässt (26.11.2026).
+  nicht höher werden.
+- KOPF-DECKEL: `.top-cap` (in `index.html`, `impressum.html`, `datenschutz.html`) ist eine feste, deckende Leiste so hoch wie
+  die Statusleiste. Sie verhindert die Unschärfe, die iOS 26 über den oberen Rand von Home-Bildschirm-Web-Apps legt. Nicht
+  durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
   feste Höhe als 0; auf dem iPhone zeigten Karte, Statistiken und Einstellungen dann nur die Kopfzeile (18.11.2026).
   Chromium (auch der eingebaute Browser) zeigt den Fehler nicht; nachstellbar mit `.sheet-body { flex-basis: 0px }`.
