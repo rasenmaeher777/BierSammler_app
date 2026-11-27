@@ -21,8 +21,9 @@
   --shadow: rgb(70 50 20 / 0.16);
   /* Fenster heben sich nur per Schatten und feiner Kante ab, OHNE abgedunkelten Hintergrund (sonst müsste sich oben die Statusleiste
      umfärben, und das macht iOS sichtbar verzögert; siehe KOPF-DECKEL, 26.11.2026) */
-  --sheet-edge: #DCCDB4;
-  --sheet-shadow: rgb(70 50 20 / 0.24);
+  --sheet-edge: #CDBB9C;
+  --sheet-shadow: rgb(70 50 20 / 0.42);
+  --sheet-shadow-near: rgb(70 50 20 / 0.18);
   --radius: 16px;
 
   /* Kategorie-Farben (1 Standardgebräu … 5 Heiligtum) und die Schrift darauf; --rd gehört zur Spezialkarte Raddelfuß */
@@ -60,8 +61,9 @@
     --danger: #FF8A80;
     --on-danger: #15130F;
     --shadow: rgb(0 0 0 / 0.5);
-    --sheet-edge: #4A4237;
-    --sheet-shadow: rgb(0 0 0 / 0.75);
+    --sheet-edge: #5E5446;
+    --sheet-shadow: rgb(0 0 0 / 0.9);
+    --sheet-shadow-near: rgb(0 0 0 / 0.6);
     --k1: #A39A8B; --on-k1: #15130F;
     --k2: #79B886; --on-k2: #15130F;
     --k3: #78ACDC; --on-k3: #15130F;
@@ -89,8 +91,9 @@
   --danger: #FF8A80;
   --on-danger: #15130F;
   --shadow: rgb(0 0 0 / 0.5);
-  --sheet-edge: #4A4237;
-  --sheet-shadow: rgb(0 0 0 / 0.75);
+  --sheet-edge: #5E5446;
+  --sheet-shadow: rgb(0 0 0 / 0.9);
+  --sheet-shadow-near: rgb(0 0 0 / 0.6);
   --k1: #A39A8B; --on-k1: #15130F;
   --k2: #79B886; --on-k2: #15130F;
   --k3: #78ACDC; --on-k3: #15130F;
@@ -261,7 +264,7 @@ dialog.sheet {
   margin: auto 0 0; padding: 0;
   border: 0; border-radius: 22px 22px 0 0;
   background: var(--surface); color: var(--text);
-  box-shadow: 0 -1px 0 var(--sheet-edge), 0 -10px 44px var(--sheet-shadow);
+  box-shadow: 0 -1px 0 var(--sheet-edge), 0 -3px 10px var(--sheet-shadow-near), 0 -18px 70px var(--sheet-shadow);
   overflow: hidden;
 }
 dialog.sheet[open] { display: flex; flex-direction: column; }
@@ -286,7 +289,7 @@ dialog.sheet::backdrop { top: calc(env(safe-area-inset-top) + 12px); background:
 .sheet.small .sheet-body { text-align: center; }
 .sheet .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 18px; }
 @media (min-width: 641px) {
-  dialog.sheet { max-width: 560px; max-height: 86vh; margin: auto; border-radius: 22px; box-shadow: 0 0 0 1px var(--sheet-edge), 0 14px 52px var(--sheet-shadow); }
+  dialog.sheet { max-width: 560px; max-height: 86vh; margin: auto; border-radius: 22px; box-shadow: 0 0 0 1px var(--sheet-edge), 0 4px 12px var(--sheet-shadow-near), 0 22px 80px var(--sheet-shadow); }
   dialog.sheet.small { max-width: 420px; }
   .sheet-body { padding-bottom: 22px; }
 }

@@ -595,7 +595,7 @@ bisheriger Name im selben Vorgang freigegeben wird (auch beim Leeren/Löschen de
   durchsichtig machen, kein `pointer-events: none`, kein `backdrop-filter` (26.11.2026).
   Offene Fenster (26.11.2026, Entscheidung des Nutzers): KEINE Abdunkelung des Hintergrunds mehr. Mit Abdunkelung musste sich oben die
   Statusleiste mitfärben, und iOS tat das sichtbar verzögert (auch mit gleichzeitigem Übergang, besonders beim Schließen). Jetzt heben sich die
-  Fenster nur per Schatten und feiner Kante ab (`--sheet-edge`, `--sheet-shadow` in allen drei Farbblöcken); Leiste und Statusleiste bleiben immer
+  Fenster nur per Schatten und feiner Kante ab (`--sheet-edge`, `--sheet-shadow`, `--sheet-shadow-near` in allen drei Farbblöcken; am 27.11.2026 auf Wunsch deutlich verstärkt: naher + weiter Schatten, 70 px); Leiste und Statusleiste bleiben immer
   in `--bg`. `dialog.sheet::backdrop` ist durchsichtig, existiert aber weiter (Tipp daneben schließt) und beginnt unter der Leiste (`top`), sonst läge
   oben ein durchsichtiges Element über der Leiste. NICHT wieder abdunkeln, ohne das Statusleisten-Problem zu lösen.
 - Dialog-Inhalt `.sheet-body`: `flex: 1 1 auto`, NIE `flex: 1` (Grundgröße 0 %). Safari rechnet 0 % im Dialog ohne
